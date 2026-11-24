@@ -1,0 +1,16 @@
+const express = require('express');
+const router = express.Router();
+const {
+  createInvoice,
+  getInvoices,
+  getInvoiceById,
+} = require('../controllers/invoiceController');
+
+router.route('/')
+  .post(createInvoice)
+  .get(getInvoices);
+
+router.route('/:id')
+  .get(getInvoiceById);
+
+module.exports = router;

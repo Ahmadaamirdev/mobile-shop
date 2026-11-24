@@ -1,0 +1,1015 @@
+/* ==========================================================================
+   Unity Mobile - Professional Black, White & Warm Golden Yellow Theme
+   Left Sidebar Layout (Desktop Fixed / Mobile Off-Canvas Drawer)
+   ========================================================================== */
+
+:root {
+  /* Brand Theme Colors */
+  --brand-black: #0b0f17;
+  --brand-black-card: #111827;
+  --brand-black-hover: #1f2937;
+  --brand-gold: #eab308;        /* Warm Gold from Unity Mobile Logo */
+  --brand-gold-dark: #ca8a04;   /* Deep Gold */
+  --brand-gold-light: #fef08a;  /* Light Gold Tint */
+  --brand-gold-bg: rgba(234, 179, 8, 0.10);
+
+  /* Workspace Palette */
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
+  --border-color: #e2e8f0;
+  --border-focus: #ca8a04;
+
+  /* Button Actions */
+  --btn-primary: #0b0f17;
+  --btn-primary-hover: #182234;
+  --btn-secondary: #ffffff;
+  --btn-secondary-hover: #f1f5f9;
+  --danger: #b91c1c;
+  --danger-hover: #991b1b;
+  --danger-bg: #fef2f2;
+  --success: #15803d;
+  --success-bg: #f0fdf4;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   App Master Layout: Left Sidebar + Main Viewport
+   ========================================================================== */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.app-main-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Prevents overflow in flex children */
+  background-color: var(--bg-app);
+}
+
+.main-content {
+  max-width: 1160px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px 14px 48px 14px;
+  flex: 1;
+}
+
+/* ==========================================================================
+   Left Sidebar Navigation (Black & Gold Identity)
+   ========================================================================== */
+
+.app-sidebar {
+  width: 250px;
+  background-color: var(--brand-black);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-right: 1px solid #1e293b;
+  z-index: 100;
+}
+
+/* Sidebar Top Brand Header */
+.sidebar-header {
+  padding: 18px 16px;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-logo {
+  height: 42px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.sidebar-brand-text h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-brand-text p {
+  font-size: 0.72rem;
+  color: var(--brand-gold);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.sidebar-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sidebar Navigation Items */
+.sidebar-nav {
+  padding: 16px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.08em;
+  padding: 6px 12px 10px 12px;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  position: relative;
+}
+
+.sidebar-nav-item:hover {
+  background-color: var(--brand-black-hover);
+  color: #ffffff;
+}
+
+.sidebar-nav-item .nav-icon {
+  color: #94a3b8;
+  transition: color 0.15s ease;
+}
+
+.sidebar-nav-item:hover .nav-icon {
+  color: var(--brand-gold);
+}
+
+.sidebar-nav-item.active {
+  background-color: var(--brand-gold-bg);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.sidebar-nav-item.active .nav-icon {
+  color: var(--brand-gold);
+}
+
+.sidebar-nav-item.active .nav-active-pill {
+  position: absolute;
+  left: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 3.5px;
+  background-color: var(--brand-gold);
+  border-radius: 0 3px 3px 0;
+}
+
+/* Sidebar Bottom Footer */
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid #1e293b;
+  background-color: #080c14;
+}
+
+.sidebar-shop-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shop-status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--brand-gold);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(234, 179, 8, 0.6);
+}
+
+.shop-footer-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.shop-footer-text strong {
+  font-size: 0.8rem;
+  color: #ffffff;
+}
+
+.shop-footer-text span {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   Mobile Top Bar (Shown only on Mobile Screens)
+   ========================================================================== */
+
+.mobile-topbar {
+  background-color: var(--brand-black);
+  border-bottom: 1px solid #1e293b;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.mobile-menu-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.mobile-menu-btn:active {
+  background-color: var(--brand-black-hover);
+}
+
+.mobile-topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-topbar-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+
+.mobile-topbar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  border-left: 2px solid var(--brand-gold);
+  padding-left: 8px;
+}
+
+/* Mobile Off-Canvas Drawer Backdrop */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+  z-index: 95;
+}
+
+/* ==========================================================================
+   Alerts & Notifications
+   ========================================================================== */
+
+.alert-banner {
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.alert-success {
+  background-color: var(--success-bg);
+  border: 1px solid #bbf7d0;
+  color: var(--success);
+}
+.alert-error {
+  background-color: var(--danger-bg);
+  border: 1px solid #fecaca;
+  color: var(--danger);
+}
+
+/* ==========================================================================
+   Section Header & Toolbar
+   ========================================================================== */
+
+.section-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 16px; /* 16px prevents iOS zoom */
+  background-color: #ffffff;
+  color: var(--text-main);
+  outline: none;
+  min-height: 44px;
+  transition: border-color 0.15s ease;
+}
+.search-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--brand-gold-bg);
+}
+
+.select-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 16px;
+  background-color: #ffffff;
+  color: var(--text-main);
+  outline: none;
+  cursor: pointer;
+  min-height: 44px;
+  transition: border-color 0.15s ease;
+}
+.select-input:focus {
+  border-color: var(--border-focus);
+}
+
+/* ==========================================================================
+   Buttons (Black with Golden Trim)
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  min-height: 44px;
+}
+.btn-primary {
+  background-color: var(--btn-primary);
+  color: #ffffff;
+  border-bottom: 2px solid var(--brand-gold-dark);
+}
+.btn-primary:active,
+.btn-primary:hover {
+  background-color: var(--btn-primary-hover);
+  border-bottom-color: var(--brand-gold);
+}
+.btn-secondary {
+  background-color: #ffffff;
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+.btn-secondary:active,
+.btn-secondary:hover {
+  background-color: var(--btn-secondary);
+}
+.btn-danger {
+  background-color: #ffffff;
+  border-color: #fca5a5;
+  color: var(--danger);
+}
+.btn-danger:active,
+.btn-danger:hover {
+  background-color: var(--danger-bg);
+}
+.btn-sm {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+.btn-block {
+  width: 100%;
+}
+
+/* ==========================================================================
+   Cards & Forms
+   ========================================================================== */
+
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 18px;
+  margin-bottom: 22px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.card-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.form-group input,
+.form-group select {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 16px;
+  color: var(--text-main);
+  background-color: #ffffff;
+  outline: none;
+  min-height: 44px;
+  transition: border-color 0.15s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--brand-gold-bg);
+}
+
+.form-group .hint {
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ==========================================================================
+   Mobile-Optimized Cards (80% Mobile Use)
+   ========================================================================== */
+
+.mobile-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.mobile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mobile-card-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.mobile-card-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.mobile-card-price {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  text-align: right;
+}
+
+.mobile-card-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+}
+
+.mobile-detail-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-detail-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 1px;
+}
+
+.mobile-detail-value {
+  color: var(--text-main);
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.mobile-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Visibility helpers */
+.mobile-only {
+  display: flex;
+}
+.desktop-only {
+  display: none;
+}
+
+/* Desktop Tables */
+.table-container {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.data-table th {
+  background-color: #f8fafc;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.mono-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.82rem;
+  letter-spacing: -0.02em;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   A4 Centered Invoice (Black & Gold Header Accents)
+   ========================================================================== */
+
+.invoice-preview-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.invoice-toolbar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.a4-sheet {
+  width: 100%;
+  max-width: 210mm;
+  min-height: auto;
+  background-color: #ffffff;
+  margin: 0 auto 24px auto;
+  padding: 18px 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.invoice-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid var(--brand-black);
+  position: relative;
+}
+
+/* Subtle gold bar under header */
+.invoice-header::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--brand-gold);
+}
+
+.invoice-logo-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.invoice-logo-img {
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.invoice-shop-details h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.invoice-shop-details p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.invoice-meta {
+  text-align: left;
+  background-color: #f8fafc;
+  padding: 8px 10px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.invoice-meta h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-main);
+}
+
+.invoice-meta p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.invoice-section-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 18px 0 14px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.invoice-box h4 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.invoice-box p {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+}
+
+.invoice-table th {
+  background-color: var(--brand-black);
+  color: #ffffff;
+  padding: 9px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.invoice-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.84rem;
+}
+
+.invoice-summary-box {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.invoice-total-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background-color: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-top: 2px solid var(--brand-gold);
+  border-bottom: 2px solid var(--brand-black);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.invoice-footer {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.invoice-footer-sign {
+  flex: 1;
+  text-align: center;
+  border-top: 1px solid var(--text-main);
+  padding-top: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Responsive Breakpoints: Mobile vs Desktop (>= 768px)
+   ========================================================================== */
+
+/* Mobile view: Sidebar is off-canvas drawer */
+@media (max-width: 767px) {
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .app-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+}
+
+/* Desktop view: Sidebar is fixed on the left */
+@media (min-width: 768px) {
+  .main-content {
+    padding: 24px 28px 48px 28px;
+  }
+
+  .mobile-only {
+    display: none !important;
+  }
+
+  .desktop-only {
+    display: block !important;
+  }
+
+  .section-toolbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .filter-bar {
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+  }
+
+  .search-input {
+    width: auto;
+    min-width: 250px;
+    font-size: 0.875rem;
+    min-height: 38px;
+  }
+
+  .select-input {
+    width: auto;
+    font-size: 0.875rem;
+    min-height: 38px;
+  }
+
+  .btn {
+    min-height: 38px;
+    font-size: 0.875rem;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  }
+
+  .form-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .invoice-toolbar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 210mm;
+  }
+
+  .a4-sheet {
+    min-height: 297mm;
+    padding: 20mm;
+  }
+
+  .invoice-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .invoice-meta {
+    text-align: right;
+    background: none;
+    padding: 0;
+    display: block;
+  }
+
+  .invoice-section-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .invoice-total-row {
+    width: 280px;
+  }
+}
+
+/* ==========================================================================
+   Print Stylesheet - Strictly A4 Centered with Clean Margins
+   ========================================================================== */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    background-color: #ffffff;
+    color: #000000;
+    margin: 0;
+    padding: 0;
+  }
+
+  .app-sidebar,
+  .mobile-topbar,
+  .invoice-toolbar,
+  .section-toolbar,
+  .card,
+  .alert-banner,
+  .hide-on-print,
+  .mobile-only {
+    display: none !important;
+  }
+
+  .app-layout {
+    display: block !important;
+  }
+
+  .app-main-viewport,
+  .main-content {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+  }
+
+  .invoice-preview-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .a4-sheet {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: flex !important;
+  }
+
+  .desktop-only {
+    display: block !important;
+  }
+}
