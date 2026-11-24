@@ -4,6 +4,7 @@ const {
   createPurchase,
   getPurchases,
   getPurchaseById,
+  deletePurchase,
 } = require('../controllers/purchaseController');
 
 router.route('/')
@@ -11,6 +12,7 @@ router.route('/')
   .get(getPurchases);
 
 router.route('/:id')
-  .get(getPurchaseById);
+  .get(getPurchaseById)
+  .delete(deletePurchase);
 
 module.exports = router;

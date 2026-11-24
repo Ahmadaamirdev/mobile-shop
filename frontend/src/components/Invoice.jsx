@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getInvoices, createInvoice } from '../services/api';
+import { getInvoices, createInvoice, deleteInvoice } from '../services/api';
+import { Trash2, Printer } from 'lucide-react';
 
 const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   const [viewMode, setViewMode] = useState('generator'); // 'generator' | 'history'
@@ -90,6 +91,23 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
     }
   };
 
+  const handleDeleteInvoice = async (id, invoiceNumber) => {
+    if (!window.confirm(`Are you sure you want to delete invoice ${invoiceNumber}?`)) return;
+    try {
+      await deleteInvoice(id);
+      setAlert({
+        type: 'success',
+        message: 'Invoice record deleted successfully.',
+      });
+      fetchHistory();
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to delete invoice record.',
+      });
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -127,7 +145,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   };
 
   return (
-    <div>
+    <div className="section-container">
       <div className="section-toolbar hide-on-print">
         <h2 className="section-title">Invoices</h2>
         <div className="filter-bar">
@@ -199,12 +217,18 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                       )}
                     </div>
 
-                    <div className="mobile-card-actions">
+                    <div className="mobile-card-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <button
-                        className="btn btn-secondary btn-block btn-sm"
+                        className="btn btn-secondary btn-sm"
                         onClick={() => handleLoadFromHistory(inv)}
                       >
-                        View / Print Invoice
+                        <Printer size={15} /> View
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDeleteInvoice(inv._id, inv.invoiceNumber)}
+                      >
+                        <Trash2 size={15} /> Delete
                       </button>
                     </div>
                   </div>
@@ -213,50 +237,63 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
             )}
           </div>
 
-          {/* Desktop Table for Invoices */}
+          {/* Desktop Responsive Table for Invoices */}
           <div className="table-container desktop-only">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Invoice No.</th>
-                  <th>Date</th>
-                  <th>Customer Name</th>
-                  <th>Customer Phone</th>
-                  <th>Model</th>
-                  <th>IMEI 1</th>
+                  <th style={{ width: '110px' }}>Invoice No.</th>
+                  <th style={{ width: '85px' }}>Date</th>
+                  <th>Customer</th>
+                  <th>Model & IMEI</th>
                   <th>Price</th>
-                  <th>Action</th>
+                  <th style={{ textAlign: 'center', width: '110px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingHistory ? (
                   <tr>
-                    <td colSpan="8" className="empty-state">Loading invoice records...</td>
+                    <td colSpan="6" className="empty-state">Loading invoice records...</td>
                   </tr>
                 ) : invoices.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="empty-state">No invoice records found.</td>
+                    <td colSpan="6" className="empty-state">No invoice records found.</td>
                   </tr>
                 ) : (
                   invoices.map((inv) => (
                     <tr key={inv._id}>
                       <td><strong>{inv.invoiceNumber}</strong></td>
-                      <td>{new Date(inv.date).toLocaleDateString()}</td>
-                      <td>{inv.customerName}</td>
-                      <td>{inv.customerNumber}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {new Date(inv.date).toLocaleDateString()}
+                      </td>
+                      <td>
+                        <strong>{inv.customerName}</strong>
+                        <div className="hint">{inv.customerNumber}</div>
+                      </td>
                       <td>
                         <strong>{inv.modelName}</strong>
-                        {inv.modelNumber && <div className="hint">{inv.modelNumber}</div>}
+                        {inv.imei1 && <div className="mono-text hint">IMEI: {inv.imei1}</div>}
                       </td>
-                      <td className="mono-text">{inv.imei1 || '-'}</td>
-                      <td><strong>PKR {Number(inv.price).toLocaleString()}</strong></td>
-                      <td>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => handleLoadFromHistory(inv)}
-                        >
-                          View / Print
-                        </button>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <strong>PKR {Number(inv.price).toLocaleString()}</strong>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px' }}>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => handleLoadFromHistory(inv)}
+                            title="View and print invoice"
+                          >
+                            <Printer size={14} />
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDeleteInvoice(inv._id, inv.invoiceNumber)}
+                            title="Delete invoice record"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -373,7 +410,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                 className="btn btn-primary"
                 onClick={handlePrint}
               >
-                Print A4 Invoice
+                <Printer size={16} /> Print A4 Invoice
               </button>
             </div>
           </div>
@@ -385,7 +422,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                 A4 Centered Layout Preview
               </span>
               <button className="btn btn-primary btn-sm" onClick={handlePrint}>
-                Print A4
+                <Printer size={14} /> Print A4
               </button>
             </div>
 
@@ -430,7 +467,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                       <th>Item Description</th>
                       <th>Model Number</th>
                       <th>IMEI / Identifiers</th>
-                      <th style={{ textAlign: 'right', width: '110px' }}>Amount (PKR)</th>
+                      <th style={{ textAlign: 'right', width: '120px' }}>Amount (PKR)</th>
                     </tr>
                   </thead>
                   <tbody>

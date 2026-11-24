@@ -157,3 +157,24 @@ exports.getPurchaseById = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Delete purchase record
+// @route   DELETE /api/purchases/:id
+exports.deletePurchase = async (req, res, next) => {
+  try {
+    const purchase = await Purchase.findByIdAndDelete(req.params.id);
+    if (!purchase) {
+      return res.status(404).json({
+        success: false,
+        message: 'Purchase record not found.',
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: 'Purchase record deleted successfully.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

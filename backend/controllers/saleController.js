@@ -152,3 +152,40 @@ exports.getSaleById = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Delete sale record and restore inventory stock
+// @route   DELETE /api/sales/:id
+exports.deleteSale = async (req, res, next) => {
+  try {
+    const sale = await Sale.findByIdAndDelete(req.params.id);
+    if (!sale) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sale record not found.',
+      });
+    }
+
+    // Restore stock to inventory
+    const inventoryItem = await Inventory.findOne({
+      modelName: { $regex: new RegExp(`^${sale.modelName.trim()}$`, 'i') },
+    });
+
+    if (inventoryItem) {
+      inventoryItem.quantity += 1;
+      if (sale.imei1 && !inventoryItem.imeis.includes(sale.imei1)) {
+        inventoryItem.imeis.push(sale.imei1);
+      }
+      if (sale.imei2 && !inventoryItem.imeis.includes(sale.imei2)) {
+        inventoryItem.imeis.push(sale.imei2);
+      }
+      await inventoryItem.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Sale record deleted and inventory stock restored.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};

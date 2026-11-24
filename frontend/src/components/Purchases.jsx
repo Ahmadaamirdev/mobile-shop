@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getPurchases, createPurchase } from '../services/api';
+import { getPurchases, createPurchase, deletePurchase } from '../services/api';
+import { Trash2 } from 'lucide-react';
 
 const Purchases = ({ onPurchaseSuccess, setAlert }) => {
   const [purchases, setPurchases] = useState([]);
@@ -108,8 +109,25 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
     }
   };
 
+  const handleDelete = async (id, modelName) => {
+    if (!window.confirm(`Are you sure you want to delete purchase record for ${modelName}?`)) return;
+    try {
+      await deletePurchase(id);
+      setAlert({
+        type: 'success',
+        message: 'Purchase record deleted successfully.',
+      });
+      fetchPurchases();
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to delete purchase record.',
+      });
+    }
+  };
+
   return (
-    <div>
+    <div className="section-container">
       <div className="section-toolbar">
         <h2 className="section-title">Purchases</h2>
         <div className="filter-bar">
@@ -345,56 +363,75 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                     </span>
                   </div>
                 </div>
+
+                <div className="mobile-card-actions">
+                  <button
+                    className="btn btn-danger btn-block btn-sm"
+                    onClick={() => handleDelete(item._id, item.modelName)}
+                  >
+                    <Trash2 size={15} /> Delete Purchase
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Desktop Table (Screen > 768px) */}
+      {/* Desktop Responsive Table (Screen > 768px) */}
       <div className="table-container desktop-only">
         <table className="data-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Category</th>
-              <th>Company</th>
-              <th>Model Name & Number</th>
-              <th>IMEI 1 & 2</th>
-              <th>Serial No.</th>
-              <th>Customer Phone</th>
-              <th>Customer ID Card</th>
+              <th style={{ width: '85px' }}>Date</th>
+              <th>Device & Brand</th>
+              <th>IMEIs & Serial</th>
+              <th>Customer Info</th>
               <th>Price</th>
+              <th style={{ textAlign: 'center', width: '80px' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="9" className="empty-state">Loading purchases...</td>
+                <td colSpan="6" className="empty-state">Loading purchases...</td>
               </tr>
             ) : purchases.length === 0 ? (
               <tr>
-                <td colSpan="9" className="empty-state">No purchases recorded yet.</td>
+                <td colSpan="6" className="empty-state">No purchases recorded yet.</td>
               </tr>
             ) : (
               purchases.map((item) => (
                 <tr key={item._id}>
-                  <td>{new Date(item.createdAt).toLocaleDateString()}</td>
-                  <td>{item.category}</td>
-                  <td>{item.companyName}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </td>
                   <td>
                     <strong>{item.modelName}</strong>
-                    <div className="hint">{item.modelNumber}</div>
+                    <div className="hint">{item.companyName} ({item.modelNumber}) • {item.category}</div>
                   </td>
                   <td className="mono-text">
-                    {item.imei1 && <div>1: {item.imei1}</div>}
-                    {item.imei2 && <div>2: {item.imei2}</div>}
-                    {!item.imei1 && !item.imei2 && '-'}
+                    {item.imei1 && <div>IMEI 1: {item.imei1}</div>}
+                    {item.imei2 && <div>IMEI 2: {item.imei2}</div>}
+                    {item.serialNumber && <div className="hint">SN: {item.serialNumber}</div>}
+                    {!item.imei1 && !item.imei2 && !item.serialNumber && '-'}
                   </td>
-                  <td>{item.serialNumber || '-'}</td>
-                  <td>{item.customerPhone}</td>
-                  <td className="mono-text">{item.customerIdCard}</td>
-                  <td><strong>PKR {Number(item.price).toLocaleString()}</strong></td>
+                  <td>
+                    <div><strong>{item.customerPhone}</strong></div>
+                    <div className="mono-text hint">CNIC: {item.customerIdCard}</div>
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <strong>PKR {Number(item.price).toLocaleString()}</strong>
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => handleDelete(item._id, item.modelName)}
+                      title="Delete purchase"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}

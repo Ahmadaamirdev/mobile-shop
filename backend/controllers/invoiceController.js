@@ -137,3 +137,23 @@ exports.getInvoiceById = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Delete invoice record
+// @route   DELETE /api/invoices/:id
+exports.deleteInvoice = async (req, res, next) => {
+  try {
+    const invoice = await Invoice.findByIdAndDelete(req.params.id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found.',
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: 'Invoice record deleted successfully.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};

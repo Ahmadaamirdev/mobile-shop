@@ -4,6 +4,7 @@ const {
   createSale,
   getSales,
   getSaleById,
+  deleteSale,
 } = require('../controllers/saleController');
 
 router.route('/')
@@ -11,6 +12,7 @@ router.route('/')
   .get(getSales);
 
 router.route('/:id')
-  .get(getSaleById);
+  .get(getSaleById)
+  .delete(deleteSale);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getSales, createSale, getInventory } from '../services/api';
+import { getSales, createSale, deleteSale, getInventory } from '../services/api';
+import { Trash2, FileText } from 'lucide-react';
 
 const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
   const [sales, setSales] = useState([]);
@@ -134,8 +135,26 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
     }
   };
 
+  const handleDelete = async (id, modelName) => {
+    if (!window.confirm(`Are you sure you want to delete this sale for ${modelName}? Stock will be restored to inventory.`)) return;
+    try {
+      await deleteSale(id);
+      setAlert({
+        type: 'success',
+        message: 'Sale deleted and inventory stock restored.',
+      });
+      fetchSalesAndInventory();
+      if (onSaleSuccess) onSaleSuccess();
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to delete sale record.',
+      });
+    }
+  };
+
   return (
-    <div>
+    <div className="section-container">
       <div className="section-toolbar">
         <h2 className="section-title">Sales</h2>
         <div className="filter-bar">
@@ -345,12 +364,18 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                   )}
                 </div>
 
-                <div className="mobile-card-actions">
+                <div className="mobile-card-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <button
-                    className="btn btn-secondary btn-block btn-sm"
+                    className="btn btn-secondary btn-sm"
                     onClick={() => onOpenInvoice(sale)}
                   >
-                    Generate Invoice
+                    <FileText size={15} /> Invoice
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => handleDelete(sale._id, sale.modelName)}
+                  >
+                    <Trash2 size={15} /> Delete
                   </button>
                 </div>
               </div>
@@ -359,49 +384,67 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
         )}
       </div>
 
-      {/* Desktop Table (Screen > 768px) */}
+      {/* Desktop Responsive Table (Screen > 768px) */}
       <div className="table-container desktop-only">
         <table className="data-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Customer Name</th>
-              <th>Customer Number</th>
-              <th>Model Name</th>
-              <th>IMEI 1 & 2</th>
-              <th>Sale Price</th>
-              <th>Action</th>
+              <th style={{ width: '85px' }}>Date</th>
+              <th>Customer</th>
+              <th>Device Model</th>
+              <th>IMEIs</th>
+              <th>Price</th>
+              <th style={{ textAlign: 'center', width: '130px' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="7" className="empty-state">Loading sales...</td>
+                <td colSpan="6" className="empty-state">Loading sales...</td>
               </tr>
             ) : sales.length === 0 ? (
               <tr>
-                <td colSpan="7" className="empty-state">No sales recorded yet.</td>
+                <td colSpan="6" className="empty-state">No sales recorded yet.</td>
               </tr>
             ) : (
               sales.map((sale) => (
                 <tr key={sale._id}>
-                  <td>{new Date(sale.createdAt).toLocaleDateString()}</td>
-                  <td><strong>{sale.customerName}</strong></td>
-                  <td>{sale.customerNumber}</td>
-                  <td>{sale.modelName}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {new Date(sale.createdAt).toLocaleDateString()}
+                  </td>
+                  <td>
+                    <strong>{sale.customerName}</strong>
+                    <div className="hint">{sale.customerNumber}</div>
+                  </td>
+                  <td>
+                    <strong>{sale.modelName}</strong>
+                    {sale.modelNumber && <div className="hint">{sale.modelNumber}</div>}
+                  </td>
                   <td className="mono-text">
                     {sale.imei1 && <div>1: {sale.imei1}</div>}
                     {sale.imei2 && <div>2: {sale.imei2}</div>}
                     {!sale.imei1 && !sale.imei2 && '-'}
                   </td>
-                  <td><strong>PKR {Number(sale.price).toLocaleString()}</strong></td>
-                  <td>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => onOpenInvoice(sale)}
-                    >
-                      Generate Invoice
-                    </button>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <strong>PKR {Number(sale.price).toLocaleString()}</strong>
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <div style={{ display: 'inline-flex', gap: '6px' }}>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => onOpenInvoice(sale)}
+                        title="Generate Invoice"
+                      >
+                        <FileText size={14} />
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDelete(sale._id, sale.modelName)}
+                        title="Delete sale and restore stock"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

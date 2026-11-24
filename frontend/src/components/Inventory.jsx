@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getInventory, createInventoryItem, deleteInventoryItem } from '../services/api';
+import { Trash2 } from 'lucide-react';
 
 const Inventory = ({ setAlert }) => {
   const [inventory, setInventory] = useState([]);
@@ -98,7 +99,7 @@ const Inventory = ({ setAlert }) => {
   };
 
   return (
-    <div>
+    <div className="section-container">
       <div className="section-toolbar">
         <h2 className="section-title">Inventory</h2>
         <div className="filter-bar">
@@ -273,7 +274,7 @@ const Inventory = ({ setAlert }) => {
                     className="btn btn-danger btn-block btn-sm"
                     onClick={() => handleDelete(item._id, item.modelName)}
                   >
-                    Delete Item
+                    <Trash2 size={15} /> Delete Item
                   </button>
                 </div>
               </div>
@@ -282,54 +283,56 @@ const Inventory = ({ setAlert }) => {
         )}
       </div>
 
-      {/* Desktop Table (Screen > 768px) */}
+      {/* Desktop Responsive Table (Screen > 768px) */}
       <div className="table-container desktop-only">
         <table className="data-table">
           <thead>
             <tr>
-              <th>Category</th>
-              <th>Company</th>
-              <th>Model Name</th>
+              <th>Model Name & Category</th>
               <th>Model Number</th>
-              <th>Quantity in Stock</th>
+              <th>Stock Status</th>
               <th>Price</th>
               <th>Available IMEIs</th>
-              <th>Action</th>
+              <th style={{ textAlign: 'center', width: '80px' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="8" className="empty-state">Loading inventory...</td>
+                <td colSpan="6" className="empty-state">Loading inventory...</td>
               </tr>
             ) : inventory.length === 0 ? (
               <tr>
-                <td colSpan="8" className="empty-state">No inventory items found.</td>
+                <td colSpan="6" className="empty-state">No inventory items found.</td>
               </tr>
             ) : (
               inventory.map((item) => (
                 <tr key={item._id}>
-                  <td>{item.category}</td>
-                  <td>{item.companyName || '-'}</td>
-                  <td><strong>{item.modelName}</strong></td>
+                  <td>
+                    <strong>{item.modelName}</strong>
+                    <div className="hint">{item.companyName || '-'} • {item.category}</div>
+                  </td>
                   <td>{item.modelNumber}</td>
                   <td>
-                    <span style={{ fontWeight: 600, color: item.quantity > 0 ? 'var(--text-main)' : 'var(--danger)' }}>
+                    <span style={{ fontWeight: 600, color: item.quantity > 0 ? 'var(--success)' : 'var(--danger)' }}>
                       {item.quantity} {item.quantity === 0 ? '(Out of Stock)' : 'units'}
                     </span>
                   </td>
-                  <td><strong>PKR {Number(item.price).toLocaleString()}</strong></td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <strong>PKR {Number(item.price).toLocaleString()}</strong>
+                  </td>
                   <td className="mono-text">
                     {item.imeis && item.imeis.length > 0
                       ? item.imeis.map((im) => <div key={im}>{im}</div>)
                       : '-'}
                   </td>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
                     <button
                       className="btn btn-danger btn-sm"
                       onClick={() => handleDelete(item._id, item.modelName)}
+                      title="Delete item"
                     >
-                      Delete
+                      <Trash2 size={14} />
                     </button>
                   </td>
                 </tr>

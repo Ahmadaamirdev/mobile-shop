@@ -69,6 +69,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0; /* Prevents overflow in flex children */
+  overflow-x: hidden;
   background-color: var(--bg-app);
 }
 
@@ -630,16 +631,17 @@ body {
   background-color: #f8fafc;
   color: var(--text-muted);
   font-weight: 600;
-  padding: 11px 14px;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--border-color);
-  white-space: nowrap;
+  font-size: 0.8rem;
 }
 
 .data-table td {
-  padding: 11px 14px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-main);
   vertical-align: middle;
+  font-size: 0.84rem;
 }
 
 .data-table tr:last-child td {
