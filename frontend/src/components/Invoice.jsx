@@ -146,53 +146,57 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
 
   return (
     <div>
-      {/* 1. Page Header with Mode Switcher */}
-      <div className="page-header-container hide-on-print">
-        <div className="page-header-title-row">
-          <div className="page-header-text">
-            <h1>Invoices</h1>
-            <p>Generate printable A4 sales invoices & review billing history</p>
+      {/* 1. Header Card (Reference: Al Haditha Top Card) */}
+      <div className="panel-header-card hide-on-print">
+        <div className="panel-header-row">
+          <div className="panel-header-left">
+            <div className="panel-icon-box">
+              <FileText size={18} />
+            </div>
+            <div className="panel-header-text">
+              <h2>Billing &amp; Invoice Registry</h2>
+              <p>Generate verified A4 print sales invoices &amp; review historical customer bills.</p>
+            </div>
           </div>
-          <div className="page-header-actions">
+
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button
-              className={viewMode === 'generator' ? 'btn-secondary active' : 'btn-secondary'}
+              className={`filter-pill ${viewMode === 'generator' ? 'active' : 'inactive'}`}
               onClick={() => setViewMode('generator')}
             >
-              <FileText size={15} /> Invoice Generator
+              <FileText size={14} style={{ display: 'inline', marginRight: '5px' }} />
+              Invoice Generator
             </button>
             <button
-              className={viewMode === 'history' ? 'btn-secondary active' : 'btn-secondary'}
+              className={`filter-pill ${viewMode === 'history' ? 'active' : 'inactive'}`}
               onClick={() => setViewMode('history')}
             >
               Past Invoices ({invoices.length})
             </button>
           </div>
         </div>
+
+        {viewMode === 'history' && (
+          <div className="panel-toolbar-row">
+            <div style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>
+              Showing {invoices.length} billing history record{invoices.length === 1 ? '' : 's'}
+            </div>
+            <div className="panel-search-box">
+              <Search size={14} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search invoice #, customer, model..."
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {viewMode === 'history' ? (
-        /* History View */
-        <div className="card-data hide-on-print">
-          <div className="table-toolbar">
-            <div className="table-toolbar-left">
-              <div className="search-input-wrapper">
-                <Search size={15} className="search-icon" />
-                <input
-                  type="text"
-                  placeholder="Search invoices by number, customer, model, IMEI..."
-                  value={historySearch}
-                  onChange={(e) => setHistorySearch(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="table-toolbar-right">
-              <span className="record-count-badge">
-                {invoices.length} {invoices.length === 1 ? 'Invoice' : 'Invoices'}
-              </span>
-            </div>
-          </div>
-
-          {/* Desktop Table (Zero Overflow) */}
+        /* History View Table Card */
+        <div className="table-card hide-on-print">
           <div className="hide-on-mobile desktop-table-container">
             <table className="pro-table">
               <thead>
@@ -200,7 +204,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                   <th style={{ width: '14%' }}>Invoice No.</th>
                   <th style={{ width: '12%' }}>Date</th>
                   <th style={{ width: '18%' }}>Customer Name</th>
-                  <th style={{ width: '14%' }}>Phone</th>
+                  <th style={{ width: '14%' }}>Customer Phone</th>
                   <th style={{ width: '22%' }}>Device Model</th>
                   <th style={{ width: '14%' }}>Amount (PKR)</th>
                   <th style={{ width: '6%', textAlign: 'center' }}></th>
@@ -220,14 +224,16 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                     <tr key={item._id}>
                       {/* Invoice No */}
                       <td>
-                        <span className="cell-title" style={{ color: 'var(--brand-gold-hover)', fontFamily: 'monospace' }}>
+                        <span className="cell-mono" style={{ color: 'var(--brand-gold-hover)', fontWeight: 600 }}>
                           {item.invoiceNumber}
                         </span>
                       </td>
 
                       {/* Date */}
-                      <td style={{ color: 'var(--text-muted)' }}>
-                        {item.date ? new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      <td>
+                        <span className="cell-mono">
+                          {item.date ? new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        </span>
                       </td>
 
                       {/* Customer Name */}
@@ -237,7 +243,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
 
                       {/* Phone */}
                       <td>
-                        <span className="cell-sub">{item.customerNumber}</span>
+                        <span className="cell-mono">{item.customerNumber}</span>
                       </td>
 
                       {/* Model */}
@@ -261,14 +267,14 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                             onClick={() => handleLoadFromHistory(item)}
                             title="View / Print Invoice"
                           >
-                            <Printer size={13} />
+                            <Printer size={12} />
                           </button>
                           <button
                             className="action-btn-danger"
                             onClick={() => handleDeleteInvoice(item._id, item.invoiceNumber)}
                             title="Delete invoice record"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={12} />
                           </button>
                         </div>
                       </td>
@@ -319,14 +325,14 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                       className="btn-primary"
                       onClick={() => handleLoadFromHistory(item)}
                     >
-                      <Printer size={14} /> View & Print
+                      <Printer size={13} /> View &amp; Print
                     </button>
                     <button
-                      className="btn-secondary"
-                      style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-border)' }}
+                      className="action-btn-danger"
+                      style={{ height: '36px', padding: '0 12px' }}
                       onClick={() => handleDeleteInvoice(item._id, item.invoiceNumber)}
                     >
-                      <Trash2 size={14} /> Delete
+                      <Trash2 size={13} /> Delete
                     </button>
                   </div>
                 </div>
@@ -341,13 +347,13 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
           <div className="invoice-actions-bar hide-on-print">
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
-                className="btn-secondary btn-sm"
+                className="btn-secondary"
                 onClick={handleNewManual}
               >
                 <Plus size={14} /> New Invoice
               </button>
               <button
-                className="btn-secondary btn-sm"
+                className="btn-secondary"
                 onClick={handleSaveInvoice}
               >
                 <Check size={14} /> Save to Database
@@ -357,7 +363,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
               className="btn-primary"
               onClick={handlePrint}
             >
-              <Printer size={16} /> Print A4 Invoice
+              <Printer size={15} /> Print A4 Invoice
             </button>
           </div>
 
@@ -488,7 +494,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                 </div>
 
                 <div className="invoice-col">
-                  <h4>DEVICE & SALE INFO</h4>
+                  <h4>DEVICE &amp; SALE INFO</h4>
                   <p><strong>Model:</strong> {invoiceData.modelName || '—'} {invoiceData.modelNumber ? `(${invoiceData.modelNumber})` : ''}</p>
                   {invoiceData.imei1 && <p><strong>IMEI 1:</strong> {invoiceData.imei1}</p>}
                   {invoiceData.imei2 && <p><strong>IMEI 2:</strong> {invoiceData.imei2}</p>}
@@ -510,9 +516,9 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                     <td>1</td>
                     <td>
                       <strong>{invoiceData.modelName || 'Device Sale'}</strong>
-                      {invoiceData.modelNumber && <div style={{ fontSize: '0.8rem', color: '#555' }}>Model: {invoiceData.modelNumber}</div>}
-                      {invoiceData.imei1 && <div style={{ fontSize: '0.75rem', color: '#666' }}>IMEI: {invoiceData.imei1}</div>}
-                      {invoiceData.imei2 && <div style={{ fontSize: '0.75rem', color: '#666' }}>IMEI 2: {invoiceData.imei2}</div>}
+                      {invoiceData.modelNumber && <div style={{ fontSize: '12px', color: '#555' }}>Model: {invoiceData.modelNumber}</div>}
+                      {invoiceData.imei1 && <div style={{ fontSize: '11px', color: '#666', fontFamily: 'JetBrains Mono' }}>IMEI: {invoiceData.imei1}</div>}
+                      {invoiceData.imei2 && <div style={{ fontSize: '11px', color: '#666', fontFamily: 'JetBrains Mono' }}>IMEI 2: {invoiceData.imei2}</div>}
                     </td>
                     <td style={{ textAlign: 'center' }}>1</td>
                     <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
@@ -532,7 +538,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
 
               {/* Terms and Return Policy */}
               <div className="invoice-terms-box">
-                <p><strong>Notice & Warranty Terms:</strong></p>
+                <p><strong>Notice &amp; Warranty Terms:</strong></p>
                 <p>1. Please inspect the device carefully before leaving the store.</p>
                 <p>2. Goods once sold cannot be returned or refunded without the original invoice.</p>
                 <p>3. Software and physical damage are not covered under warranty.</p>

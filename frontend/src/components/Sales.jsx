@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getSales, createSale, deleteSale, getInventory } from '../services/api';
-import { Trash2, FileText, Search, Plus } from 'lucide-react';
+import { Trash2, FileText, Search, Plus, Tag } from 'lucide-react';
 
 const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
   const [sales, setSales] = useState([]);
   const [inventoryList, setInventoryList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Form state
@@ -156,23 +157,61 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
     }
   };
 
+  const filteredSales = sales.filter((item) => {
+    if (selectedCategory === 'All') return true;
+    return item.category?.toLowerCase() === selectedCategory.toLowerCase();
+  });
+
   return (
     <div>
-      {/* 1. Page Header */}
-      <div className="page-header-container">
-        <div className="page-header-title-row">
-          <div className="page-header-text">
-            <h1>Sales</h1>
-            <p>Record customer sales, deduct inventory stock & generate billing invoices</p>
+      {/* 1. Header Card (Reference: Al Haditha Top Card) */}
+      <div className="panel-header-card">
+        <div className="panel-header-row">
+          <div className="panel-header-left">
+            <div className="panel-icon-box">
+              <Tag size={18} />
+            </div>
+            <div className="panel-header-text">
+              <h2>Customer Sales &amp; Dispatch Registry</h2>
+              <p>Record customer sales, deduct live inventory &amp; generate verified billing invoices.</p>
+            </div>
           </div>
-          <div className="page-header-actions">
+          <div>
             <button
               className="btn-primary"
               onClick={() => setShowAddForm(!showAddForm)}
             >
-              <Plus size={16} />
+              <Plus size={15} />
               {showAddForm ? 'Close Form' : 'Add Sale'}
             </button>
+          </div>
+        </div>
+
+        {/* Toolbar: Category Filters on Left, Search Input on Right */}
+        <div className="panel-toolbar-row">
+          <div className="panel-filter-pills">
+            {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat === 'All' ? 'All Categories' : `${cat}s`}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="panel-search-box">
+              <Search size={14} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search sales by model, customer, IMEI..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -185,12 +224,12 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
           </div>
 
           {/* Quick Select from In-Stock Inventory */}
-          <div style={{ marginBottom: '16px', background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: '7px', border: '1px solid var(--border-card)' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
-              Select from Available In-Stock Inventory
+          <div style={{ marginBottom: '14px', background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-card)' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '5px' }}>
+              Select Available Device from Live Inventory
             </label>
             <select
-              style={{ width: '100%', height: '38px', padding: '0 12px', borderRadius: '6px', border: '1px solid var(--border-card)', background: '#ffffff', fontSize: '0.85rem' }}
+              style={{ width: '100%', height: '36px', padding: '0 10px', borderRadius: '7px', border: '1px solid var(--border-card)', background: '#ffffff', fontSize: '13px' }}
               onChange={handleSelectInventoryItem}
               defaultValue=""
             >
@@ -199,7 +238,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                 .filter((inv) => inv.quantity > 0)
                 .map((inv) => (
                   <option key={inv._id} value={inv._id}>
-                    {inv.modelName} ({inv.modelNumber}) - Stock: {inv.quantity} - Price: PKR {Number(inv.price).toLocaleString()}
+                    {inv.modelName} ({inv.modelNumber}) - Stock: {inv.quantity} - PKR {Number(inv.price).toLocaleString()}
                   </option>
                 ))}
             </select>
@@ -321,45 +360,25 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                 Cancel
               </button>
               <button type="submit" className="btn-primary">
-                Record Sale & Deduct Stock
+                Record Sale &amp; Deduct Stock
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* 3. Main Data Card */}
-      <div className="card-data">
-        {/* Integrated Toolbar */}
-        <div className="table-toolbar">
-          <div className="table-toolbar-left">
-            <div className="search-input-wrapper">
-              <Search size={15} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search sales by model, customer, IMEI..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="table-toolbar-right">
-            <span className="record-count-badge">
-              {sales.length} {sales.length === 1 ? 'Sale' : 'Sales'}
-            </span>
-          </div>
-        </div>
-
-        {/* Desktop Proportional Table (Zero Horizontal Overflow) */}
+      {/* 3. Table Card (Reference: Al Haditha Table) */}
+      <div className="table-card">
+        {/* Desktop Proportional Table */}
         <div className="hide-on-mobile desktop-table-container">
           <table className="pro-table">
             <thead>
               <tr>
                 <th style={{ width: '12%' }}>Date</th>
-                <th style={{ width: '23%' }}>Device</th>
-                <th style={{ width: '19%' }}>Customer</th>
+                <th style={{ width: '23%' }}>Device Model</th>
+                <th style={{ width: '20%' }}>Customer</th>
                 <th style={{ width: '18%' }}>IMEI Sold</th>
-                <th style={{ width: '14%' }}>Price (PKR)</th>
+                <th style={{ width: '13%' }}>Sale Price</th>
                 <th style={{ width: '14%', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
@@ -368,16 +387,18 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                 <tr>
                   <td colSpan="6" className="empty-state">Loading sales records...</td>
                 </tr>
-              ) : sales.length === 0 ? (
+              ) : filteredSales.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="empty-state">No sales recorded yet.</td>
                 </tr>
               ) : (
-                sales.map((item) => (
+                filteredSales.map((item) => (
                   <tr key={item._id}>
                     {/* Date */}
-                    <td style={{ color: 'var(--text-muted)' }}>
-                      {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    <td>
+                      <span className="cell-mono">
+                        {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
                     </td>
 
                     {/* Device */}
@@ -389,13 +410,13 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                     {/* Customer */}
                     <td>
                       <span className="cell-title">{item.customerName}</span>
-                      <span className="cell-sub">{item.customerNumber}</span>
+                      <span className="cell-sub" style={{ fontFamily: 'JetBrains Mono' }}>{item.customerNumber}</span>
                     </td>
 
                     {/* IMEI */}
                     <td>
-                      {item.imei1 && <div className="cell-mono">IMEI 1: {item.imei1}</div>}
-                      {item.imei2 && <div className="cell-mono" style={{ marginTop: '2px' }}>IMEI 2: {item.imei2}</div>}
+                      {item.imei1 && <div className="cell-mono">1: {item.imei1}</div>}
+                      {item.imei2 && <div className="cell-mono" style={{ marginTop: '1px' }}>2: {item.imei2}</div>}
                       {!item.imei1 && !item.imei2 && <span className="cell-sub">—</span>}
                     </td>
 
@@ -412,17 +433,17 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                         <button
                           className="action-btn-primary"
                           onClick={() => onOpenInvoice && onOpenInvoice(item)}
-                          title="Generate Invoice for this sale"
+                          title="Generate Invoice"
                         >
-                          <FileText size={13} />
+                          <FileText size={12} />
                           <span>Invoice</span>
                         </button>
                         <button
                           className="action-btn-danger"
                           onClick={() => handleDelete(item._id, item.modelName)}
-                          title="Delete sale and restore stock"
+                          title="Delete sale and return stock"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={12} />
                         </button>
                       </div>
                     </td>
@@ -437,10 +458,10 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
         <div className="show-on-mobile mobile-card-container">
           {loading ? (
             <div className="empty-state">Loading sales records...</div>
-          ) : sales.length === 0 ? (
+          ) : filteredSales.length === 0 ? (
             <div className="empty-state">No sales recorded yet.</div>
           ) : (
-            sales.map((item) => (
+            filteredSales.map((item) => (
               <div key={item._id} className="mobile-card">
                 <div className="mobile-card-top">
                   <div>
@@ -460,7 +481,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
 
                   <div className="mobile-meta-cell">
                     <div className="mobile-meta-label">Phone</div>
-                    <div className="mobile-meta-val">{item.customerNumber}</div>
+                    <div className="mobile-meta-val" style={{ fontFamily: 'monospace' }}>{item.customerNumber}</div>
                   </div>
 
                   <div className="mobile-meta-cell">
@@ -472,8 +493,8 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
 
                   {(item.imei1 || item.imei2) && (
                     <div className="mobile-meta-cell full-width">
-                      <div className="mobile-meta-label">IMEI Sold</div>
-                      <div className="mobile-meta-val" style={{ fontFamily: 'monospace', fontSize: '0.76rem' }}>
+                      <div className="mobile-meta-label">IMEIs Sold</div>
+                      <div className="mobile-meta-val" style={{ fontFamily: 'monospace', fontSize: '11px' }}>
                         {item.imei1 && <div>1: {item.imei1}</div>}
                         {item.imei2 && <div>2: {item.imei2}</div>}
                       </div>
@@ -486,14 +507,14 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                     className="btn-primary"
                     onClick={() => onOpenInvoice && onOpenInvoice(item)}
                   >
-                    <FileText size={14} /> Generate Invoice
+                    <FileText size={13} /> Generate Invoice
                   </button>
                   <button
-                    className="btn-secondary"
-                    style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-border)' }}
+                    className="action-btn-danger"
+                    style={{ height: '36px', padding: '0 12px' }}
                     onClick={() => handleDelete(item._id, item.modelName)}
                   >
-                    <Trash2 size={14} /> Delete
+                    <Trash2 size={13} /> Delete
                   </button>
                 </div>
               </div>

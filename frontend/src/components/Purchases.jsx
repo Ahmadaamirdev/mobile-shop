@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getPurchases, createPurchase, deletePurchase } from '../services/api';
-import { Trash2, Search, Plus } from 'lucide-react';
+import { Trash2, Search, Plus, ShoppingBag } from 'lucide-react';
 
 const Purchases = ({ onPurchaseSuccess, setAlert }) => {
   const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState('newest');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Form state
@@ -123,28 +124,66 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
     }
   };
 
+  const filteredPurchases = purchases.filter((item) => {
+    if (selectedCategory === 'All') return true;
+    return item.category?.toLowerCase() === selectedCategory.toLowerCase();
+  });
+
   return (
     <div>
-      {/* 1. Page Header */}
-      <div className="page-header-container">
-        <div className="page-header-title-row">
-          <div className="page-header-text">
-            <h1>Purchases</h1>
-            <p>Record stock purchases, customer ID checks & incoming devices</p>
+      {/* 1. Header Card (Reference: Al Haditha Top Card) */}
+      <div className="panel-header-card">
+        <div className="panel-header-row">
+          <div className="panel-header-left">
+            <div className="panel-icon-box">
+              <ShoppingBag size={18} />
+            </div>
+            <div className="panel-header-text">
+              <h2>Device Purchases &amp; Inward Registry</h2>
+              <p>Record stock purchases, verify customer ID credentials &amp; track intake costs.</p>
+            </div>
           </div>
-          <div className="page-header-actions">
+          <div>
             <button
               className="btn-primary"
               onClick={() => setShowAddForm(!showAddForm)}
             >
-              <Plus size={16} />
+              <Plus size={15} />
               {showAddForm ? 'Close Form' : 'Add Purchase'}
             </button>
           </div>
         </div>
+
+        {/* Toolbar: Category Filters on Left, Search Input on Right */}
+        <div className="panel-toolbar-row">
+          <div className="panel-filter-pills">
+            {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat === 'All' ? 'All Categories' : `${cat}s`}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="panel-search-box">
+              <Search size={14} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search model, IMEI, phone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 2. Collapsible Add Form Card */}
+      {/* 2. Collapsible Add Purchase Form */}
       {showAddForm && (
         <div className="card-form">
           <div className="card-form-title">
@@ -295,52 +334,24 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                 Cancel
               </button>
               <button type="submit" className="btn-primary">
-                Save & Add to Stock
+                Save &amp; Add to Stock
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* 3. Main Data Card */}
-      <div className="card-data">
-        {/* Integrated Toolbar */}
-        <div className="table-toolbar">
-          <div className="table-toolbar-left">
-            <div className="search-input-wrapper">
-              <Search size={15} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search by model, IMEI, phone, CNIC..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="table-toolbar-right">
-            <select
-              className="select-filter"
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value)}
-            >
-              <option value="newest">Sort: Newest First</option>
-              <option value="oldest">Sort: Oldest First</option>
-            </select>
-            <span className="record-count-badge">
-              {purchases.length} {purchases.length === 1 ? 'Record' : 'Records'}
-            </span>
-          </div>
-        </div>
-
-        {/* Desktop Proportional Table (Zero Horizontal Overflow) */}
+      {/* 3. Table Card (Reference: Al Haditha Table) */}
+      <div className="table-card">
+        {/* Desktop Proportional Table */}
         <div className="hide-on-mobile desktop-table-container">
           <table className="pro-table">
             <thead>
               <tr>
                 <th style={{ width: '12%' }}>Date</th>
-                <th style={{ width: '22%' }}>Model</th>
-                <th style={{ width: '14%' }}>Brand & Type</th>
-                <th style={{ width: '20%' }}>IMEI / Serial</th>
+                <th style={{ width: '22%' }}>Model Name</th>
+                <th style={{ width: '13%' }}>Brand &amp; Category</th>
+                <th style={{ width: '21%' }}>IMEI &amp; Serial</th>
                 <th style={{ width: '16%' }}>Customer Info</th>
                 <th style={{ width: '12%' }}>Price (PKR)</th>
                 <th style={{ width: '4%', textAlign: 'center' }}></th>
@@ -349,18 +360,20 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="empty-state">Loading purchases...</td>
+                  <td colSpan="7" className="empty-state">Loading purchase records...</td>
                 </tr>
-              ) : purchases.length === 0 ? (
+              ) : filteredPurchases.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="empty-state">No purchases recorded yet.</td>
                 </tr>
               ) : (
-                purchases.map((item) => (
+                filteredPurchases.map((item) => (
                   <tr key={item._id}>
                     {/* Date */}
-                    <td style={{ color: 'var(--text-muted)' }}>
-                      {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    <td>
+                      <span className="cell-mono">
+                        {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
                     </td>
 
                     {/* Model */}
@@ -369,7 +382,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                       <span className="cell-sub">{item.modelNumber}</span>
                     </td>
 
-                    {/* Brand & Type */}
+                    {/* Brand & Category */}
                     <td>
                       <span className="cell-title">{item.companyName}</span>
                       <span className="cell-sub">
@@ -380,15 +393,15 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                     {/* IMEI & Serial */}
                     <td>
                       {item.imei1 && <div className="cell-mono">IMEI 1: {item.imei1}</div>}
-                      {item.imei2 && <div className="cell-mono" style={{ marginTop: '2px' }}>IMEI 2: {item.imei2}</div>}
+                      {item.imei2 && <div className="cell-mono" style={{ marginTop: '1px' }}>IMEI 2: {item.imei2}</div>}
                       {item.serialNumber && <div className="cell-sub">SN: {item.serialNumber}</div>}
                       {!item.imei1 && !item.imei2 && !item.serialNumber && <span className="cell-sub">—</span>}
                     </td>
 
                     {/* Customer Info */}
                     <td>
-                      <span className="cell-title">{item.customerPhone}</span>
-                      <span className="cell-sub">CNIC: {item.customerIdCard}</span>
+                      <span className="cell-title" style={{ fontFamily: 'JetBrains Mono', fontSize: '12px' }}>{item.customerPhone}</span>
+                      <span className="cell-sub" style={{ fontFamily: 'JetBrains Mono', fontSize: '11px' }}>CNIC: {item.customerIdCard}</span>
                     </td>
 
                     {/* Price */}
@@ -405,7 +418,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                         onClick={() => handleDelete(item._id, item.modelName)}
                         title="Delete purchase record"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </td>
                   </tr>
@@ -415,14 +428,14 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
           </table>
         </div>
 
-        {/* Mobile View Cards (100% Fluid 2x2 Grid) */}
+        {/* Mobile View Cards */}
         <div className="show-on-mobile mobile-card-container">
           {loading ? (
             <div className="empty-state">Loading purchases...</div>
-          ) : purchases.length === 0 ? (
+          ) : filteredPurchases.length === 0 ? (
             <div className="empty-state">No purchases recorded yet.</div>
           ) : (
-            purchases.map((item) => (
+            filteredPurchases.map((item) => (
               <div key={item._id} className="mobile-card">
                 <div className="mobile-card-top">
                   <div>
@@ -448,16 +461,16 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                   </div>
 
                   <div className="mobile-meta-cell full-width">
-                    <div className="mobile-meta-label">Customer Contact & ID</div>
-                    <div className="mobile-meta-val">
+                    <div className="mobile-meta-label">Customer Contact &amp; CNIC</div>
+                    <div className="mobile-meta-val" style={{ fontFamily: 'monospace' }}>
                       {item.customerPhone} • {item.customerIdCard}
                     </div>
                   </div>
 
                   {(item.imei1 || item.imei2 || item.serialNumber) && (
                     <div className="mobile-meta-cell full-width">
-                      <div className="mobile-meta-label">Identifiers</div>
-                      <div className="mobile-meta-val" style={{ fontFamily: 'monospace', fontSize: '0.76rem' }}>
+                      <div className="mobile-meta-label">IMEIs / Serial</div>
+                      <div className="mobile-meta-val" style={{ fontFamily: 'monospace', fontSize: '11px' }}>
                         {item.imei1 && <div>IMEI 1: {item.imei1}</div>}
                         {item.imei2 && <div>IMEI 2: {item.imei2}</div>}
                         {item.serialNumber && <div>SN: {item.serialNumber}</div>}
@@ -468,11 +481,11 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
 
                 <div className="mobile-card-actions">
                   <button
-                    className="btn-secondary"
-                    style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-border)' }}
+                    className="action-btn-danger"
+                    style={{ width: '100%', height: '36px' }}
                     onClick={() => handleDelete(item._id, item.modelName)}
                   >
-                    <Trash2 size={14} /> Delete Record
+                    <Trash2 size={13} /> Delete Record
                   </button>
                 </div>
               </div>

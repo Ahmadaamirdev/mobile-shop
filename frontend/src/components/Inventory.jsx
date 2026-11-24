@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getInventory, createInventoryItem, deleteInventoryItem } from '../services/api';
-import { Trash2, Search, Plus } from 'lucide-react';
+import { Trash2, Search, Plus, Package } from 'lucide-react';
 
 const Inventory = ({ setAlert }) => {
   const [inventory, setInventory] = useState([]);
@@ -100,21 +100,54 @@ const Inventory = ({ setAlert }) => {
 
   return (
     <div>
-      {/* 1. Page Header */}
-      <div className="page-header-container">
-        <div className="page-header-title-row">
-          <div className="page-header-text">
-            <h1>Inventory</h1>
-            <p>Live inventory tracking for mobile devices, tablets and shop accessories</p>
+      {/* 1. Header Card (Reference: Al Haditha Top Card) */}
+      <div className="panel-header-card">
+        <div className="panel-header-row">
+          <div className="panel-header-left">
+            <div className="panel-icon-box">
+              <Package size={18} />
+            </div>
+            <div className="panel-header-text">
+              <h2>Inventory &amp; Stock Registry</h2>
+              <p>Real-time shop inventory, stock availability, active IMEIs &amp; unit pricing.</p>
+            </div>
           </div>
-          <div className="page-header-actions">
+          <div>
             <button
               className="btn-primary"
               onClick={() => setShowAddForm(!showAddForm)}
             >
-              <Plus size={16} />
+              <Plus size={15} />
               {showAddForm ? 'Close Form' : 'Add Item'}
             </button>
+          </div>
+        </div>
+
+        {/* Toolbar: Category Filters on Left, Search Input on Right */}
+        <div className="panel-toolbar-row">
+          <div className="panel-filter-pills">
+            {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat === 'All' ? 'All Categories' : `${cat}s`}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="panel-search-box">
+              <Search size={14} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search inventory by model, brand, IMEI..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -211,49 +244,19 @@ const Inventory = ({ setAlert }) => {
         </div>
       )}
 
-      {/* 3. Main Data Card */}
-      <div className="card-data">
-        {/* Integrated Toolbar */}
-        <div className="table-toolbar">
-          <div className="table-toolbar-left">
-            <div className="search-input-wrapper">
-              <Search size={15} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search inventory by model, brand, IMEI..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="table-toolbar-right">
-            <select
-              className="select-filter"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="All">All Categories</option>
-              <option value="Mobile">Mobiles</option>
-              <option value="Tablet">Tablets</option>
-              <option value="Accessory">Accessories</option>
-            </select>
-            <span className="record-count-badge">
-              {inventory.length} {inventory.length === 1 ? 'Item' : 'Items'}
-            </span>
-          </div>
-        </div>
-
-        {/* Desktop Proportional Table (Zero Overflow) */}
+      {/* 3. Table Card (Reference: Al Haditha Table) */}
+      <div className="table-card">
+        {/* Desktop Proportional Table */}
         <div className="hide-on-mobile desktop-table-container">
           <table className="pro-table">
             <thead>
               <tr>
                 <th style={{ width: '12%' }}>Category</th>
                 <th style={{ width: '14%' }}>Brand</th>
-                <th style={{ width: '26%' }}>Model Name & Number</th>
-                <th style={{ width: '14%' }}>In Stock</th>
+                <th style={{ width: '26%' }}>Model Name &amp; Number</th>
+                <th style={{ width: '14%' }}>Stock Status</th>
                 <th style={{ width: '18%' }}>Active IMEIs</th>
-                <th style={{ width: '12%' }}>Price (PKR)</th>
+                <th style={{ width: '12%' }}>Unit Price</th>
                 <th style={{ width: '4%', textAlign: 'center' }}></th>
               </tr>
             </thead>
@@ -285,15 +288,15 @@ const Inventory = ({ setAlert }) => {
                       <span className="cell-sub">{item.modelNumber}</span>
                     </td>
 
-                    {/* Stock Quantity */}
+                    {/* Stock Status */}
                     <td>
                       {item.quantity > 0 ? (
                         <span className="cell-badge badge-success">
-                          {item.quantity} in stock
+                          • {item.quantity} in stock
                         </span>
                       ) : (
                         <span className="cell-badge badge-danger">
-                          Out of stock
+                          • Out of stock
                         </span>
                       )}
                     </td>
@@ -301,7 +304,7 @@ const Inventory = ({ setAlert }) => {
                     {/* Active IMEIs */}
                     <td>
                       {item.imeis && item.imeis.length > 0 ? (
-                        <div className="cell-mono" style={{ fontSize: '0.75rem' }}>
+                        <div className="cell-mono" style={{ fontSize: '11px' }}>
                           {item.imeis.slice(0, 2).map((im, idx) => (
                             <div key={idx}>{im}</div>
                           ))}
@@ -328,7 +331,7 @@ const Inventory = ({ setAlert }) => {
                         onClick={() => handleDelete(item._id, item.modelName)}
                         title="Delete inventory item"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </td>
                   </tr>
@@ -376,8 +379,8 @@ const Inventory = ({ setAlert }) => {
 
                   {item.imeis && item.imeis.length > 0 && (
                     <div className="mobile-meta-cell full-width">
-                      <div className="mobile-meta-label">In-Stock IMEIs</div>
-                      <div className="mobile-meta-val" style={{ fontFamily: 'monospace', fontSize: '0.76rem' }}>
+                      <div className="mobile-meta-label">Active IMEIs</div>
+                      <div className="mobile-meta-val" style={{ fontFamily: 'monospace', fontSize: '11px' }}>
                         {item.imeis.join(', ')}
                       </div>
                     </div>
@@ -386,11 +389,11 @@ const Inventory = ({ setAlert }) => {
 
                 <div className="mobile-card-actions">
                   <button
-                    className="btn-secondary"
-                    style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-border)' }}
+                    className="action-btn-danger"
+                    style={{ width: '100%', height: '36px' }}
                     onClick={() => handleDelete(item._id, item.modelName)}
                   >
-                    <Trash2 size={14} /> Delete from Inventory
+                    <Trash2 size={13} /> Delete from Inventory
                   </button>
                 </div>
               </div>
