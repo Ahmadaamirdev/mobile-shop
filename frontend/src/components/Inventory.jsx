@@ -99,54 +99,35 @@ const Inventory = ({ setAlert }) => {
   };
 
   return (
-    <div className="section-container">
-      {/* Title & Subtitle */}
-      <div className="page-header-row">
-        <div>
-          <h2 className="page-title">Inventory</h2>
-          <p className="page-subtitle">Live stock management for mobiles, tablets and shop accessories</p>
-        </div>
-      </div>
-
-      {/* Toolbar / Search / Action */}
-      <div className="section-toolbar">
-        <div className="filter-bar">
-          <div className="search-input-wrapper">
-            <Search size={16} className="search-icon-inside" />
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search inventory by model, brand, IMEI..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+    <div>
+      {/* 1. Page Header */}
+      <div className="page-header-container">
+        <div className="page-header-title-row">
+          <div className="page-header-text">
+            <h1>Inventory</h1>
+            <p>Live inventory tracking for mobile devices, tablets and shop accessories</p>
           </div>
-          <select
-            className="select-input"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            <option value="All">All Categories</option>
-            <option value="Mobile">Mobiles</option>
-            <option value="Tablet">Tablets</option>
-            <option value="Accessory">Accessories</option>
-          </select>
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowAddForm(!showAddForm)}
-          >
-            <Plus size={16} />
-            {showAddForm ? 'Cancel' : 'Add Manual Item'}
-          </button>
+          <div className="page-header-actions">
+            <button
+              className="btn-primary"
+              onClick={() => setShowAddForm(!showAddForm)}
+            >
+              <Plus size={16} />
+              {showAddForm ? 'Close Form' : 'Add Item'}
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* 2. Collapsible Add Item Form */}
       {showAddForm && (
-        <div className="card">
-          <h3 className="card-title">Manual Inventory Entry</h3>
+        <div className="card-form">
+          <div className="card-form-title">
+            <span>Manual Inventory Entry</span>
+          </div>
           <form onSubmit={handleManualAdd}>
-            <div className="form-grid">
-              <div className="form-group">
+            <div className="form-grid-3">
+              <div className="form-field">
                 <label>Category *</label>
                 <select
                   value={formData.category}
@@ -158,7 +139,7 @@ const Inventory = ({ setAlert }) => {
                 </select>
               </div>
 
-              <div className="form-group">
+              <div className="form-field">
                 <label>Company / Brand</label>
                 <input
                   type="text"
@@ -168,7 +149,7 @@ const Inventory = ({ setAlert }) => {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-field">
                 <label>Model Name *</label>
                 <input
                   type="text"
@@ -179,7 +160,7 @@ const Inventory = ({ setAlert }) => {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-field">
                 <label>Model Number *</label>
                 <input
                   type="text"
@@ -190,7 +171,7 @@ const Inventory = ({ setAlert }) => {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-field">
                 <label>Quantity *</label>
                 <input
                   type="number"
@@ -201,8 +182,8 @@ const Inventory = ({ setAlert }) => {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Price (PKR) *</label>
+              <div className="form-field">
+                <label>Unit Price (PKR) *</label>
                 <input
                   type="number"
                   min="0"
@@ -214,15 +195,15 @@ const Inventory = ({ setAlert }) => {
               </div>
             </div>
 
-            <div className="form-actions">
+            <div className="card-form-actions">
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn-secondary"
                 onClick={() => setShowAddForm(false)}
               >
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn-primary">
                 Save to Inventory
               </button>
             </div>
@@ -230,151 +211,122 @@ const Inventory = ({ setAlert }) => {
         </div>
       )}
 
-      {/* Mobile Card List (Screen <= 768px) */}
-      <div className="mobile-only">
-        {loading ? (
-          <div className="empty-state">Loading inventory...</div>
-        ) : inventory.length === 0 ? (
-          <div className="empty-state">No inventory items found.</div>
-        ) : (
-          <div className="mobile-card-list">
-            {inventory.map((item) => (
-              <div key={item._id} className="mobile-card">
-                <div className="mobile-card-header">
-                  <div>
-                    <div className="mobile-card-title">{item.modelName}</div>
-                    <div className="mobile-card-subtitle">
-                      {item.companyName || '—'} • {item.modelNumber}
-                    </div>
-                  </div>
-                  <div className="mobile-card-price">
-                    PKR {Number(item.price).toLocaleString()}
-                  </div>
-                </div>
-
-                <div className="mobile-card-grid">
-                  <div className="mobile-grid-box">
-                    <span className="mobile-grid-label">Stock Status</span>
-                    <span
-                      className="mobile-grid-value"
-                      style={{
-                        color: item.quantity > 0 ? 'var(--success)' : 'var(--danger)',
-                      }}
-                    >
-                      {item.quantity > 0 ? `${item.quantity} In Stock` : 'Out of Stock'}
-                    </span>
-                  </div>
-                  <div className="mobile-grid-box">
-                    <span className="mobile-grid-label">Category</span>
-                    <span className="mobile-grid-value">{item.category}</span>
-                  </div>
-                  {item.imeis && item.imeis.length > 0 && (
-                    <div className="mobile-grid-box" style={{ gridColumn: 'span 2' }}>
-                      <span className="mobile-grid-label">In-Stock IMEIs</span>
-                      <span className="mobile-grid-value" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        {item.imeis.map((im) => (
-                          <span key={im} className="imei-badge">{im}</span>
-                        ))}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mobile-card-actions">
-                  <button
-                    className="btn btn-danger btn-block btn-sm"
-                    onClick={() => handleDelete(item._id, item.modelName)}
-                  >
-                    <Trash2 size={15} /> Delete Item
-                  </button>
-                </div>
-              </div>
-            ))}
+      {/* 3. Main Data Card */}
+      <div className="card-data">
+        {/* Integrated Toolbar */}
+        <div className="table-toolbar">
+          <div className="table-toolbar-left">
+            <div className="search-input-wrapper">
+              <Search size={15} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search inventory by model, brand, IMEI..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
-        )}
-      </div>
-
-      {/* Desktop Responsive Table Card (Screen > 768px) */}
-      <div className="table-card desktop-only">
-        <div className="table-card-header">
-          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
-            Current Inventory Stock
-          </span>
-          <span className="table-count-badge">
-            {inventory.length} {inventory.length === 1 ? 'Item' : 'Items'}
-          </span>
+          <div className="table-toolbar-right">
+            <select
+              className="select-filter"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="All">All Categories</option>
+              <option value="Mobile">Mobiles</option>
+              <option value="Tablet">Tablets</option>
+              <option value="Accessory">Accessories</option>
+            </select>
+            <span className="record-count-badge">
+              {inventory.length} {inventory.length === 1 ? 'Item' : 'Items'}
+            </span>
+          </div>
         </div>
 
-        <div className="table-responsive-wrapper">
-          <table className="data-table">
+        {/* Desktop Proportional Table (Zero Overflow) */}
+        <div className="hide-on-mobile desktop-table-container">
+          <table className="pro-table">
             <thead>
               <tr>
-                <th>Model Name</th>
-                <th>Model Number</th>
-                <th>Brand</th>
-                <th>Category</th>
-                <th>Stock Quantity</th>
-                <th>Price (PKR)</th>
-                <th>In-Stock IMEIs</th>
-                <th style={{ textAlign: 'center', width: '70px' }}>Action</th>
+                <th style={{ width: '12%' }}>Category</th>
+                <th style={{ width: '14%' }}>Brand</th>
+                <th style={{ width: '26%' }}>Model Name & Number</th>
+                <th style={{ width: '14%' }}>In Stock</th>
+                <th style={{ width: '18%' }}>Active IMEIs</th>
+                <th style={{ width: '12%' }}>Price (PKR)</th>
+                <th style={{ width: '4%', textAlign: 'center' }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="empty-state">Loading inventory...</td>
+                  <td colSpan="7" className="empty-state">Loading inventory...</td>
                 </tr>
               ) : inventory.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="empty-state">No inventory items found.</td>
+                  <td colSpan="7" className="empty-state">No items found in stock.</td>
                 </tr>
               ) : (
                 inventory.map((item) => (
                   <tr key={item._id}>
+                    {/* Category */}
                     <td>
-                      <div className="cell-primary">{item.modelName}</div>
+                      <span className="cell-badge badge-gray">{item.category}</span>
                     </td>
+
+                    {/* Brand */}
                     <td>
-                      <span style={{ color: 'var(--text-secondary)' }}>{item.modelNumber}</span>
+                      <span className="cell-title">{item.companyName || '—'}</span>
                     </td>
+
+                    {/* Model */}
                     <td>
-                      <span style={{ fontWeight: 600 }}>{item.companyName || '—'}</span>
+                      <span className="cell-title">{item.modelName}</span>
+                      <span className="cell-sub">{item.modelNumber}</span>
                     </td>
+
+                    {/* Stock Quantity */}
                     <td>
-                      <span className="category-tag">{item.category}</span>
+                      {item.quantity > 0 ? (
+                        <span className="cell-badge badge-success">
+                          {item.quantity} in stock
+                        </span>
+                      ) : (
+                        <span className="cell-badge badge-danger">
+                          Out of stock
+                        </span>
+                      )}
                     </td>
+
+                    {/* Active IMEIs */}
                     <td>
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          color: item.quantity > 0 ? 'var(--success)' : 'var(--danger)',
-                          backgroundColor: item.quantity > 0 ? 'var(--success-bg)' : 'var(--danger-bg)',
-                          padding: '3px 8px',
-                          borderRadius: '4px',
-                          fontSize: '0.82rem',
-                          display: 'inline-block',
-                        }}
-                      >
-                        {item.quantity > 0 ? `${item.quantity} units` : 'Out of Stock'}
-                      </span>
+                      {item.imeis && item.imeis.length > 0 ? (
+                        <div className="cell-mono" style={{ fontSize: '0.75rem' }}>
+                          {item.imeis.slice(0, 2).map((im, idx) => (
+                            <div key={idx}>{im}</div>
+                          ))}
+                          {item.imeis.length > 2 && (
+                            <span className="cell-sub">+{item.imeis.length - 2} more</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="cell-sub">—</span>
+                      )}
                     </td>
+
+                    {/* Price */}
                     <td>
-                      <span className="price-display">
+                      <span className="cell-price">
                         PKR {Number(item.price).toLocaleString()}
                       </span>
                     </td>
-                    <td>
-                      <div className="imei-box">
-                        {item.imeis && item.imeis.length > 0
-                          ? item.imeis.map((im) => <span key={im} className="imei-badge">{im}</span>)
-                          : <span className="cell-secondary">—</span>}
-                      </div>
-                    </td>
+
+                    {/* Action */}
                     <td style={{ textAlign: 'center' }}>
                       <button
-                        className="btn btn-danger btn-sm"
+                        className="action-btn-danger"
                         onClick={() => handleDelete(item._id, item.modelName)}
-                        title="Delete item"
+                        title="Delete inventory item"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -384,6 +336,66 @@ const Inventory = ({ setAlert }) => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View Cards */}
+        <div className="show-on-mobile mobile-card-container">
+          {loading ? (
+            <div className="empty-state">Loading inventory...</div>
+          ) : inventory.length === 0 ? (
+            <div className="empty-state">No items in inventory.</div>
+          ) : (
+            inventory.map((item) => (
+              <div key={item._id} className="mobile-card">
+                <div className="mobile-card-top">
+                  <div>
+                    <div className="mobile-card-title">{item.modelName}</div>
+                    <div className="mobile-card-subtitle">{item.companyName} • {item.modelNumber}</div>
+                  </div>
+                  <div className="mobile-card-price">
+                    PKR {Number(item.price).toLocaleString()}
+                  </div>
+                </div>
+
+                <div className="mobile-card-meta-grid">
+                  <div className="mobile-meta-cell">
+                    <div className="mobile-meta-label">Category</div>
+                    <div className="mobile-meta-val">{item.category}</div>
+                  </div>
+
+                  <div className="mobile-meta-cell">
+                    <div className="mobile-meta-label">Stock Status</div>
+                    <div className="mobile-meta-val">
+                      {item.quantity > 0 ? (
+                        <span style={{ color: 'var(--success-color)' }}>{item.quantity} In Stock</span>
+                      ) : (
+                        <span style={{ color: 'var(--danger-color)' }}>Out of Stock</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {item.imeis && item.imeis.length > 0 && (
+                    <div className="mobile-meta-cell full-width">
+                      <div className="mobile-meta-label">In-Stock IMEIs</div>
+                      <div className="mobile-meta-val" style={{ fontFamily: 'monospace', fontSize: '0.76rem' }}>
+                        {item.imeis.join(', ')}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mobile-card-actions">
+                  <button
+                    className="btn-secondary"
+                    style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-border)' }}
+                    onClick={() => handleDelete(item._id, item.modelName)}
+                  >
+                    <Trash2 size={14} /> Delete from Inventory
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

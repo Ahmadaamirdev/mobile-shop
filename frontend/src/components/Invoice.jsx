@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getInvoices, createInvoice, deleteInvoice } from '../services/api';
-import { Trash2, Printer, Search, FileText } from 'lucide-react';
+import { Trash2, Printer, Search, FileText, Plus, Check } from 'lucide-react';
 
 const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   const [viewMode, setViewMode] = useState('generator'); // 'generator' | 'history'
@@ -145,209 +145,270 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   };
 
   return (
-    <div className="section-container">
-      {/* Title & View Toggle */}
-      <div className="page-header-row hide-on-print">
-        <div>
-          <h2 className="page-title">Invoices</h2>
-          <p className="page-subtitle">A4 sales invoices, automated billing & printable receipts</p>
-        </div>
-      </div>
-
-      <div className="section-toolbar hide-on-print">
-        <div className="filter-bar">
-          <button
-            className={`btn ${viewMode === 'generator' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setViewMode('generator')}
-          >
-            <FileText size={16} /> Invoice Generator
-          </button>
-          <button
-            className={`btn ${viewMode === 'history' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setViewMode('history')}
-          >
-            Past Records ({invoices.length})
-          </button>
+    <div>
+      {/* 1. Page Header with Mode Switcher */}
+      <div className="page-header-container hide-on-print">
+        <div className="page-header-title-row">
+          <div className="page-header-text">
+            <h1>Invoices</h1>
+            <p>Generate printable A4 sales invoices & review billing history</p>
+          </div>
+          <div className="page-header-actions">
+            <button
+              className={viewMode === 'generator' ? 'btn-secondary active' : 'btn-secondary'}
+              onClick={() => setViewMode('generator')}
+            >
+              <FileText size={15} /> Invoice Generator
+            </button>
+            <button
+              className={viewMode === 'history' ? 'btn-secondary active' : 'btn-secondary'}
+              onClick={() => setViewMode('history')}
+            >
+              Past Invoices ({invoices.length})
+            </button>
+          </div>
         </div>
       </div>
 
       {viewMode === 'history' ? (
-        <div className="hide-on-print">
-          <div style={{ marginBottom: '14px' }}>
-            <div className="search-input-wrapper">
-              <Search size={16} className="search-icon-inside" />
-              <input
-                type="text"
-                className="search-input"
-                placeholder="Search by Invoice No, Customer, Model, IMEI..."
-                value={historySearch}
-                onChange={(e) => setHistorySearch(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Mobile Card List for Invoices */}
-          <div className="mobile-only">
-            {loadingHistory ? (
-              <div className="empty-state">Loading invoice records...</div>
-            ) : invoices.length === 0 ? (
-              <div className="empty-state">No invoice records found.</div>
-            ) : (
-              <div className="mobile-card-list">
-                {invoices.map((inv) => (
-                  <div key={inv._id} className="mobile-card">
-                    <div className="mobile-card-header">
-                      <div>
-                        <div className="mobile-card-title">{inv.invoiceNumber}</div>
-                        <div className="mobile-card-subtitle">
-                          {inv.customerName}
-                        </div>
-                      </div>
-                      <div className="mobile-card-price">
-                        PKR {Number(inv.price).toLocaleString()}
-                      </div>
-                    </div>
-
-                    <div className="mobile-card-grid">
-                      <div className="mobile-grid-box">
-                        <span className="mobile-grid-label">Phone</span>
-                        <span className="mobile-grid-value">{inv.customerNumber}</span>
-                      </div>
-                      <div className="mobile-grid-box">
-                        <span className="mobile-grid-label">Date</span>
-                        <span className="mobile-grid-value">
-                          {new Date(inv.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="mobile-grid-box" style={{ gridColumn: 'span 2' }}>
-                        <span className="mobile-grid-label">Device Model</span>
-                        <span className="mobile-grid-value">{inv.modelName}</span>
-                      </div>
-                      {inv.imei1 && (
-                        <div className="mobile-grid-box" style={{ gridColumn: 'span 2' }}>
-                          <span className="mobile-grid-label">IMEI</span>
-                          <span className="mobile-grid-value mono-text">{inv.imei1}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mobile-card-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => handleLoadFromHistory(inv)}
-                      >
-                        <Printer size={15} /> View
-                      </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleDeleteInvoice(inv._id, inv.invoiceNumber)}
-                      >
-                        <Trash2 size={15} /> Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
+        /* History View */
+        <div className="card-data hide-on-print">
+          <div className="table-toolbar">
+            <div className="table-toolbar-left">
+              <div className="search-input-wrapper">
+                <Search size={15} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search invoices by number, customer, model, IMEI..."
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                />
               </div>
-            )}
-          </div>
-
-          {/* Desktop Responsive Table Card for Invoices */}
-          <div className="table-card desktop-only">
-            <div className="table-card-header">
-              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
-                Generated Invoice History
-              </span>
-              <span className="table-count-badge">
+            </div>
+            <div className="table-toolbar-right">
+              <span className="record-count-badge">
                 {invoices.length} {invoices.length === 1 ? 'Invoice' : 'Invoices'}
               </span>
             </div>
+          </div>
 
-            <div className="table-responsive-wrapper">
-              <table className="data-table">
-                <thead>
+          {/* Desktop Table (Zero Overflow) */}
+          <div className="hide-on-mobile desktop-table-container">
+            <table className="pro-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '14%' }}>Invoice No.</th>
+                  <th style={{ width: '12%' }}>Date</th>
+                  <th style={{ width: '18%' }}>Customer Name</th>
+                  <th style={{ width: '14%' }}>Phone</th>
+                  <th style={{ width: '22%' }}>Device Model</th>
+                  <th style={{ width: '12%' }}>Amount</th>
+                  <th style={{ width: '8%', textAlign: 'center' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingHistory ? (
                   <tr>
-                    <th style={{ width: '120px' }}>Invoice No.</th>
-                    <th style={{ width: '95px' }}>Date</th>
-                    <th>Customer Name</th>
-                    <th>Customer Phone</th>
-                    <th>Device Model</th>
-                    <th>IMEI</th>
-                    <th>Amount (PKR)</th>
-                    <th style={{ textAlign: 'center', width: '110px' }}>Actions</th>
+                    <td colSpan="7" className="empty-state">Loading invoice history...</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {loadingHistory ? (
-                    <tr>
-                      <td colSpan="8" className="empty-state">Loading invoice records...</td>
+                ) : invoices.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="empty-state">No invoice records found.</td>
+                  </tr>
+                ) : (
+                  invoices.map((item) => (
+                    <tr key={item._id}>
+                      {/* Invoice No */}
+                      <td>
+                        <span className="cell-title" style={{ color: 'var(--brand-gold-hover)', fontFamily: 'monospace' }}>
+                          {item.invoiceNumber}
+                        </span>
+                      </td>
+
+                      {/* Date */}
+                      <td style={{ color: 'var(--text-muted)' }}>
+                        {item.date ? new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      </td>
+
+                      {/* Customer Name */}
+                      <td>
+                        <span className="cell-title">{item.customerName}</span>
+                      </td>
+
+                      {/* Phone */}
+                      <td>
+                        <span className="cell-sub">{item.customerNumber}</span>
+                      </td>
+
+                      {/* Model */}
+                      <td>
+                        <span className="cell-title">{item.modelName}</span>
+                        {item.modelNumber && <span className="cell-sub">{item.modelNumber}</span>}
+                      </td>
+
+                      {/* Amount */}
+                      <td>
+                        <span className="cell-price">
+                          PKR {Number(item.price).toLocaleString()}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                          <button
+                            className="action-btn-primary"
+                            onClick={() => handleLoadFromHistory(item)}
+                            title="View / Print Invoice"
+                          >
+                            <Printer size={13} />
+                          </button>
+                          <button
+                            className="action-btn-danger"
+                            onClick={() => handleDeleteInvoice(item._id, item.invoiceNumber)}
+                            title="Delete invoice record"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
-                  ) : invoices.length === 0 ? (
-                    <tr>
-                      <td colSpan="8" className="empty-state">No invoice records found.</td>
-                    </tr>
-                  ) : (
-                    invoices.map((inv) => (
-                      <tr key={inv._id}>
-                        <td>
-                          <span className="imei-badge" style={{ fontWeight: 700 }}>{inv.invoiceNumber}</span>
-                        </td>
-                        <td style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
-                          {new Date(inv.date).toLocaleDateString()}
-                        </td>
-                        <td>
-                          <div className="cell-primary">{inv.customerName}</div>
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>{inv.customerNumber}</div>
-                        </td>
-                        <td>
-                          <div className="cell-primary">{inv.modelName}</div>
-                          {inv.modelNumber && <div className="cell-secondary">Model: {inv.modelNumber}</div>}
-                        </td>
-                        <td>
-                          {inv.imei1 ? <span className="imei-badge">{inv.imei1}</span> : <span className="cell-secondary">—</span>}
-                        </td>
-                        <td>
-                          <span className="price-display">
-                            PKR {Number(inv.price).toLocaleString()}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <div style={{ display: 'inline-flex', gap: '6px' }}>
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              onClick={() => handleLoadFromHistory(inv)}
-                              title="View and print invoice"
-                            >
-                              <Printer size={14} />
-                            </button>
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleDeleteInvoice(inv._id, inv.invoiceNumber)}
-                              title="Delete invoice record"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile View Cards */}
+          <div className="show-on-mobile mobile-card-container">
+            {loadingHistory ? (
+              <div className="empty-state">Loading invoice history...</div>
+            ) : invoices.length === 0 ? (
+              <div className="empty-state">No invoice records found.</div>
+            ) : (
+              invoices.map((item) => (
+                <div key={item._id} className="mobile-card">
+                  <div className="mobile-card-top">
+                    <div>
+                      <div className="mobile-card-title" style={{ color: 'var(--brand-gold-hover)', fontFamily: 'monospace' }}>
+                        {item.invoiceNumber}
+                      </div>
+                      <div className="mobile-card-subtitle">{item.customerName} • {item.customerNumber}</div>
+                    </div>
+                    <div className="mobile-card-price">
+                      PKR {Number(item.price).toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div className="mobile-card-meta-grid">
+                    <div className="mobile-meta-cell">
+                      <div className="mobile-meta-label">Date</div>
+                      <div className="mobile-meta-val">
+                        {item.date ? new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      </div>
+                    </div>
+
+                    <div className="mobile-meta-cell">
+                      <div className="mobile-meta-label">Model</div>
+                      <div className="mobile-meta-val">{item.modelName}</div>
+                    </div>
+                  </div>
+
+                  <div className="mobile-card-actions">
+                    <button
+                      className="btn-primary"
+                      onClick={() => handleLoadFromHistory(item)}
+                    >
+                      <Printer size={14} /> View & Print
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      style={{ color: 'var(--danger-color)', borderColor: 'var(--danger-border)' }}
+                      onClick={() => handleDeleteInvoice(item._id, item.invoiceNumber)}
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       ) : (
+        /* Generator View */
         <div>
-          {/* Form to enter/edit details directly */}
-          <div className="card hide-on-print">
-            <h3 className="card-title">
-              {initialSale ? 'Invoice Details (Auto-filled from Sale)' : 'Invoice Details (Manual Entry)'}
-            </h3>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Date</label>
+          {/* Quick Actions Bar */}
+          <div className="invoice-actions-bar hide-on-print">
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className="btn-secondary btn-sm"
+                onClick={handleNewManual}
+              >
+                <Plus size={14} /> New Invoice
+              </button>
+              <button
+                className="btn-secondary btn-sm"
+                onClick={handleSaveInvoice}
+              >
+                <Check size={14} /> Save to Database
+              </button>
+            </div>
+            <button
+              className="btn-primary"
+              onClick={handlePrint}
+            >
+              <Printer size={16} /> Print A4 Invoice
+            </button>
+          </div>
+
+          {/* Editable Fields Form Card */}
+          <div className="card-form hide-on-print">
+            <div className="card-form-title">
+              <span>Invoice Editor (Modifications reflect instantly on preview below)</span>
+            </div>
+            <div className="form-grid-3">
+              <div className="form-field">
+                <label>Customer Full Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Muhammad Ahmad"
+                  value={invoiceData.customerName}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, customerName: e.target.value })}
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Customer Phone Number *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 03001234567"
+                  value={invoiceData.customerNumber}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, customerNumber: e.target.value })}
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Device Model Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. iPhone 13 Pro"
+                  value={invoiceData.modelName}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, modelName: e.target.value })}
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Model Number</label>
+                <input
+                  type="text"
+                  placeholder="e.g. A2638"
+                  value={invoiceData.modelNumber}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, modelNumber: e.target.value })}
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Invoice Date</label>
                 <input
                   type="date"
                   value={invoiceData.date}
@@ -355,47 +416,17 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Customer Name *</label>
+              <div className="form-field">
+                <label>Sale Price (PKR) *</label>
                 <input
-                  type="text"
-                  placeholder="Customer Full Name"
-                  value={invoiceData.customerName}
-                  onChange={(e) => setInvoiceData({ ...invoiceData, customerName: e.target.value })}
+                  type="number"
+                  placeholder="0"
+                  value={invoiceData.price}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, price: e.target.value })}
                 />
               </div>
 
-              <div className="form-group">
-                <label>Customer Phone Number *</label>
-                <input
-                  type="tel"
-                  placeholder="e.g. 03001234567"
-                  value={invoiceData.customerNumber}
-                  onChange={(e) => setInvoiceData({ ...invoiceData, customerNumber: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Model Name *</label>
-                <input
-                  type="text"
-                  placeholder="Device / Item Name"
-                  value={invoiceData.modelName}
-                  onChange={(e) => setInvoiceData({ ...invoiceData, modelName: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Model Number</label>
-                <input
-                  type="text"
-                  placeholder="Model Number"
-                  value={invoiceData.modelNumber}
-                  onChange={(e) => setInvoiceData({ ...invoiceData, modelNumber: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
+              <div className="form-field">
                 <label>IMEI 1 (Optional)</label>
                 <input
                   type="text"
@@ -405,7 +436,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-field">
                 <label>IMEI 2 (Optional)</label>
                 <input
                   type="text"
@@ -415,141 +446,105 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Price (PKR) * (Editable)</label>
+              <div className="form-field">
+                <label>Invoice Number (Auto-assigned on Save)</label>
                 <input
-                  type="number"
-                  placeholder="0"
-                  value={invoiceData.price}
-                  onChange={(e) => setInvoiceData({ ...invoiceData, price: e.target.value })}
+                  type="text"
+                  placeholder="Auto-generated e.g. UM-1001"
+                  value={invoiceData.invoiceNumber}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, invoiceNumber: e.target.value })}
                 />
               </div>
             </div>
-
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleNewManual}
-              >
-                Clear / New Entry
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleSaveInvoice}
-              >
-                Save Invoice Record
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handlePrint}
-              >
-                <Printer size={16} /> Print A4 Invoice
-              </button>
-            </div>
           </div>
 
-          {/* Centered A4 Page Preview */}
-          <div className="invoice-preview-wrapper">
-            <div className="invoice-toolbar hide-on-print">
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                A4 Centered Layout Preview
-              </span>
-              <button className="btn btn-primary btn-sm" onClick={handlePrint}>
-                <Printer size={14} /> Print A4
-              </button>
-            </div>
-
-            <div className="a4-sheet" id="printable-invoice">
+          {/* Centered A4 Printable Sheet */}
+          <div className="invoice-preview-container">
+            <div className="a4-sheet">
               {/* Header */}
-              <div>
-                <div className="invoice-header">
-                  <div className="invoice-logo-box">
-                    <img src="/logo.jpg" alt="Unity Mobile" className="invoice-logo-img" />
-                    <div className="invoice-shop-details">
-                      <h2>Unity Mobile</h2>
-                      <p>Shop #14, Rehma Center, Kachery Road, Multan</p>
-                    </div>
-                  </div>
-
-                  <div className="invoice-meta">
-                    <h3>SALES INVOICE</h3>
-                    <p><strong>Invoice No:</strong> {invoiceData.invoiceNumber || 'NEW'}</p>
-                    <p><strong>Date:</strong> {invoiceData.date || new Date().toLocaleDateString()}</p>
+              <div className="invoice-header">
+                <div className="invoice-brand-box">
+                  <img src="/logo.jpg" alt="Unity Mobile" className="invoice-brand-logo" />
+                  <div className="invoice-brand-title">
+                    <h2>UNITY MOBILE</h2>
+                    <p>Shop #14, Rehma Center, Kachery Road, Multan</p>
+                    <p>Phone: +92 300 1234567 • Email: support@unitymobile.pk</p>
                   </div>
                 </div>
 
-                {/* Customer Details */}
-                <div className="invoice-section-row">
-                  <div className="invoice-box">
-                    <h4>Customer Information</h4>
-                    <p><strong>Name:</strong> {invoiceData.customerName || '—'}</p>
-                    <p><strong>Phone:</strong> {invoiceData.customerNumber || '—'}</p>
-                  </div>
-                  <div className="invoice-box desktop-only" style={{ textAlign: 'right' }}>
-                    <h4>Shop Reference</h4>
-                    <p><strong>Store:</strong> Unity Mobile</p>
-                    <p><strong>Location:</strong> Multan</p>
-                  </div>
-                </div>
-
-                {/* Items Table */}
-                <table className="invoice-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '30px' }}>#</th>
-                      <th>Item Description</th>
-                      <th>Model Number</th>
-                      <th>IMEI / Identifiers</th>
-                      <th style={{ textAlign: 'right', width: '130px' }}>Amount (PKR)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>1</td>
-                      <td>
-                        <strong>{invoiceData.modelName || 'Device / Accessory'}</strong>
-                      </td>
-                      <td>{invoiceData.modelNumber || '—'}</td>
-                      <td className="mono-text">
-                        {invoiceData.imei1 && <div>IMEI 1: {invoiceData.imei1}</div>}
-                        {invoiceData.imei2 && <div>IMEI 2: {invoiceData.imei2}</div>}
-                        {!invoiceData.imei1 && !invoiceData.imei2 && '—'}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <strong>
-                          {invoiceData.price !== ''
-                            ? Number(invoiceData.price).toLocaleString()
-                            : '0'}
-                        </strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                {/* Summary / Total */}
-                <div className="invoice-summary-box">
-                  <div className="invoice-total-row">
-                    <span>Total Amount:</span>
-                    <span>
-                      PKR{' '}
-                      {invoiceData.price !== ''
-                        ? Number(invoiceData.price).toLocaleString()
-                        : '0'}
-                    </span>
-                  </div>
+                <div className="invoice-meta-box">
+                  <h3>INVOICE</h3>
+                  <p><strong>Invoice No:</strong> {invoiceData.invoiceNumber || 'UM-XXXX (Draft)'}</p>
+                  <p><strong>Date:</strong> {invoiceData.date || new Date().toISOString().split('T')[0]}</p>
                 </div>
               </div>
 
-              {/* Footer Signatures */}
-              <div className="invoice-footer">
-                <div className="invoice-footer-sign">
+              {/* Customer & Device Meta Information */}
+              <div className="invoice-details-grid">
+                <div className="invoice-col">
+                  <h4>CUSTOMER DETAILS</h4>
+                  <p><strong>Name:</strong> {invoiceData.customerName || '—'}</p>
+                  <p><strong>Phone:</strong> {invoiceData.customerNumber || '—'}</p>
+                </div>
+
+                <div className="invoice-col">
+                  <h4>DEVICE & SALE INFO</h4>
+                  <p><strong>Model:</strong> {invoiceData.modelName || '—'} {invoiceData.modelNumber ? `(${invoiceData.modelNumber})` : ''}</p>
+                  {invoiceData.imei1 && <p><strong>IMEI 1:</strong> {invoiceData.imei1}</p>}
+                  {invoiceData.imei2 && <p><strong>IMEI 2:</strong> {invoiceData.imei2}</p>}
+                </div>
+              </div>
+
+              {/* Items Table */}
+              <table className="invoice-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '10%' }}>Sr. #</th>
+                    <th style={{ width: '55%' }}>Item Description</th>
+                    <th style={{ width: '15%', textAlign: 'center' }}>Qty</th>
+                    <th style={{ width: '20%', textAlign: 'right' }}>Total (PKR)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td>
+                      <strong>{invoiceData.modelName || 'Device Sale'}</strong>
+                      {invoiceData.modelNumber && <div style={{ fontSize: '0.8rem', color: '#555' }}>Model: {invoiceData.modelNumber}</div>}
+                      {invoiceData.imei1 && <div style={{ fontSize: '0.75rem', color: '#666' }}>IMEI: {invoiceData.imei1}</div>}
+                      {invoiceData.imei2 && <div style={{ fontSize: '0.75rem', color: '#666' }}>IMEI 2: {invoiceData.imei2}</div>}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>1</td>
+                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                      {invoiceData.price ? Number(invoiceData.price).toLocaleString() : '0'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Summary Total */}
+              <div className="invoice-total-container">
+                <div className="invoice-total-box">
+                  <span>Grand Total:</span>
+                  <span>PKR {invoiceData.price ? Number(invoiceData.price).toLocaleString() : '0'}</span>
+                </div>
+              </div>
+
+              {/* Terms and Return Policy */}
+              <div className="invoice-terms-box">
+                <p><strong>Notice & Warranty Terms:</strong></p>
+                <p>1. Please inspect the device carefully before leaving the store.</p>
+                <p>2. Goods once sold cannot be returned or refunded without the original invoice.</p>
+                <p>3. Software and physical damage are not covered under warranty.</p>
+              </div>
+
+              {/* Signatures */}
+              <div className="invoice-signatures">
+                <div className="invoice-sig-line">
                   Customer Signature
                 </div>
-                <div className="invoice-footer-sign">
-                  Authorized Sign & Stamp
+                <div className="invoice-sig-line">
+                  Authorized Unity Mobile Signature
                 </div>
               </div>
             </div>
