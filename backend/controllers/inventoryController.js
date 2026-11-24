@@ -6,7 +6,7 @@ exports.getInventory = async (req, res, next) => {
   try {
     const { search = '', category = '' } = req.query;
 
-    const query = {};
+    const query = { quantity: { $gt: 0 } };
     if (category && category !== 'All') {
       query.category = category;
     }

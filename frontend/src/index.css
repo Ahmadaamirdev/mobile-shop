@@ -251,13 +251,14 @@ body {
 .mobile-topbar {
   background-color: var(--sidebar-bg);
   border-bottom: 1px solid var(--sidebar-border);
-  padding: 12px 16px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px 14px;
+  min-height: 54px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 90;
 }
 
 .mobile-menu-btn {
@@ -265,10 +266,18 @@ body {
   border: none;
   color: #ffffff;
   cursor: pointer;
-  padding: 6px;
+  padding: 8px;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.mobile-menu-btn:active {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .mobile-topbar-center {
@@ -834,6 +843,100 @@ body {
 }
 
 /* ==========================================================================
+   Mobile Bottom Navigation Bar (Native App Style)
+   ========================================================================== */
+
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(62px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background-color: var(--sidebar-bg);
+  border-top: 1px solid var(--sidebar-border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.28);
+  z-index: 95;
+  user-select: none;
+}
+
+.mobile-bottom-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: 62px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 4px;
+}
+
+.mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 6px 0 4px 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+  width: 32px;
+  height: 24px;
+}
+
+.mobile-nav-icon {
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.mobile-nav-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.1px;
+  transition: color 0.2s ease;
+}
+
+.mobile-nav-item:active {
+  transform: scale(0.96);
+}
+
+.mobile-nav-item.active {
+  color: var(--brand-gold);
+}
+
+.mobile-nav-item.active .mobile-nav-icon {
+  transform: translateY(-2px);
+  color: var(--brand-gold);
+}
+
+.mobile-nav-item.active .mobile-nav-label {
+  color: var(--brand-gold);
+  font-weight: 700;
+}
+
+.mobile-nav-active-dot {
+  position: absolute;
+  bottom: -4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--brand-gold);
+  box-shadow: 0 0 8px var(--brand-gold);
+}
+
+/* ==========================================================================
    A4 Centered Invoice Stylesheet
    ========================================================================== */
 
@@ -842,6 +945,59 @@ body {
   flex-direction: column;
   align-items: center;
   width: 100%;
+}
+
+.floating-invoice-actions {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 28px !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  pointer-events: auto !important;
+}
+
+.floating-invoice-actions .floating-btn {
+  height: 44px;
+  padding: 0 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.floating-invoice-actions .floating-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+}
+
+.floating-print-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  z-index: 99;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.floating-print-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
 }
 
 .invoice-actions-bar {
@@ -1028,31 +1184,86 @@ body {
 }
 
 /* ==========================================================================
-   Alert Banners
+   Left-Side Floating Toast Popup ("Recorded or Deleted Successfully")
    ========================================================================== */
 
-.alert-banner {
+.toast-popup-left {
+  position: fixed;
+  bottom: 24px;
+  left: 216px;
+  z-index: 9999;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+  min-width: 280px;
+  max-width: 400px;
   padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 16px;
-  box-shadow: var(--shadow-sm);
+  background-color: #ffffff;
+  border: 1px solid var(--border-card);
+  border-radius: 9px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid var(--success-color);
+  animation: toastSlideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
 }
 
-.alert-success {
-  background-color: var(--success-bg);
-  border: 1px solid var(--success-border);
+.toast-popup-left.toast-error {
+  border-left-color: var(--danger-color);
+}
+
+.toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-popup-left.toast-success .toast-icon {
   color: var(--success-color);
 }
 
-.alert-error {
-  background-color: var(--danger-bg);
-  border: 1px solid var(--danger-border);
+.toast-popup-left.toast-error .toast-icon {
   color: var(--danger-color);
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.toast-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.toast-close-btn:hover {
+  color: #0f172a;
+}
+
+@keyframes toastSlideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Alert Banners */
+.alert-banner {
+  display: none;
 }
 
 /* ==========================================================================
@@ -1127,13 +1338,14 @@ body {
   }
 
   .main-content {
-    padding: 12px 10px 48px 10px;
+    padding: 12px 10px calc(88px + env(safe-area-inset-bottom, 0px)) 10px !important;
     overflow-x: hidden;
   }
 
-  /* Prevent iOS zoom on input focus */
+  /* Prevent iOS zoom on input focus and ensure comfortable touch target */
   input, select, textarea {
     font-size: 16px !important;
+    min-height: 44px;
   }
 
   /* Off-canvas sidebar transition on mobile */
@@ -1168,7 +1380,8 @@ body {
 
   .panel-header-row .btn-primary {
     width: 100%;
-    height: 40px;
+    height: 44px;
+    min-height: 44px;
     font-size: 14px;
   }
 
@@ -1196,8 +1409,12 @@ body {
 
   .filter-pill {
     flex-shrink: 0;
-    padding: 6px 12px;
+    padding: 8px 14px;
     font-size: 13px;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .panel-search-box {
@@ -1205,7 +1422,7 @@ body {
   }
 
   .panel-search-box input {
-    height: 38px;
+    height: 44px;
   }
 
   /* Form Panels on Mobile */
@@ -1226,7 +1443,8 @@ body {
 
   .card-form-actions button {
     width: 100%;
-    height: 40px;
+    height: 44px;
+    min-height: 44px;
   }
 
   /* Mobile Cards Container */
@@ -1238,15 +1456,42 @@ body {
   .mobile-card {
     padding: 14px 12px;
     border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
   .mobile-card-actions button {
-    height: 40px;
-    font-size: 13px;
+    height: 44px;
+    min-height: 44px;
+    font-size: 13.5px;
     font-weight: 600;
   }
 
   /* Invoice Mobile Styling */
+  .floating-invoice-actions {
+    position: fixed !important;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 14px !important;
+    gap: 8px !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    align-items: center !important;
+    pointer-events: auto !important;
+  }
+  .floating-invoice-actions .floating-btn {
+    height: 44px;
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .floating-print-btn {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 14px !important;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 18px;
+  }
+
   .invoice-actions-bar {
     flex-direction: column;
     align-items: stretch;
@@ -1262,14 +1507,25 @@ body {
 
   .invoice-actions-bar button {
     flex: 1;
-    height: 40px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  /* Mobile Toast Popup */
+  .toast-popup-left {
+    left: 14px;
+    right: 14px;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+    max-width: none;
+    min-width: 0;
+    z-index: 98;
   }
 
   .invoice-preview-container {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 16px;
+    padding-bottom: 24px;
   }
 
   .a4-sheet {
@@ -1286,7 +1542,7 @@ body {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm;
+    margin: 10mm;
   }
 
   * {
@@ -1297,11 +1553,16 @@ body {
   body {
     background-color: #ffffff;
     color: #000000;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .app-sidebar,
   .mobile-topbar,
+  .mobile-bottom-nav,
   .invoice-actions-bar,
+  .floating-invoice-actions,
+  .floating-print-btn,
   .panel-header-card,
   .card-form,
   .hide-on-print,
@@ -1312,20 +1573,28 @@ body {
 
   .app-layout,
   .app-main-viewport,
-  .main-content {
+  .main-content,
+  .invoice-preview-container {
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     background: none !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
   .a4-sheet {
     width: 100% !important;
+    max-width: 100% !important;
+    min-height: calc(297mm - 20mm) !important;
     margin: 0 auto !important;
-    padding: 0 !important;
+    padding: 12mm 14mm !important;
+    box-sizing: border-box !important;
     border: none !important;
     box-shadow: none !important;
     display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
   }
 
   .hide-on-mobile {

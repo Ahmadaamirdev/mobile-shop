@@ -89,7 +89,12 @@ exports.createSale = async (req, res, next) => {
     if (cleanImei2) {
       inventoryItem.imeis = inventoryItem.imeis.filter((im) => im !== cleanImei2);
     }
-    await inventoryItem.save();
+
+    if (inventoryItem.quantity <= 0) {
+      await Inventory.findByIdAndDelete(inventoryItem._id);
+    } else {
+      await inventoryItem.save();
+    }
 
     return res.status(201).json({
       success: true,
@@ -166,7 +171,7 @@ exports.deleteSale = async (req, res, next) => {
     }
 
     // Restore stock to inventory
-    const inventoryItem = await Inventory.findOne({
+    let inventoryItem = await Inventory.findOne({
       modelName: { $regex: new RegExp(`^${sale.modelName.trim()}$`, 'i') },
     });
 
@@ -179,6 +184,15 @@ exports.deleteSale = async (req, res, next) => {
         inventoryItem.imeis.push(sale.imei2);
       }
       await inventoryItem.save();
+    } else {
+      await Inventory.create({
+        category: sale.category,
+        modelName: sale.modelName,
+        modelNumber: sale.modelNumber || '',
+        quantity: 1,
+        price: sale.price,
+        imeis: [sale.imei1, sale.imei2].filter(Boolean),
+      });
     }
 
     return res.status(200).json({

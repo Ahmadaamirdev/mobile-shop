@@ -19,6 +19,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
     imei1: '',
     imei2: '',
     serialNumber: '',
+    customerName: '',
     customerPhone: '',
     customerIdCard: '',
     price: '',
@@ -52,6 +53,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
     if (!formData.companyName.trim()) errors.companyName = 'Company name is required';
     if (!formData.modelName.trim()) errors.modelName = 'Model name is required';
     if (!formData.modelNumber.trim()) errors.modelNumber = 'Model number is required';
+    if (!formData.customerName.trim()) errors.customerName = 'Customer name is required';
     if (!formData.customerPhone.trim()) errors.customerPhone = 'Phone number is required';
 
     const idDigits = formData.customerIdCard.replace(/\D/g, '');
@@ -82,7 +84,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
       await createPurchase(formData);
       setAlert({
         type: 'success',
-        message: 'Purchase recorded and automatically added to inventory.',
+        message: 'Purchase recorded successfully',
       });
       setFormData({
         category: 'Mobile',
@@ -92,6 +94,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
         imei1: '',
         imei2: '',
         serialNumber: '',
+        customerName: '',
         customerPhone: '',
         customerIdCard: '',
         price: '',
@@ -113,7 +116,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
       await deletePurchase(id);
       setAlert({
         type: 'success',
-        message: 'Purchase record deleted successfully.',
+        message: 'Purchase deleted successfully',
       });
       fetchPurchases();
     } catch (err) {
@@ -285,12 +288,23 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
+                <label>Customer Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Muhammad Ahmad"
+                  value={formData.customerName}
+                  onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                />
+                {formErrors.customerName && <span className="form-field-error">{formErrors.customerName}</span>}
+              </div>
+
+              <div className="form-field">
                 <label>Customer Phone Number *</label>
                 <input
                   type="tel"
                   placeholder="e.g. 03001234567"
                   value={formData.customerPhone}
-                  onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value.replace(/[^0-9+]/g, '') })}
                 />
                 {formErrors.customerPhone && <span className="form-field-error">{formErrors.customerPhone}</span>}
               </div>
@@ -299,16 +313,23 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                 <label>
                   Customer ID Card Number * (13 digits)
                   {formData.customerIdCard && (
-                    <span style={{ marginLeft: '6px', color: formData.customerIdCard.replace(/\D/g, '').length === 13 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                      ({formData.customerIdCard.replace(/\D/g, '').length}/13)
+                    <span style={{ marginLeft: '6px', color: formData.customerIdCard.length === 13 ? 'var(--success-color)' : 'var(--text-muted)' }}>
+                      ({formData.customerIdCard.length}/13)
                     </span>
                   )}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. 36302-1234567-1"
+                  maxLength={13}
+                  placeholder="13 digits without dashes"
                   value={formData.customerIdCard}
-                  onChange={(e) => setFormData({ ...formData, customerIdCard: e.target.value })}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 13);
+                    setFormData({ ...formData, customerIdCard: digits });
+                    if (digits.length === 13 && formErrors.customerIdCard) {
+                      setFormErrors((prev) => ({ ...prev, customerIdCard: '' }));
+                    }
+                  }}
                 />
                 {formErrors.customerIdCard && <span className="form-field-error">{formErrors.customerIdCard}</span>}
               </div>
@@ -349,10 +370,10 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
             <thead>
               <tr>
                 <th style={{ width: '11%' }}>Date</th>
-                <th style={{ width: '16%' }}>Model Name</th>
+                <th style={{ width: '15%' }}>Model Name</th>
                 <th style={{ width: '14%' }}>Brand &amp; Category</th>
-                <th style={{ width: '22%' }}>IMEI &amp; Serial</th>
-                <th style={{ width: '19%' }}>Customer Info</th>
+                <th style={{ width: '24%' }}>IMEI &amp; Serial</th>
+                <th style={{ width: '18%' }}>Customer Info</th>
                 <th style={{ width: '12%' }}>Price (PKR)</th>
                 <th style={{ width: '6%', textAlign: 'center', paddingRight: '14px' }}></th>
               </tr>
@@ -392,36 +413,42 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
 
                     {/* IMEI & Serial (Parallel Grid) */}
                     <td>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
                         {item.imei1 && (
                           <>
-                            <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>IMEI 1:</span>
-                            <span style={{ color: '#090d16', fontWeight: 700, letterSpacing: '0.02em' }}>{item.imei1}</span>
+                            <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>IMEI 1:</span>
+                            <span style={{ color: '#334155', fontWeight: 400, letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>{item.imei1}</span>
                           </>
                         )}
                         {item.imei2 && (
                           <>
-                            <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>IMEI 2:</span>
-                            <span style={{ color: '#090d16', fontWeight: 700, letterSpacing: '0.02em' }}>{item.imei2}</span>
+                            <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>IMEI 2:</span>
+                            <span style={{ color: '#334155', fontWeight: 400, letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>{item.imei2}</span>
                           </>
                         )}
                         {item.serialNumber && (
                           <>
-                            <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>SN:</span>
-                            <span style={{ color: '#0f172a', fontWeight: 600 }}>{item.serialNumber}</span>
+                            <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>SN:</span>
+                            <span style={{ color: '#334155', fontWeight: 400, whiteSpace: 'nowrap' }}>{item.serialNumber}</span>
                           </>
                         )}
                         {!item.imei1 && !item.imei2 && !item.serialNumber && <span className="cell-sub">—</span>}
                       </div>
                     </td>
 
-                    {/* Customer Info (Parallel Grid with Phone and CNIC) */}
+                    {/* Customer Info (Parallel Grid with Name, Phone and CNIC) */}
                     <td>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
-                        <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>Phone:</span>
-                        <span style={{ fontWeight: 800, color: '#090d16', fontSize: '13.5px' }}>{item.customerPhone}</span>
-                        <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>CNIC:</span>
-                        <span style={{ fontWeight: 700, color: '#090d16', letterSpacing: '0.02em' }}>{item.customerIdCard}</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
+                        {item.customerName && (
+                          <>
+                            <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>Name:</span>
+                            <span style={{ fontWeight: 500, color: '#0f172a', fontFamily: 'Inter', whiteSpace: 'nowrap' }}>{item.customerName}</span>
+                          </>
+                        )}
+                        <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>Phone:</span>
+                        <span style={{ color: '#334155', fontWeight: 400, whiteSpace: 'nowrap' }}>{item.customerPhone}</span>
+                        <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>CNIC:</span>
+                        <span style={{ color: '#334155', fontWeight: 400, letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>{item.customerIdCard}</span>
                       </div>
                     </td>
 
@@ -482,9 +509,12 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                   </div>
 
                   <div className="mobile-meta-cell full-width">
-                    <div className="mobile-meta-label">Customer Contact &amp; CNIC</div>
-                    <div className="mobile-meta-val" style={{ fontFamily: 'monospace' }}>
-                      {item.customerPhone} • {item.customerIdCard}
+                    <div className="mobile-meta-label">Customer Details &amp; CNIC</div>
+                    <div className="mobile-meta-val">
+                      {item.customerName && <div style={{ fontWeight: 600, color: '#0f172a', marginBottom: '2px' }}>{item.customerName}</div>}
+                      <div style={{ fontFamily: 'monospace', fontSize: '11.5px', color: '#475569' }}>
+                        {item.customerPhone} • {item.customerIdCard}
+                      </div>
                     </div>
                   </div>
 
@@ -503,7 +533,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                 <div className="mobile-card-actions">
                   <button
                     className="action-btn-danger"
-                    style={{ width: '100%', height: '36px' }}
+                    style={{ width: '100%', minHeight: '44px' }}
                     onClick={() => handleDelete(item._id, item.modelName)}
                   >
                     <Trash2 size={13} /> Delete Record

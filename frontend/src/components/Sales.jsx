@@ -69,9 +69,14 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
     }
   };
 
-  const matchedInventoryItem = inventoryList.find(
-    (item) => item.modelName.trim().toLowerCase() === formData.modelName.trim().toLowerCase()
-  );
+  const matchedInventoryItem = inventoryList.find((item) => {
+    const nameMatch = item.modelName.trim().toLowerCase() === formData.modelName.trim().toLowerCase();
+    if (!nameMatch) return false;
+    if (formData.modelNumber && formData.modelNumber.trim() && item.modelNumber) {
+      return item.modelNumber.trim().toLowerCase() === formData.modelNumber.trim().toLowerCase();
+    }
+    return true;
+  });
 
   const validateForm = () => {
     const errors = {};
@@ -109,7 +114,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
       const res = await createSale(formData);
       setAlert({
         type: 'success',
-        message: 'Sale recorded and inventory stock deducted successfully.',
+        message: 'Sale recorded successfully',
       });
       setFormData({
         category: 'Mobile',
@@ -145,7 +150,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
       await deleteSale(id);
       setAlert({
         type: 'success',
-        message: 'Sale deleted and item stock returned to inventory.',
+        message: 'Sale deleted successfully',
       });
       fetchSalesAndInventory();
       if (onSaleSuccess) onSaleSuccess();
@@ -229,7 +234,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
               Select Available Device from Live Inventory
             </label>
             <select
-              style={{ width: '100%', height: '36px', padding: '0 10px', borderRadius: '7px', border: '1px solid var(--border-card)', background: '#ffffff', fontSize: '13px' }}
+              style={{ width: '100%', minHeight: '40px', padding: '0 10px', borderRadius: '7px', border: '1px solid var(--border-card)', background: '#ffffff', fontSize: '13px' }}
               onChange={handleSelectInventoryItem}
               defaultValue=""
             >
@@ -296,7 +301,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                   type="tel"
                   placeholder="e.g. 03001234567"
                   value={formData.customerNumber}
-                  onChange={(e) => setFormData({ ...formData, customerNumber: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, customerNumber: e.target.value.replace(/[^0-9+]/g, '') })}
                 />
                 {formErrors.customerNumber && <span className="form-field-error">{formErrors.customerNumber}</span>}
               </div>
@@ -375,11 +380,11 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
             <thead>
               <tr>
                 <th style={{ width: '11%' }}>Date</th>
-                <th style={{ width: '22%' }}>Device Model</th>
+                <th style={{ width: '21%' }}>Device Model</th>
                 <th style={{ width: '20%' }}>Customer</th>
-                <th style={{ width: '18%' }}>IMEI Sold</th>
+                <th style={{ width: '20%' }}>IMEI Sold</th>
                 <th style={{ width: '13%' }}>Sale Price</th>
-                <th style={{ width: '16%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
+                <th style={{ width: '15%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -409,27 +414,27 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
 
                     {/* Customer (Parallel Grid) */}
                     <td>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
-                        <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>Name:</span>
-                        <span style={{ fontWeight: 700, color: '#090d16', fontFamily: 'Inter' }}>{item.customerName}</span>
-                        <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>Phone:</span>
-                        <span style={{ fontWeight: 800, color: '#090d16', fontSize: '13.5px' }}>{item.customerNumber}</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
+                        <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>Name:</span>
+                        <span style={{ fontWeight: 500, color: '#0f172a', fontFamily: 'Inter', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.customerName}</span>
+                        <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>Phone:</span>
+                        <span style={{ color: '#334155', fontWeight: 400, whiteSpace: 'nowrap' }}>{item.customerNumber}</span>
                       </div>
                     </td>
 
                     {/* IMEI (Parallel Grid) */}
                     <td>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
                         {item.imei1 && (
                           <>
-                            <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>IMEI 1:</span>
-                            <span style={{ color: '#090d16', fontWeight: 700, letterSpacing: '0.02em' }}>{item.imei1}</span>
+                            <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>IMEI 1:</span>
+                            <span style={{ color: '#334155', fontWeight: 400, letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>{item.imei1}</span>
                           </>
                         )}
                         {item.imei2 && (
                           <>
-                            <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>IMEI 2:</span>
-                            <span style={{ color: '#090d16', fontWeight: 700, letterSpacing: '0.02em' }}>{item.imei2}</span>
+                            <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>IMEI 2:</span>
+                            <span style={{ color: '#334155', fontWeight: 400, letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>{item.imei2}</span>
                           </>
                         )}
                         {!item.imei1 && !item.imei2 && <span className="cell-sub">—</span>}
@@ -527,7 +532,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                   </button>
                   <button
                     className="action-btn-danger"
-                    style={{ height: '36px', padding: '0 12px' }}
+                    style={{ padding: '0 12px' }}
                     onClick={() => handleDelete(item._id, item.modelName)}
                   >
                     <Trash2 size={13} /> Delete

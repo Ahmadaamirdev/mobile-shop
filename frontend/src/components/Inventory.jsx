@@ -27,7 +27,7 @@ const Inventory = ({ setAlert }) => {
         search,
       });
       if (res.data && res.data.data) {
-        setInventory(res.data.data);
+        setInventory(res.data.data.filter((item) => item.quantity > 0));
       }
     } catch (err) {
       setAlert({
@@ -61,7 +61,7 @@ const Inventory = ({ setAlert }) => {
       });
       setAlert({
         type: 'success',
-        message: 'Item manually added to inventory.',
+        message: 'Item added successfully',
       });
       setFormData({
         category: 'Mobile',
@@ -87,7 +87,7 @@ const Inventory = ({ setAlert }) => {
       await deleteInventoryItem(id);
       setAlert({
         type: 'success',
-        message: 'Item removed from inventory.',
+        message: 'Item deleted successfully',
       });
       fetchInventory();
     } catch (err) {
@@ -390,7 +390,7 @@ const Inventory = ({ setAlert }) => {
                 <div className="mobile-card-actions">
                   <button
                     className="action-btn-danger"
-                    style={{ width: '100%', height: '36px' }}
+                    style={{ width: '100%', minHeight: '44px' }}
                     onClick={() => handleDelete(item._id, item.modelName)}
                   >
                     <Trash2 size={13} /> Delete from Inventory

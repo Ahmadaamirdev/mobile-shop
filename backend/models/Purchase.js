@@ -57,6 +57,11 @@ const purchaseSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    customerName: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     customerPhone: {
       type: String,
       required: [true, 'Customer phone number is required'],
@@ -85,6 +90,6 @@ const purchaseSchema = new mongoose.Schema(
 // Indexes for searching & sorting
 purchaseSchema.index({ createdAt: -1 });
 purchaseSchema.index({ imei1: 1, imei2: 1 });
-purchaseSchema.index({ modelName: 'text', modelNumber: 'text', companyName: 'text', customerPhone: 'text' });
+purchaseSchema.index({ modelName: 'text', modelNumber: 'text', companyName: 'text', customerName: 'text', customerPhone: 'text' });
 
 module.exports = mongoose.model('Purchase', purchaseSchema);

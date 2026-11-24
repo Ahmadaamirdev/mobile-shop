@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getInvoices, createInvoice, deleteInvoice } from '../services/api';
-import { Trash2, Printer, Search, FileText, Plus, Check } from 'lucide-react';
+import { Trash2, Printer, Search, FileText, Download } from 'lucide-react';
 
 const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   const [viewMode, setViewMode] = useState('generator'); // 'generator' | 'history'
@@ -64,40 +65,13 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
     }
   }, [viewMode, historySearch]);
 
-  const handleSaveInvoice = async () => {
-    if (!invoiceData.customerName.trim() || !invoiceData.customerNumber.trim() || !invoiceData.modelName.trim() || invoiceData.price === '') {
-      setAlert({
-        type: 'error',
-        message: 'Please fill in Customer Name, Phone Number, Model Name, and Price.',
-      });
-      return;
-    }
-
-    try {
-      const res = await createInvoice(invoiceData);
-      setAlert({
-        type: 'success',
-        message: `Invoice ${res.data.data.invoiceNumber} saved successfully to records.`,
-      });
-      setInvoiceData((prev) => ({
-        ...prev,
-        invoiceNumber: res.data.data.invoiceNumber,
-      }));
-    } catch (err) {
-      setAlert({
-        type: 'error',
-        message: err.response?.data?.message || 'Failed to save invoice.',
-      });
-    }
-  };
-
   const handleDeleteInvoice = async (id, invoiceNumber) => {
     if (!window.confirm(`Are you sure you want to delete invoice ${invoiceNumber}?`)) return;
     try {
       await deleteInvoice(id);
       setAlert({
         type: 'success',
-        message: 'Invoice record deleted successfully.',
+        message: 'Invoice deleted successfully',
       });
       fetchHistory();
     } catch (err) {
@@ -108,24 +82,91 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    // 1. If not already assigned an invoice number, auto-save first so it gets a real UM-XXXX number
+    let currentInvoiceNum = invoiceData.invoiceNumber;
+    if (
+      !currentInvoiceNum &&
+      invoiceData.customerName?.trim() &&
+      invoiceData.customerNumber?.trim() &&
+      invoiceData.modelName?.trim() &&
+      invoiceData.price !== ''
+    ) {
+      try {
+        const res = await createInvoice(invoiceData);
+        if (res.data?.data?.invoiceNumber) {
+          currentInvoiceNum = res.data.data.invoiceNumber;
+          setInvoiceData((prev) => ({
+            ...prev,
+            invoiceNumber: currentInvoiceNum,
+          }));
+        }
+      } catch (err) {
+        // Proceed even if background save encounters issue
+      }
+    }
+
+    const element = document.querySelector('.a4-sheet');
+    if (!element) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default || html2pdfModule;
+
+      const safeCustomer = invoiceData.customerName
+        ? invoiceData.customerName.replace(/[^a-zA-Z0-9]/g, '_')
+        : 'Customer';
+      const filename = `Invoice_${currentInvoiceNum || 'Draft'}_${safeCustomer}.pdf`;
+
+      const opt = {
+        margin: [6, 6, 6, 6],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      setAlert({
+        type: 'success',
+        message: 'Invoice PDF downloaded successfully!',
+      });
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      setAlert({
+        type: 'error',
+        message: 'Could not generate PDF directly. You can also use Print A4 Invoice -> Save as PDF.',
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
-  const handleNewManual = () => {
-    if (clearInitialSale) clearInitialSale();
-    setInvoiceData({
-      saleId: null,
-      invoiceNumber: '',
-      date: new Date().toISOString().split('T')[0],
-      customerName: '',
-      customerNumber: '',
-      modelName: '',
-      modelNumber: '',
-      imei1: '',
-      imei2: '',
-      price: '',
-    });
+  const handlePrint = async () => {
+    // If not already assigned an invoice number, auto-save so it is tracked in billing history
+    if (
+      !invoiceData.invoiceNumber &&
+      invoiceData.customerName?.trim() &&
+      invoiceData.customerNumber?.trim() &&
+      invoiceData.modelName?.trim() &&
+      invoiceData.price !== ''
+    ) {
+      try {
+        const res = await createInvoice(invoiceData);
+        if (res.data?.data?.invoiceNumber) {
+          setInvoiceData((prev) => ({
+            ...prev,
+            invoiceNumber: res.data.data.invoiceNumber,
+          }));
+        }
+      } catch (err) {
+        // Proceed to print dialog even if auto-record encounters network issue
+      }
+    }
+    window.print();
   };
 
   const handleLoadFromHistory = (item) => {
@@ -329,7 +370,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                     </button>
                     <button
                       className="action-btn-danger"
-                      style={{ height: '36px', padding: '0 12px' }}
+                      style={{ padding: '0 12px' }}
                       onClick={() => handleDeleteInvoice(item._id, item.invoiceNumber)}
                     >
                       <Trash2 size={13} /> Delete
@@ -343,30 +384,6 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
       ) : (
         /* Generator View */
         <div>
-          {/* Quick Actions Bar */}
-          <div className="invoice-actions-bar hide-on-print">
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                className="btn-secondary"
-                onClick={handleNewManual}
-              >
-                <Plus size={14} /> New Invoice
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={handleSaveInvoice}
-              >
-                <Check size={14} /> Save to Database
-              </button>
-            </div>
-            <button
-              className="btn-primary"
-              onClick={handlePrint}
-            >
-              <Printer size={15} /> Print A4 Invoice
-            </button>
-          </div>
-
           {/* Editable Fields Form Card */}
           <div className="card-form hide-on-print">
             <div className="card-form-title">
@@ -449,16 +466,6 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                   placeholder="15 digits"
                   value={invoiceData.imei2}
                   onChange={(e) => setInvoiceData({ ...invoiceData, imei2: e.target.value })}
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Invoice Number (Auto-assigned on Save)</label>
-                <input
-                  type="text"
-                  placeholder="Auto-generated e.g. UM-1001"
-                  value={invoiceData.invoiceNumber}
-                  onChange={(e) => setInvoiceData({ ...invoiceData, invoiceNumber: e.target.value })}
                 />
               </div>
             </div>
@@ -555,6 +562,32 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
               </div>
             </div>
           </div>
+
+          {/* Floating Action Buttons Sticking Firmly at Bottom Right (Rendered to body via Portal so they NEVER scroll) */}
+          {typeof document !== 'undefined' && createPortal(
+            <div className="floating-invoice-actions hide-on-print">
+              <button
+                type="button"
+                className="btn-secondary floating-btn"
+                onClick={handleDownloadPDF}
+                disabled={isGeneratingPDF}
+                title="Download Invoice as PDF document"
+              >
+                <Download size={16} />
+                <span>{isGeneratingPDF ? 'Generating...' : 'Download PDF'}</span>
+              </button>
+              <button
+                type="button"
+                className="btn-primary floating-btn"
+                onClick={handlePrint}
+                title="Print A4 Invoice"
+              >
+                <Printer size={16} />
+                <span>Print A4 Invoice</span>
+              </button>
+            </div>,
+            document.body
+          )}
         </div>
       )}
     </div>
