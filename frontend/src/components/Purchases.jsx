@@ -337,12 +337,12 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
           <table className="pro-table">
             <thead>
               <tr>
-                <th style={{ width: '11%' }}>Date</th>
-                <th style={{ width: '23%' }}>Model</th>
-                <th style={{ width: '13%' }}>Brand & Type</th>
-                <th style={{ width: '21%' }}>IMEI / Serial</th>
-                <th style={{ width: '17%' }}>Customer Info</th>
-                <th style={{ width: '11%' }}>Price (PKR)</th>
+                <th style={{ width: '12%' }}>Date</th>
+                <th style={{ width: '22%' }}>Model</th>
+                <th style={{ width: '14%' }}>Brand & Type</th>
+                <th style={{ width: '20%' }}>IMEI / Serial</th>
+                <th style={{ width: '16%' }}>Customer Info</th>
+                <th style={{ width: '12%' }}>Price (PKR)</th>
                 <th style={{ width: '4%', textAlign: 'center' }}></th>
               </tr>
             </thead>

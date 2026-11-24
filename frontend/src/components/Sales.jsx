@@ -355,12 +355,12 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
           <table className="pro-table">
             <thead>
               <tr>
-                <th style={{ width: '11%' }}>Date</th>
-                <th style={{ width: '24%' }}>Device</th>
-                <th style={{ width: '20%' }}>Customer</th>
+                <th style={{ width: '12%' }}>Date</th>
+                <th style={{ width: '23%' }}>Device</th>
+                <th style={{ width: '19%' }}>Customer</th>
                 <th style={{ width: '18%' }}>IMEI Sold</th>
-                <th style={{ width: '12%' }}>Price (PKR)</th>
-                <th style={{ width: '15%', textAlign: 'center' }}>Actions</th>
+                <th style={{ width: '14%' }}>Price (PKR)</th>
+                <th style={{ width: '14%', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>

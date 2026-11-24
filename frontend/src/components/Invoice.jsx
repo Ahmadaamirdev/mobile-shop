@@ -202,8 +202,8 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                   <th style={{ width: '18%' }}>Customer Name</th>
                   <th style={{ width: '14%' }}>Phone</th>
                   <th style={{ width: '22%' }}>Device Model</th>
-                  <th style={{ width: '12%' }}>Amount</th>
-                  <th style={{ width: '8%', textAlign: 'center' }}></th>
+                  <th style={{ width: '14%' }}>Amount (PKR)</th>
+                  <th style={{ width: '6%', textAlign: 'center' }}></th>
                 </tr>
               </thead>
               <tbody>
