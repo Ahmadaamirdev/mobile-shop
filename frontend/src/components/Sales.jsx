@@ -374,12 +374,12 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
           <table className="pro-table">
             <thead>
               <tr>
-                <th style={{ width: '12%' }}>Date</th>
-                <th style={{ width: '23%' }}>Device Model</th>
+                <th style={{ width: '11%' }}>Date</th>
+                <th style={{ width: '22%' }}>Device Model</th>
                 <th style={{ width: '20%' }}>Customer</th>
                 <th style={{ width: '18%' }}>IMEI Sold</th>
                 <th style={{ width: '13%' }}>Sale Price</th>
-                <th style={{ width: '14%', textAlign: 'center' }}>Actions</th>
+                <th style={{ width: '16%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -407,17 +407,33 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                       <span className="cell-sub">{item.modelNumber} • {item.category}</span>
                     </td>
 
-                    {/* Customer */}
+                    {/* Customer (Parallel Grid) */}
                     <td>
-                      <span className="cell-title">{item.customerName}</span>
-                      <span className="cell-sub" style={{ fontFamily: 'JetBrains Mono' }}>{item.customerNumber}</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '8px', rowGap: '2px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '12px' }}>
+                        <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>Name:</span>
+                        <span style={{ fontWeight: 600, color: '#0f172a', fontFamily: 'Inter' }}>{item.customerName}</span>
+                        <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>Phone:</span>
+                        <span style={{ color: '#334155' }}>{item.customerNumber}</span>
+                      </div>
                     </td>
 
-                    {/* IMEI */}
+                    {/* IMEI (Parallel Grid) */}
                     <td>
-                      {item.imei1 && <div className="cell-mono">1: {item.imei1}</div>}
-                      {item.imei2 && <div className="cell-mono" style={{ marginTop: '1px' }}>2: {item.imei2}</div>}
-                      {!item.imei1 && !item.imei2 && <span className="cell-sub">—</span>}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '8px', rowGap: '2px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '12px' }}>
+                        {item.imei1 && (
+                          <>
+                            <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>IMEI 1:</span>
+                            <span style={{ color: '#0f172a' }}>{item.imei1}</span>
+                          </>
+                        )}
+                        {item.imei2 && (
+                          <>
+                            <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>IMEI 2:</span>
+                            <span style={{ color: '#0f172a' }}>{item.imei2}</span>
+                          </>
+                        )}
+                        {!item.imei1 && !item.imei2 && <span className="cell-sub">—</span>}
+                      </div>
                     </td>
 
                     {/* Price */}
@@ -428,7 +444,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                     </td>
 
                     {/* Actions */}
-                    <td style={{ textAlign: 'center' }}>
+                    <td style={{ textAlign: 'center', paddingRight: '14px' }}>
                       <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                         <button
                           className="action-btn-primary"

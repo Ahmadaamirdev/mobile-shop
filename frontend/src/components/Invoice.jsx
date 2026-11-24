@@ -202,12 +202,12 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
               <thead>
                 <tr>
                   <th style={{ width: '14%' }}>Invoice No.</th>
-                  <th style={{ width: '12%' }}>Date</th>
+                  <th style={{ width: '11%' }}>Date</th>
                   <th style={{ width: '18%' }}>Customer Name</th>
-                  <th style={{ width: '14%' }}>Customer Phone</th>
+                  <th style={{ width: '15%' }}>Customer Phone</th>
                   <th style={{ width: '22%' }}>Device Model</th>
-                  <th style={{ width: '14%' }}>Amount (PKR)</th>
-                  <th style={{ width: '6%', textAlign: 'center' }}></th>
+                  <th style={{ width: '13%' }}>Amount (PKR)</th>
+                  <th style={{ width: '7%', textAlign: 'center', paddingRight: '14px' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -260,7 +260,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                       </td>
 
                       {/* Actions */}
-                      <td style={{ textAlign: 'center' }}>
+                      <td style={{ textAlign: 'center', paddingRight: '14px' }}>
                         <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                           <button
                             className="action-btn-primary"

@@ -253,11 +253,11 @@ const Inventory = ({ setAlert }) => {
               <tr>
                 <th style={{ width: '12%' }}>Category</th>
                 <th style={{ width: '14%' }}>Brand</th>
-                <th style={{ width: '26%' }}>Model Name &amp; Number</th>
+                <th style={{ width: '25%' }}>Model Name &amp; Number</th>
                 <th style={{ width: '14%' }}>Stock Status</th>
-                <th style={{ width: '18%' }}>Active IMEIs</th>
+                <th style={{ width: '17%' }}>Active IMEIs</th>
                 <th style={{ width: '12%' }}>Unit Price</th>
-                <th style={{ width: '4%', textAlign: 'center' }}></th>
+                <th style={{ width: '6%', textAlign: 'center', paddingRight: '14px' }}></th>
               </tr>
             </thead>
             <tbody>
@@ -325,7 +325,7 @@ const Inventory = ({ setAlert }) => {
                     </td>
 
                     {/* Action */}
-                    <td style={{ textAlign: 'center' }}>
+                    <td style={{ textAlign: 'center', paddingRight: '14px' }}>
                       <button
                         className="action-btn-danger"
                         onClick={() => handleDelete(item._id, item.modelName)}
