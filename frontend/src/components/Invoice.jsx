@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getInvoices, createInvoice, deleteInvoice } from '../services/api';
-import { Trash2, Printer } from 'lucide-react';
+import { Trash2, Printer, Search, FileText } from 'lucide-react';
 
 const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   const [viewMode, setViewMode] = useState('generator'); // 'generator' | 'history'
@@ -146,20 +146,27 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
 
   return (
     <div className="section-container">
+      {/* Title & View Toggle */}
+      <div className="page-header-row hide-on-print">
+        <div>
+          <h2 className="page-title">Invoices</h2>
+          <p className="page-subtitle">A4 sales invoices, automated billing & printable receipts</p>
+        </div>
+      </div>
+
       <div className="section-toolbar hide-on-print">
-        <h2 className="section-title">Invoices</h2>
         <div className="filter-bar">
           <button
             className={`btn ${viewMode === 'generator' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setViewMode('generator')}
           >
-            Invoice Generator
+            <FileText size={16} /> Invoice Generator
           </button>
           <button
             className={`btn ${viewMode === 'history' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setViewMode('history')}
           >
-            Invoice History & Records
+            Past Records ({invoices.length})
           </button>
         </div>
       </div>
@@ -167,13 +174,16 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
       {viewMode === 'history' ? (
         <div className="hide-on-print">
           <div style={{ marginBottom: '14px' }}>
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search by Invoice No, Customer, Model..."
-              value={historySearch}
-              onChange={(e) => setHistorySearch(e.target.value)}
-            />
+            <div className="search-input-wrapper">
+              <Search size={16} className="search-icon-inside" />
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search by Invoice No, Customer, Model, IMEI..."
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+              />
+            </div>
           </div>
 
           {/* Mobile Card List for Invoices */}
@@ -190,7 +200,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                       <div>
                         <div className="mobile-card-title">{inv.invoiceNumber}</div>
                         <div className="mobile-card-subtitle">
-                          {inv.customerName} • {inv.customerNumber}
+                          {inv.customerName}
                         </div>
                       </div>
                       <div className="mobile-card-price">
@@ -198,21 +208,25 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                       </div>
                     </div>
 
-                    <div className="mobile-card-details">
-                      <div className="mobile-detail-item">
-                        <span className="mobile-detail-label">Model</span>
-                        <span className="mobile-detail-value">{inv.modelName}</span>
+                    <div className="mobile-card-grid">
+                      <div className="mobile-grid-box">
+                        <span className="mobile-grid-label">Phone</span>
+                        <span className="mobile-grid-value">{inv.customerNumber}</span>
                       </div>
-                      <div className="mobile-detail-item">
-                        <span className="mobile-detail-label">Date</span>
-                        <span className="mobile-detail-value">
+                      <div className="mobile-grid-box">
+                        <span className="mobile-grid-label">Date</span>
+                        <span className="mobile-grid-value">
                           {new Date(inv.date).toLocaleDateString()}
                         </span>
                       </div>
+                      <div className="mobile-grid-box" style={{ gridColumn: 'span 2' }}>
+                        <span className="mobile-grid-label">Device Model</span>
+                        <span className="mobile-grid-value">{inv.modelName}</span>
+                      </div>
                       {inv.imei1 && (
-                        <div className="mobile-detail-item" style={{ gridColumn: 'span 2' }}>
-                          <span className="mobile-detail-label">IMEI</span>
-                          <span className="mobile-detail-value mono-text">{inv.imei1}</span>
+                        <div className="mobile-grid-box" style={{ gridColumn: 'span 2' }}>
+                          <span className="mobile-grid-label">IMEI</span>
+                          <span className="mobile-grid-value mono-text">{inv.imei1}</span>
                         </div>
                       )}
                     </div>
@@ -237,69 +251,91 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
             )}
           </div>
 
-          {/* Desktop Responsive Table for Invoices */}
-          <div className="table-container desktop-only">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '110px' }}>Invoice No.</th>
-                  <th style={{ width: '85px' }}>Date</th>
-                  <th>Customer</th>
-                  <th>Model & IMEI</th>
-                  <th>Price</th>
-                  <th style={{ textAlign: 'center', width: '110px' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingHistory ? (
+          {/* Desktop Responsive Table Card for Invoices */}
+          <div className="table-card desktop-only">
+            <div className="table-card-header">
+              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                Generated Invoice History
+              </span>
+              <span className="table-count-badge">
+                {invoices.length} {invoices.length === 1 ? 'Invoice' : 'Invoices'}
+              </span>
+            </div>
+
+            <div className="table-responsive-wrapper">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <td colSpan="6" className="empty-state">Loading invoice records...</td>
+                    <th style={{ width: '120px' }}>Invoice No.</th>
+                    <th style={{ width: '95px' }}>Date</th>
+                    <th>Customer Name</th>
+                    <th>Customer Phone</th>
+                    <th>Device Model</th>
+                    <th>IMEI</th>
+                    <th>Amount (PKR)</th>
+                    <th style={{ textAlign: 'center', width: '110px' }}>Actions</th>
                   </tr>
-                ) : invoices.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="empty-state">No invoice records found.</td>
-                  </tr>
-                ) : (
-                  invoices.map((inv) => (
-                    <tr key={inv._id}>
-                      <td><strong>{inv.invoiceNumber}</strong></td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        {new Date(inv.date).toLocaleDateString()}
-                      </td>
-                      <td>
-                        <strong>{inv.customerName}</strong>
-                        <div className="hint">{inv.customerNumber}</div>
-                      </td>
-                      <td>
-                        <strong>{inv.modelName}</strong>
-                        {inv.imei1 && <div className="mono-text hint">IMEI: {inv.imei1}</div>}
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        <strong>PKR {Number(inv.price).toLocaleString()}</strong>
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'inline-flex', gap: '6px' }}>
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => handleLoadFromHistory(inv)}
-                            title="View and print invoice"
-                          >
-                            <Printer size={14} />
-                          </button>
-                          <button
-                            className="btn btn-danger btn-sm"
-                            onClick={() => handleDeleteInvoice(inv._id, inv.invoiceNumber)}
-                            title="Delete invoice record"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
+                </thead>
+                <tbody>
+                  {loadingHistory ? (
+                    <tr>
+                      <td colSpan="8" className="empty-state">Loading invoice records...</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : invoices.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="empty-state">No invoice records found.</td>
+                    </tr>
+                  ) : (
+                    invoices.map((inv) => (
+                      <tr key={inv._id}>
+                        <td>
+                          <span className="imei-badge" style={{ fontWeight: 700 }}>{inv.invoiceNumber}</span>
+                        </td>
+                        <td style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
+                          {new Date(inv.date).toLocaleDateString()}
+                        </td>
+                        <td>
+                          <div className="cell-primary">{inv.customerName}</div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>{inv.customerNumber}</div>
+                        </td>
+                        <td>
+                          <div className="cell-primary">{inv.modelName}</div>
+                          {inv.modelNumber && <div className="cell-secondary">Model: {inv.modelNumber}</div>}
+                        </td>
+                        <td>
+                          {inv.imei1 ? <span className="imei-badge">{inv.imei1}</span> : <span className="cell-secondary">—</span>}
+                        </td>
+                        <td>
+                          <span className="price-display">
+                            PKR {Number(inv.price).toLocaleString()}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', gap: '6px' }}>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => handleLoadFromHistory(inv)}
+                              title="View and print invoice"
+                            >
+                              <Printer size={14} />
+                            </button>
+                            <button
+                              className="btn btn-danger btn-sm"
+                              onClick={() => handleDeleteInvoice(inv._id, inv.invoiceNumber)}
+                              title="Delete invoice record"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       ) : (
@@ -467,7 +503,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                       <th>Item Description</th>
                       <th>Model Number</th>
                       <th>IMEI / Identifiers</th>
-                      <th style={{ textAlign: 'right', width: '120px' }}>Amount (PKR)</th>
+                      <th style={{ textAlign: 'right', width: '130px' }}>Amount (PKR)</th>
                     </tr>
                   </thead>
                   <tbody>

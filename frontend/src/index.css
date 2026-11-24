@@ -1,36 +1,33 @@
 /* ==========================================================================
-   Unity Mobile - Professional Black, White & Warm Golden Yellow Theme
-   Left Sidebar Layout (Desktop Fixed / Mobile Off-Canvas Drawer)
+   Unity Mobile - Premium Professional UI Theme (Black, White & Gold)
+   Senior UI/UX Design System: High contrast, distinct columns, zero clutter.
    ========================================================================== */
 
 :root {
-  /* Brand Theme Colors */
-  --brand-black: #0b0f17;
-  --brand-black-card: #111827;
-  --brand-black-hover: #1f2937;
-  --brand-gold: #eab308;        /* Warm Gold from Unity Mobile Logo */
-  --brand-gold-dark: #ca8a04;   /* Deep Gold */
-  --brand-gold-light: #fef08a;  /* Light Gold Tint */
-  --brand-gold-bg: rgba(234, 179, 8, 0.10);
+  /* Brand Palette */
+  --brand-black: #0f172a;        /* Deep Slate Black */
+  --sidebar-bg: #090d16;         /* Obsidian Black */
+  --sidebar-border: #1e293b;
+  --brand-gold: #f59e0b;         /* Logo Amber/Gold */
+  --brand-gold-dark: #d97706;
+  --brand-gold-glow: rgba(245, 158, 11, 0.15);
 
   /* Workspace Palette */
-  --bg-app: #f8fafc;
+  --bg-app: #f1f5f9;             /* Soft neutral background to give cards depth */
   --bg-card: #ffffff;
-  --text-main: #0f172a;
+  --text-main: #0f172a;          /* Charcoal text for ultra-sharp readability */
+  --text-secondary: #334155;
   --text-muted: #64748b;
   --text-light: #94a3b8;
   --border-color: #e2e8f0;
-  --border-focus: #ca8a04;
+  --border-focus: #f59e0b;
 
-  /* Button Actions */
-  --btn-primary: #0b0f17;
-  --btn-primary-hover: #182234;
-  --btn-secondary: #ffffff;
-  --btn-secondary-hover: #f1f5f9;
-  --danger: #b91c1c;
-  --danger-hover: #991b1b;
+  /* Status Colors */
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
   --danger-bg: #fef2f2;
-  --success: #15803d;
+  --danger-border: #fecaca;
+  --success: #16a34a;
   --success-bg: #f0fdf4;
 }
 
@@ -55,7 +52,7 @@ body {
 }
 
 /* ==========================================================================
-   App Master Layout: Left Sidebar + Main Viewport
+   Master Layout: Fixed Left Sidebar + Main Viewport
    ========================================================================== */
 
 .app-layout {
@@ -68,38 +65,37 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0; /* Prevents overflow in flex children */
+  min-width: 0;
   overflow-x: hidden;
   background-color: var(--bg-app);
 }
 
 .main-content {
-  max-width: 1160px;
+  max-width: 1280px;
   width: 100%;
   margin: 0 auto;
-  padding: 16px 14px 48px 14px;
+  padding: 24px 24px 60px 24px;
   flex: 1;
 }
 
 /* ==========================================================================
-   Left Sidebar Navigation (Black & Gold Identity)
+   Left Sidebar Navigation
    ========================================================================== */
 
 .app-sidebar {
-  width: 250px;
-  background-color: var(--brand-black);
+  width: 256px;
+  background-color: var(--sidebar-bg);
   color: #ffffff;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  border-right: 1px solid #1e293b;
+  border-right: 1px solid var(--sidebar-border);
   z-index: 100;
 }
 
-/* Sidebar Top Brand Header */
 .sidebar-header {
-  padding: 18px 16px;
-  border-bottom: 1px solid #1e293b;
+  padding: 22px 18px;
+  border-bottom: 1px solid var(--sidebar-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -112,14 +108,16 @@ body {
 }
 
 .sidebar-logo {
-  height: 42px;
+  height: 44px;
   width: auto;
   object-fit: contain;
-  border-radius: 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.1);
 }
 
 .sidebar-brand-text h2 {
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #ffffff;
   line-height: 1.2;
@@ -127,10 +125,9 @@ body {
 }
 
 .sidebar-brand-text p {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--brand-gold);
-  font-weight: 500;
-  line-height: 1.2;
+  font-weight: 600;
 }
 
 .sidebar-close-btn {
@@ -144,17 +141,16 @@ body {
   justify-content: center;
 }
 
-/* Sidebar Navigation Items */
 .sidebar-nav {
-  padding: 16px 12px;
+  padding: 20px 14px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .nav-section-label {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: #64748b;
   letter-spacing: 0.08em;
@@ -166,12 +162,12 @@ body {
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 11px 14px;
+  padding: 12px 16px;
   background: none;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #94a3b8;
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -180,7 +176,7 @@ body {
 }
 
 .sidebar-nav-item:hover {
-  background-color: var(--brand-black-hover);
+  background-color: rgba(255, 255, 255, 0.05);
   color: #ffffff;
 }
 
@@ -194,7 +190,7 @@ body {
 }
 
 .sidebar-nav-item.active {
-  background-color: var(--brand-gold-bg);
+  background-color: var(--brand-gold-glow);
   color: #ffffff;
   font-weight: 600;
 }
@@ -208,16 +204,16 @@ body {
   left: 0;
   top: 15%;
   bottom: 15%;
-  width: 3.5px;
+  width: 4px;
   background-color: var(--brand-gold);
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
 }
 
-/* Sidebar Bottom Footer */
 .sidebar-footer {
-  padding: 16px;
-  border-top: 1px solid #1e293b;
-  background-color: #080c14;
+  padding: 16px 18px;
+  border-top: 1px solid var(--sidebar-border);
+  background-color: #060910;
 }
 
 .sidebar-shop-pill {
@@ -231,7 +227,7 @@ body {
   height: 8px;
   background-color: var(--brand-gold);
   border-radius: 50%;
-  box-shadow: 0 0 6px rgba(234, 179, 8, 0.6);
+  box-shadow: 0 0 6px var(--brand-gold);
 }
 
 .shop-footer-text {
@@ -240,12 +236,12 @@ body {
 }
 
 .shop-footer-text strong {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: #ffffff;
 }
 
 .shop-footer-text span {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: #94a3b8;
 }
 
@@ -254,9 +250,9 @@ body {
    ========================================================================== */
 
 .mobile-topbar {
-  background-color: var(--brand-black);
-  border-bottom: 1px solid #1e293b;
-  padding: 10px 14px;
+  background-color: var(--sidebar-bg);
+  border-bottom: 1px solid var(--sidebar-border);
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -274,11 +270,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-}
-
-.mobile-menu-btn:active {
-  background-color: var(--brand-black-hover);
+  border-radius: 6px;
 }
 
 .mobile-topbar-center {
@@ -288,68 +280,66 @@ body {
 }
 
 .mobile-topbar-logo {
-  height: 32px;
+  height: 34px;
   width: auto;
   object-fit: contain;
 }
 
 .mobile-topbar-title {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #ffffff;
   border-left: 2px solid var(--brand-gold);
   padding-left: 8px;
 }
 
-/* Mobile Off-Canvas Drawer Backdrop */
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.65);
+  background-color: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(2px);
   z-index: 95;
 }
 
 /* ==========================================================================
-   Alerts & Notifications
+   Section Containers & Toolbar
    ========================================================================== */
 
-.alert-banner {
-  padding: 10px 14px;
-  margin-bottom: 16px;
-  border-radius: 6px;
-  font-size: 0.85rem;
+.section-container {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.alert-success {
-  background-color: var(--success-bg);
-  border: 1px solid #bbf7d0;
-  color: var(--success);
-}
-.alert-error {
-  background-color: var(--danger-bg);
-  border: 1px solid #fecaca;
-  color: var(--danger);
+  flex-direction: column;
+  gap: 18px;
 }
 
-/* ==========================================================================
-   Section Header & Toolbar
-   ========================================================================== */
+.page-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.page-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
 
 .section-toolbar {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 14px 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 18px;
-}
-
-.section-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-main);
-  letter-spacing: -0.01em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .filter-bar {
@@ -359,113 +349,141 @@ body {
   width: 100%;
 }
 
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
 .search-input {
   width: 100%;
-  padding: 10px 14px;
+  padding: 10px 14px 10px 38px;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 16px; /* 16px prevents iOS zoom */
-  background-color: #ffffff;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background-color: #f8fafc;
   color: var(--text-main);
   outline: none;
-  min-height: 44px;
-  transition: border-color 0.15s ease;
+  min-height: 42px;
+  transition: all 0.15s ease;
 }
+
 .search-input:focus {
+  background-color: #ffffff;
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 2px var(--brand-gold-bg);
+  box-shadow: 0 0 0 3px var(--brand-gold-glow);
+}
+
+.search-icon-inside {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
 }
 
 .select-input {
-  width: 100%;
   padding: 10px 14px;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 16px;
-  background-color: #ffffff;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background-color: #f8fafc;
   color: var(--text-main);
   outline: none;
   cursor: pointer;
-  min-height: 44px;
-  transition: border-color 0.15s ease;
+  min-height: 42px;
+  transition: all 0.15s ease;
 }
+
 .select-input:focus {
+  background-color: #ffffff;
   border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--brand-gold-glow);
 }
 
 /* ==========================================================================
-   Buttons (Black with Golden Trim)
+   Buttons
    ========================================================================== */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   padding: 10px 18px;
   font-size: 0.88rem;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
   border: 1px solid transparent;
-  min-height: 44px;
+  min-height: 42px;
+  white-space: nowrap;
 }
+
 .btn-primary {
-  background-color: var(--btn-primary);
+  background-color: var(--brand-black);
   color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   border-bottom: 2px solid var(--brand-gold-dark);
 }
-.btn-primary:active,
+
 .btn-primary:hover {
-  background-color: var(--btn-primary-hover);
+  background-color: #1e293b;
   border-bottom-color: var(--brand-gold);
+  transform: translateY(-1px);
 }
+
 .btn-secondary {
   background-color: #ffffff;
   border-color: var(--border-color);
   color: var(--text-main);
 }
-.btn-secondary:active,
+
 .btn-secondary:hover {
-  background-color: var(--btn-secondary);
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
 }
+
 .btn-danger {
   background-color: #ffffff;
-  border-color: #fca5a5;
+  border-color: var(--danger-border);
   color: var(--danger);
 }
-.btn-danger:active,
+
 .btn-danger:hover {
   background-color: var(--danger-bg);
+  border-color: #f87171;
 }
+
 .btn-sm {
-  min-height: 36px;
-  padding: 6px 12px;
+  min-height: 32px;
+  padding: 5px 10px;
   font-size: 0.8rem;
+  border-radius: 6px;
 }
+
 .btn-block {
   width: 100%;
 }
 
 /* ==========================================================================
-   Cards & Forms
+   Cards & Data Tables (Clean, Structured, Distinct)
    ========================================================================== */
 
 .card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 18px;
-  margin-bottom: 22px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
+  padding: 22px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .card-title {
-  font-size: 1.02rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-main);
 }
@@ -473,51 +491,177 @@ body {
 .form-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .form-group label {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .form-group input,
 .form-group select {
-  padding: 10px 12px;
+  padding: 10px 14px;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
   color: var(--text-main);
-  background-color: #ffffff;
+  background-color: #f8fafc;
   outline: none;
-  min-height: 44px;
-  transition: border-color 0.15s ease;
+  min-height: 42px;
+  transition: all 0.15s ease;
 }
 
 .form-group input:focus,
 .form-group select:focus {
+  background-color: #ffffff;
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 2px var(--brand-gold-bg);
+  box-shadow: 0 0 0 3px var(--brand-gold-glow);
 }
 
 .form-group .hint {
-  font-size: 0.75rem;
-  color: var(--text-light);
+  font-size: 0.74rem;
+  color: var(--text-muted);
 }
 
 .form-actions {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 18px;
+}
+
+/* ==========================================================================
+   Desktop Data Table - Clean Enterprise Layout
+   ========================================================================== */
+
+.table-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.table-card-header {
+  padding: 14px 18px;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.table-count-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background-color: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.table-responsive-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #f8fafc;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--text-main);
+  vertical-align: middle;
+  font-size: 0.88rem;
+}
+
+.data-table tr:hover td {
+  background-color: #fafbfc;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Distinct cell elements */
+.cell-primary {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.cell-secondary {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.category-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #334155;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-top: 3px;
+}
+
+.imei-box {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.imei-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.78rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: #1e293b;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.price-display {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 /* ==========================================================================
@@ -533,22 +677,22 @@ body {
 .mobile-card {
   background-color: #ffffff;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 14px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .mobile-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .mobile-card-title {
-  font-size: 0.98rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text-main);
   line-height: 1.3;
@@ -557,41 +701,45 @@ body {
 .mobile-card-subtitle {
   font-size: 0.78rem;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .mobile-card-price {
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 800;
   color: var(--text-main);
   white-space: nowrap;
   text-align: right;
 }
 
-.mobile-card-details {
+.mobile-card-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  font-size: 0.8rem;
-  margin-bottom: 10px;
+  gap: 10px;
+  font-size: 0.82rem;
+  margin-bottom: 12px;
 }
 
-.mobile-detail-item {
+.mobile-grid-box {
+  background-color: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
 }
 
-.mobile-detail-label {
-  font-size: 0.72rem;
-  color: var(--text-muted);
+.mobile-grid-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
   text-transform: uppercase;
-  font-weight: 600;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
-.mobile-detail-value {
+.mobile-grid-value {
   color: var(--text-main);
-  font-weight: 500;
+  font-weight: 600;
   word-break: break-all;
 }
 
@@ -599,7 +747,7 @@ body {
   display: flex;
   gap: 8px;
   margin-top: 10px;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 1px solid #f1f5f9;
 }
 
@@ -611,65 +759,15 @@ body {
   display: none;
 }
 
-/* Desktop Tables */
-.table-container {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: 0.85rem;
-}
-
-.data-table th {
-  background-color: #f8fafc;
-  color: var(--text-muted);
-  font-weight: 600;
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 0.8rem;
-}
-
-.data-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-main);
-  vertical-align: middle;
-  font-size: 0.84rem;
-}
-
-.data-table tr:last-child td {
-  border-bottom: none;
-}
-
-.mono-text {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.82rem;
-  letter-spacing: -0.02em;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 40px 16px;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
 /* ==========================================================================
-   A4 Centered Invoice (Black & Gold Header Accents)
+   Centered A4 Invoice Layout
    ========================================================================== */
 
 .invoice-preview-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 10px;
   width: 100%;
 }
 
@@ -686,9 +784,9 @@ body {
   max-width: 210mm;
   min-height: auto;
   background-color: #ffffff;
-  margin: 0 auto 24px auto;
-  padding: 18px 14px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  margin: 0 auto 30px auto;
+  padding: 24px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-sizing: border-box;
@@ -700,13 +798,12 @@ body {
 .invoice-header {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-bottom: 12px;
+  gap: 14px;
+  padding-bottom: 16px;
   border-bottom: 3px solid var(--brand-black);
   position: relative;
 }
 
-/* Subtle gold bar under header */
 .invoice-header::after {
   content: '';
   position: absolute;
@@ -720,54 +817,54 @@ body {
 .invoice-logo-box {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .invoice-logo-img {
-  max-height: 48px;
+  max-height: 52px;
   object-fit: contain;
 }
 
 .invoice-shop-details h2 {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: var(--text-main);
   margin-bottom: 2px;
 }
 
 .invoice-shop-details p {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
 .invoice-meta {
   text-align: left;
   background-color: #f8fafc;
-  padding: 8px 10px;
-  border-radius: 4px;
+  padding: 10px 14px;
+  border-radius: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .invoice-meta h3 {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 800;
   letter-spacing: 0.05em;
   color: var(--text-main);
 }
 
 .invoice-meta p {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
 }
 
 .invoice-section-row {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
-  margin: 18px 0 14px 0;
-  padding-bottom: 12px;
+  gap: 14px;
+  margin: 20px 0 16px 0;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -776,11 +873,12 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
+  font-weight: 700;
   margin-bottom: 6px;
 }
 
 .invoice-box p {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: var(--text-main);
   margin-bottom: 2px;
 }
@@ -788,88 +886,67 @@ body {
 .invoice-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 14px 0;
+  margin: 16px 0;
 }
 
 .invoice-table th {
   background-color: var(--brand-black);
   color: #ffffff;
-  padding: 9px 8px;
-  font-size: 0.78rem;
-  font-weight: 600;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
   text-align: left;
 }
 
 .invoice-table td {
-  padding: 10px 8px;
+  padding: 12px;
   border-bottom: 1px solid var(--border-color);
-  font-size: 0.84rem;
+  font-size: 0.88rem;
 }
 
 .invoice-summary-box {
   display: flex;
   justify-content: flex-end;
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
 .invoice-total-row {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 12px 16px;
   background-color: #f8fafc;
   border: 1px solid var(--border-color);
   border-top: 2px solid var(--brand-gold);
   border-bottom: 2px solid var(--brand-black);
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 800;
 }
 
 .invoice-footer {
-  margin-top: 28px;
-  padding-top: 20px;
+  margin-top: 36px;
+  padding-top: 24px;
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
 }
 
 .invoice-footer-sign {
   flex: 1;
   text-align: center;
   border-top: 1px solid var(--text-main);
-  padding-top: 6px;
-  font-size: 0.75rem;
+  padding-top: 8px;
+  font-size: 0.8rem;
   color: var(--text-muted);
+  font-weight: 500;
 }
 
 /* ==========================================================================
-   Responsive Breakpoints: Mobile vs Desktop (>= 768px)
+   Responsive Desktop Viewport (>= 768px)
    ========================================================================== */
 
-/* Mobile view: Sidebar is off-canvas drawer */
-@media (max-width: 767px) {
-  .app-sidebar {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    transform: translateX(-100%);
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
-  }
-
-  .app-sidebar.sidebar-open {
-    transform: translateX(0);
-  }
-}
-
-/* Desktop view: Sidebar is fixed on the left */
 @media (min-width: 768px) {
-  .main-content {
-    padding: 24px 28px 48px 28px;
-  }
-
   .mobile-only {
     display: none !important;
   }
@@ -891,21 +968,11 @@ body {
   }
 
   .search-input {
-    width: auto;
-    min-width: 250px;
-    font-size: 0.875rem;
-    min-height: 38px;
+    width: 280px;
   }
 
   .select-input {
     width: auto;
-    font-size: 0.875rem;
-    min-height: 38px;
-  }
-
-  .btn {
-    min-height: 38px;
-    font-size: 0.875rem;
   }
 
   .form-grid {
@@ -926,7 +993,7 @@ body {
 
   .a4-sheet {
     min-height: 297mm;
-    padding: 20mm;
+    padding: 24mm 20mm;
   }
 
   .invoice-header {
@@ -952,7 +1019,7 @@ body {
 }
 
 /* ==========================================================================
-   Print Stylesheet - Strictly A4 Centered with Clean Margins
+   Print Stylesheet
    ========================================================================== */
 
 @media print {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getInventory, createInventoryItem, deleteInventoryItem } from '../services/api';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Search, Plus } from 'lucide-react';
 
 const Inventory = ({ setAlert }) => {
   const [inventory, setInventory] = useState([]);
@@ -100,16 +100,27 @@ const Inventory = ({ setAlert }) => {
 
   return (
     <div className="section-container">
+      {/* Title & Subtitle */}
+      <div className="page-header-row">
+        <div>
+          <h2 className="page-title">Inventory</h2>
+          <p className="page-subtitle">Live stock management for mobiles, tablets and shop accessories</p>
+        </div>
+      </div>
+
+      {/* Toolbar / Search / Action */}
       <div className="section-toolbar">
-        <h2 className="section-title">Inventory</h2>
         <div className="filter-bar">
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search by model, brand, IMEI..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="search-input-wrapper">
+            <Search size={16} className="search-icon-inside" />
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search inventory by model, brand, IMEI..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
           <select
             className="select-input"
             value={selectedCategory}
@@ -124,7 +135,8 @@ const Inventory = ({ setAlert }) => {
             className="btn btn-primary"
             onClick={() => setShowAddForm(!showAddForm)}
           >
-            {showAddForm ? 'Cancel' : '+ Add Manual Item'}
+            <Plus size={16} />
+            {showAddForm ? 'Cancel' : 'Add Manual Item'}
           </button>
         </div>
       </div>
@@ -232,7 +244,7 @@ const Inventory = ({ setAlert }) => {
                   <div>
                     <div className="mobile-card-title">{item.modelName}</div>
                     <div className="mobile-card-subtitle">
-                      {item.companyName || '-'} • {item.modelNumber} • {item.category}
+                      {item.companyName || '—'} • {item.modelNumber}
                     </div>
                   </div>
                   <div className="mobile-card-price">
@@ -240,29 +252,28 @@ const Inventory = ({ setAlert }) => {
                   </div>
                 </div>
 
-                <div className="mobile-card-details">
-                  <div className="mobile-detail-item">
-                    <span className="mobile-detail-label">Stock Status</span>
+                <div className="mobile-card-grid">
+                  <div className="mobile-grid-box">
+                    <span className="mobile-grid-label">Stock Status</span>
                     <span
-                      className="mobile-detail-value"
+                      className="mobile-grid-value"
                       style={{
-                        fontWeight: 700,
                         color: item.quantity > 0 ? 'var(--success)' : 'var(--danger)',
                       }}
                     >
-                      {item.quantity > 0 ? `${item.quantity} in stock` : 'Out of Stock'}
+                      {item.quantity > 0 ? `${item.quantity} In Stock` : 'Out of Stock'}
                     </span>
                   </div>
-                  <div className="mobile-detail-item">
-                    <span className="mobile-detail-label">Category</span>
-                    <span className="mobile-detail-value">{item.category}</span>
+                  <div className="mobile-grid-box">
+                    <span className="mobile-grid-label">Category</span>
+                    <span className="mobile-grid-value">{item.category}</span>
                   </div>
                   {item.imeis && item.imeis.length > 0 && (
-                    <div className="mobile-detail-item" style={{ gridColumn: 'span 2' }}>
-                      <span className="mobile-detail-label">Stock IMEIs</span>
-                      <span className="mobile-detail-value mono-text">
+                    <div className="mobile-grid-box" style={{ gridColumn: 'span 2' }}>
+                      <span className="mobile-grid-label">In-Stock IMEIs</span>
+                      <span className="mobile-grid-value" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                         {item.imeis.map((im) => (
-                          <div key={im}>{im}</div>
+                          <span key={im} className="imei-badge">{im}</span>
                         ))}
                       </span>
                     </div>
@@ -283,63 +294,97 @@ const Inventory = ({ setAlert }) => {
         )}
       </div>
 
-      {/* Desktop Responsive Table (Screen > 768px) */}
-      <div className="table-container desktop-only">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Model Name & Category</th>
-              <th>Model Number</th>
-              <th>Stock Status</th>
-              <th>Price</th>
-              <th>Available IMEIs</th>
-              <th style={{ textAlign: 'center', width: '80px' }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+      {/* Desktop Responsive Table Card (Screen > 768px) */}
+      <div className="table-card desktop-only">
+        <div className="table-card-header">
+          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+            Current Inventory Stock
+          </span>
+          <span className="table-count-badge">
+            {inventory.length} {inventory.length === 1 ? 'Item' : 'Items'}
+          </span>
+        </div>
+
+        <div className="table-responsive-wrapper">
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan="6" className="empty-state">Loading inventory...</td>
+                <th>Model Name</th>
+                <th>Model Number</th>
+                <th>Brand</th>
+                <th>Category</th>
+                <th>Stock Quantity</th>
+                <th>Price (PKR)</th>
+                <th>In-Stock IMEIs</th>
+                <th style={{ textAlign: 'center', width: '70px' }}>Action</th>
               </tr>
-            ) : inventory.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="empty-state">No inventory items found.</td>
-              </tr>
-            ) : (
-              inventory.map((item) => (
-                <tr key={item._id}>
-                  <td>
-                    <strong>{item.modelName}</strong>
-                    <div className="hint">{item.companyName || '-'} • {item.category}</div>
-                  </td>
-                  <td>{item.modelNumber}</td>
-                  <td>
-                    <span style={{ fontWeight: 600, color: item.quantity > 0 ? 'var(--success)' : 'var(--danger)' }}>
-                      {item.quantity} {item.quantity === 0 ? '(Out of Stock)' : 'units'}
-                    </span>
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <strong>PKR {Number(item.price).toLocaleString()}</strong>
-                  </td>
-                  <td className="mono-text">
-                    {item.imeis && item.imeis.length > 0
-                      ? item.imeis.map((im) => <div key={im}>{im}</div>)
-                      : '-'}
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleDelete(item._id, item.modelName)}
-                      title="Delete item"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="empty-state">Loading inventory...</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : inventory.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="empty-state">No inventory items found.</td>
+                </tr>
+              ) : (
+                inventory.map((item) => (
+                  <tr key={item._id}>
+                    <td>
+                      <div className="cell-primary">{item.modelName}</div>
+                    </td>
+                    <td>
+                      <span style={{ color: 'var(--text-secondary)' }}>{item.modelNumber}</span>
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: 600 }}>{item.companyName || '—'}</span>
+                    </td>
+                    <td>
+                      <span className="category-tag">{item.category}</span>
+                    </td>
+                    <td>
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: item.quantity > 0 ? 'var(--success)' : 'var(--danger)',
+                          backgroundColor: item.quantity > 0 ? 'var(--success-bg)' : 'var(--danger-bg)',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.82rem',
+                          display: 'inline-block',
+                        }}
+                      >
+                        {item.quantity > 0 ? `${item.quantity} units` : 'Out of Stock'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="price-display">
+                        PKR {Number(item.price).toLocaleString()}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="imei-box">
+                        {item.imeis && item.imeis.length > 0
+                          ? item.imeis.map((im) => <span key={im} className="imei-badge">{im}</span>)
+                          : <span className="cell-secondary">—</span>}
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDelete(item._id, item.modelName)}
+                        title="Delete item"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

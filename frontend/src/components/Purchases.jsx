@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getPurchases, createPurchase, deletePurchase } from '../services/api';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Search, Plus } from 'lucide-react';
 
 const Purchases = ({ onPurchaseSuccess, setAlert }) => {
   const [purchases, setPurchases] = useState([]);
@@ -128,16 +128,27 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
 
   return (
     <div className="section-container">
+      {/* Title & Stats */}
+      <div className="page-header-row">
+        <div>
+          <h2 className="page-title">Purchases</h2>
+          <p className="page-subtitle">Track incoming devices, customer verification & purchase costs</p>
+        </div>
+      </div>
+
+      {/* Toolbar / Search / Action */}
       <div className="section-toolbar">
-        <h2 className="section-title">Purchases</h2>
         <div className="filter-bar">
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search by model, IMEI, phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="search-input-wrapper">
+            <Search size={16} className="search-icon-inside" />
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search by model, IMEI, phone, CNIC..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
           <select
             className="select-input"
             value={sortOrder}
@@ -150,14 +161,16 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
             className="btn btn-primary"
             onClick={() => setShowAddForm(!showAddForm)}
           >
-            {showAddForm ? 'Cancel' : '+ Add Purchase'}
+            <Plus size={16} />
+            {showAddForm ? 'Cancel' : 'Add Purchase'}
           </button>
         </div>
       </div>
 
+      {/* Add Purchase Form */}
       {showAddForm && (
         <div className="card">
-          <h3 className="card-title">Record New Purchase</h3>
+          <h3 className="card-title">Record New Device Purchase</h3>
           <form onSubmit={handleSubmit}>
             <div className="form-grid">
               <div className="form-group">
@@ -173,7 +186,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-group">
-                <label>Company / Brand Name *</label>
+                <label>Company / Brand *</label>
                 <input
                   type="text"
                   placeholder="e.g. Samsung, Apple, Xiaomi"
@@ -187,7 +200,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                 <label>Model Name *</label>
                 <input
                   type="text"
-                  placeholder="e.g. Galaxy S23 Ultra"
+                  placeholder="e.g. Galaxy S22"
                   value={formData.modelName}
                   onChange={(e) => setFormData({ ...formData, modelName: e.target.value })}
                 />
@@ -198,7 +211,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                 <label>Model Number *</label>
                 <input
                   type="text"
-                  placeholder="e.g. SM-S918B"
+                  placeholder="e.g. SM-S901B"
                   value={formData.modelNumber}
                   onChange={(e) => setFormData({ ...formData, modelNumber: e.target.value })}
                 />
@@ -303,7 +316,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                 Cancel
               </button>
               <button type="submit" className="btn btn-primary">
-                Save Purchase & Stock
+                Save & Stock in Inventory
               </button>
             </div>
           </form>
@@ -324,7 +337,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                   <div>
                     <div className="mobile-card-title">{item.modelName}</div>
                     <div className="mobile-card-subtitle">
-                      {item.companyName} • {item.modelNumber} • {item.category}
+                      {item.companyName} • {item.modelNumber}
                     </div>
                   </div>
                   <div className="mobile-card-price">
@@ -332,36 +345,40 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                   </div>
                 </div>
 
-                <div className="mobile-card-details">
-                  <div className="mobile-detail-item">
-                    <span className="mobile-detail-label">Customer Phone</span>
-                    <span className="mobile-detail-value">{item.customerPhone}</span>
+                <div className="mobile-card-grid">
+                  <div className="mobile-grid-box">
+                    <span className="mobile-grid-label">Category</span>
+                    <span className="mobile-grid-value">{item.category}</span>
                   </div>
-                  <div className="mobile-detail-item">
-                    <span className="mobile-detail-label">ID Card (CNIC)</span>
-                    <span className="mobile-detail-value mono-text">{item.customerIdCard}</span>
+                  <div className="mobile-grid-box">
+                    <span className="mobile-grid-label">Date</span>
+                    <span className="mobile-grid-value">
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="mobile-grid-box">
+                    <span className="mobile-grid-label">Customer Phone</span>
+                    <span className="mobile-grid-value">{item.customerPhone}</span>
+                  </div>
+                  <div className="mobile-grid-box">
+                    <span className="mobile-grid-label">Customer CNIC</span>
+                    <span className="mobile-grid-value">{item.customerIdCard}</span>
                   </div>
                   {(item.imei1 || item.imei2) && (
-                    <div className="mobile-detail-item" style={{ gridColumn: 'span 2' }}>
-                      <span className="mobile-detail-label">IMEIs</span>
-                      <span className="mobile-detail-value mono-text">
-                        {item.imei1 && <div>1: {item.imei1}</div>}
-                        {item.imei2 && <div>2: {item.imei2}</div>}
+                    <div className="mobile-grid-box" style={{ gridColumn: 'span 2' }}>
+                      <span className="mobile-grid-label">IMEI Numbers</span>
+                      <span className="mobile-grid-value" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {item.imei1 && <span className="imei-badge">1: {item.imei1}</span>}
+                        {item.imei2 && <span className="imei-badge">2: {item.imei2}</span>}
                       </span>
                     </div>
                   )}
                   {item.serialNumber && (
-                    <div className="mobile-detail-item">
-                      <span className="mobile-detail-label">Serial No</span>
-                      <span className="mobile-detail-value">{item.serialNumber}</span>
+                    <div className="mobile-grid-box" style={{ gridColumn: 'span 2' }}>
+                      <span className="mobile-grid-label">Serial Number</span>
+                      <span className="mobile-grid-value">{item.serialNumber}</span>
                     </div>
                   )}
-                  <div className="mobile-detail-item">
-                    <span className="mobile-detail-label">Date</span>
-                    <span className="mobile-detail-value">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
                 </div>
 
                 <div className="mobile-card-actions">
@@ -369,7 +386,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                     className="btn btn-danger btn-block btn-sm"
                     onClick={() => handleDelete(item._id, item.modelName)}
                   >
-                    <Trash2 size={15} /> Delete Purchase
+                    <Trash2 size={15} /> Delete Record
                   </button>
                 </div>
               </div>
@@ -378,65 +395,103 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
         )}
       </div>
 
-      {/* Desktop Responsive Table (Screen > 768px) */}
-      <div className="table-container desktop-only">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th style={{ width: '85px' }}>Date</th>
-              <th>Device & Brand</th>
-              <th>IMEIs & Serial</th>
-              <th>Customer Info</th>
-              <th>Price</th>
-              <th style={{ textAlign: 'center', width: '80px' }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+      {/* Desktop Responsive Table Card (Screen > 768px) */}
+      <div className="table-card desktop-only">
+        <div className="table-card-header">
+          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+            All Purchases
+          </span>
+          <span className="table-count-badge">
+            {purchases.length} {purchases.length === 1 ? 'Record' : 'Records'}
+          </span>
+        </div>
+
+        <div className="table-responsive-wrapper">
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan="6" className="empty-state">Loading purchases...</td>
+                <th style={{ width: '95px' }}>Date</th>
+                <th>Model</th>
+                <th>Brand & Type</th>
+                <th>IMEI & Serial</th>
+                <th>Customer Contact</th>
+                <th>Customer CNIC</th>
+                <th>Price (PKR)</th>
+                <th style={{ textAlign: 'center', width: '70px' }}>Action</th>
               </tr>
-            ) : purchases.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="empty-state">No purchases recorded yet.</td>
-              </tr>
-            ) : (
-              purchases.map((item) => (
-                <tr key={item._id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </td>
-                  <td>
-                    <strong>{item.modelName}</strong>
-                    <div className="hint">{item.companyName} ({item.modelNumber}) • {item.category}</div>
-                  </td>
-                  <td className="mono-text">
-                    {item.imei1 && <div>IMEI 1: {item.imei1}</div>}
-                    {item.imei2 && <div>IMEI 2: {item.imei2}</div>}
-                    {item.serialNumber && <div className="hint">SN: {item.serialNumber}</div>}
-                    {!item.imei1 && !item.imei2 && !item.serialNumber && '-'}
-                  </td>
-                  <td>
-                    <div><strong>{item.customerPhone}</strong></div>
-                    <div className="mono-text hint">CNIC: {item.customerIdCard}</div>
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <strong>PKR {Number(item.price).toLocaleString()}</strong>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleDelete(item._id, item.modelName)}
-                      title="Delete purchase"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="empty-state">Loading purchases...</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : purchases.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="empty-state">No purchases recorded yet.</td>
+                </tr>
+              ) : (
+                purchases.map((item) => (
+                  <tr key={item._id}>
+                    {/* 1. Date */}
+                    <td style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </td>
+
+                    {/* 2. Model */}
+                    <td>
+                      <div className="cell-primary">{item.modelName}</div>
+                      <div className="cell-secondary">Model: {item.modelNumber}</div>
+                    </td>
+
+                    {/* 3. Brand & Type */}
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{item.companyName}</div>
+                      <span className="category-tag">{item.category}</span>
+                    </td>
+
+                    {/* 4. IMEIs & Serial */}
+                    <td>
+                      <div className="imei-box">
+                        {item.imei1 && <span className="imei-badge">1: {item.imei1}</span>}
+                        {item.imei2 && <span className="imei-badge">2: {item.imei2}</span>}
+                        {item.serialNumber && <div className="cell-secondary">SN: {item.serialNumber}</div>}
+                        {!item.imei1 && !item.imei2 && !item.serialNumber && <span className="cell-secondary">—</span>}
+                      </div>
+                    </td>
+
+                    {/* 5. Customer Contact */}
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{item.customerPhone}</div>
+                    </td>
+
+                    {/* 6. Customer CNIC */}
+                    <td>
+                      <span className="imei-badge">{item.customerIdCard}</span>
+                    </td>
+
+                    {/* 7. Price */}
+                    <td>
+                      <span className="price-display">
+                        PKR {Number(item.price).toLocaleString()}
+                      </span>
+                    </td>
+
+                    {/* 8. Action */}
+                    <td style={{ textAlign: 'center' }}>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDelete(item._id, item.modelName)}
+                        title="Delete purchase"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

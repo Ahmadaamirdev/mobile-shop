@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSales, createSale, deleteSale, getInventory } from '../services/api';
-import { Trash2, FileText } from 'lucide-react';
+import { Trash2, FileText, Search, Plus } from 'lucide-react';
 
 const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
   const [sales, setSales] = useState([]);
@@ -69,7 +69,6 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
     }
   };
 
-  // Check if current modelName is in inventory and has stock
   const matchedInventoryItem = inventoryList.find(
     (item) => item.modelName.trim().toLowerCase() === formData.modelName.trim().toLowerCase()
   );
@@ -79,7 +78,6 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
     if (!formData.modelName.trim()) {
       errors.modelName = 'Model name is required';
     } else {
-      // User rule: "if its not in inventory or purchase it wont allow to be entered."
       if (!matchedInventoryItem || matchedInventoryItem.quantity <= 0) {
         errors.modelName = 'Item is not available in inventory or has zero stock';
       }
@@ -88,7 +86,6 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
     if (!formData.customerName.trim()) errors.customerName = 'Customer name is required';
     if (!formData.customerNumber.trim()) errors.customerNumber = 'Customer phone number is required';
 
-    // Optional 15 digits check
     if (formData.imei1 && !/^\d{15}$/.test(formData.imei1.trim())) {
       errors.imei1 = 'IMEI 1 must be exactly 15 digits';
     }
@@ -155,21 +152,33 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
 
   return (
     <div className="section-container">
+      {/* Title & Subtitle */}
+      <div className="page-header-row">
+        <div>
+          <h2 className="page-title">Sales</h2>
+          <p className="page-subtitle">Process store sales, auto-deduct stock & issue invoices</p>
+        </div>
+      </div>
+
+      {/* Toolbar / Search / Action */}
       <div className="section-toolbar">
-        <h2 className="section-title">Sales</h2>
         <div className="filter-bar">
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search by customer, model, phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="search-input-wrapper">
+            <Search size={16} className="search-icon-inside" />
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search by customer, model, phone, IMEI..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
           <button
             className="btn btn-primary"
             onClick={() => setShowAddForm(!showAddForm)}
           >
-            {showAddForm ? 'Cancel' : '+ Record Sale'}
+            <Plus size={16} />
+            {showAddForm ? 'Cancel' : 'Record Sale'}
           </button>
         </div>
       </div>
@@ -200,7 +209,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                 <label>Model Name * (Must be in inventory)</label>
                 <input
                   type="text"
-                  placeholder="e.g. Galaxy S23 Ultra"
+                  placeholder="e.g. Galaxy S22"
                   value={formData.modelName}
                   onChange={(e) => setFormData({ ...formData, modelName: e.target.value })}
                 />
@@ -334,7 +343,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                   <div>
                     <div className="mobile-card-title">{sale.modelName}</div>
                     <div className="mobile-card-subtitle">
-                      {sale.customerName} • {sale.customerNumber}
+                      Model: {sale.modelNumber || '—'}
                     </div>
                   </div>
                   <div className="mobile-card-price">
@@ -342,23 +351,31 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                   </div>
                 </div>
 
-                <div className="mobile-card-details">
-                  <div className="mobile-detail-item">
-                    <span className="mobile-detail-label">Model No</span>
-                    <span className="mobile-detail-value">{sale.modelNumber || '-'}</span>
+                <div className="mobile-card-grid">
+                  <div className="mobile-grid-box">
+                    <span className="mobile-grid-label">Customer Name</span>
+                    <span className="mobile-grid-value">{sale.customerName}</span>
                   </div>
-                  <div className="mobile-detail-item">
-                    <span className="mobile-detail-label">Sale Date</span>
-                    <span className="mobile-detail-value">
+                  <div className="mobile-grid-box">
+                    <span className="mobile-grid-label">Phone</span>
+                    <span className="mobile-grid-value">{sale.customerNumber}</span>
+                  </div>
+                  <div className="mobile-grid-box">
+                    <span className="mobile-grid-label">Sale Date</span>
+                    <span className="mobile-grid-value">
                       {new Date(sale.createdAt).toLocaleDateString()}
                     </span>
                   </div>
+                  <div className="mobile-grid-box">
+                    <span className="mobile-grid-label">Category</span>
+                    <span className="mobile-grid-value">{sale.category}</span>
+                  </div>
                   {(sale.imei1 || sale.imei2) && (
-                    <div className="mobile-detail-item" style={{ gridColumn: 'span 2' }}>
-                      <span className="mobile-detail-label">IMEIs</span>
-                      <span className="mobile-detail-value mono-text">
-                        {sale.imei1 && <div>1: {sale.imei1}</div>}
-                        {sale.imei2 && <div>2: {sale.imei2}</div>}
+                    <div className="mobile-grid-box" style={{ gridColumn: 'span 2' }}>
+                      <span className="mobile-grid-label">IMEIs</span>
+                      <span className="mobile-grid-value" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {sale.imei1 && <span className="imei-badge">1: {sale.imei1}</span>}
+                        {sale.imei2 && <span className="imei-badge">2: {sale.imei2}</span>}
                       </span>
                     </div>
                   )}
@@ -384,73 +401,95 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
         )}
       </div>
 
-      {/* Desktop Responsive Table (Screen > 768px) */}
-      <div className="table-container desktop-only">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th style={{ width: '85px' }}>Date</th>
-              <th>Customer</th>
-              <th>Device Model</th>
-              <th>IMEIs</th>
-              <th>Price</th>
-              <th style={{ textAlign: 'center', width: '130px' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+      {/* Desktop Responsive Table Card (Screen > 768px) */}
+      <div className="table-card desktop-only">
+        <div className="table-card-header">
+          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+            All Sales Records
+          </span>
+          <span className="table-count-badge">
+            {sales.length} {sales.length === 1 ? 'Sale' : 'Sales'}
+          </span>
+        </div>
+
+        <div className="table-responsive-wrapper">
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan="6" className="empty-state">Loading sales...</td>
+                <th style={{ width: '95px' }}>Date</th>
+                <th>Customer Name</th>
+                <th>Customer Phone</th>
+                <th>Model Name</th>
+                <th>Model Number</th>
+                <th>IMEIs</th>
+                <th>Price (PKR)</th>
+                <th style={{ textAlign: 'center', width: '110px' }}>Actions</th>
               </tr>
-            ) : sales.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="empty-state">No sales recorded yet.</td>
-              </tr>
-            ) : (
-              sales.map((sale) => (
-                <tr key={sale._id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    {new Date(sale.createdAt).toLocaleDateString()}
-                  </td>
-                  <td>
-                    <strong>{sale.customerName}</strong>
-                    <div className="hint">{sale.customerNumber}</div>
-                  </td>
-                  <td>
-                    <strong>{sale.modelName}</strong>
-                    {sale.modelNumber && <div className="hint">{sale.modelNumber}</div>}
-                  </td>
-                  <td className="mono-text">
-                    {sale.imei1 && <div>1: {sale.imei1}</div>}
-                    {sale.imei2 && <div>2: {sale.imei2}</div>}
-                    {!sale.imei1 && !sale.imei2 && '-'}
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <strong>PKR {Number(sale.price).toLocaleString()}</strong>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'inline-flex', gap: '6px' }}>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => onOpenInvoice(sale)}
-                        title="Generate Invoice"
-                      >
-                        <FileText size={14} />
-                      </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleDelete(sale._id, sale.modelName)}
-                        title="Delete sale and restore stock"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="empty-state">Loading sales...</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : sales.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="empty-state">No sales recorded yet.</td>
+                </tr>
+              ) : (
+                sales.map((sale) => (
+                  <tr key={sale._id}>
+                    <td style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
+                      {new Date(sale.createdAt).toLocaleDateString()}
+                    </td>
+                    <td>
+                      <div className="cell-primary">{sale.customerName}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{sale.customerNumber}</div>
+                    </td>
+                    <td>
+                      <div className="cell-primary">{sale.modelName}</div>
+                      <span className="category-tag">{sale.category}</span>
+                    </td>
+                    <td>
+                      <span style={{ color: 'var(--text-secondary)' }}>{sale.modelNumber || '—'}</span>
+                    </td>
+                    <td>
+                      <div className="imei-box">
+                        {sale.imei1 && <span className="imei-badge">1: {sale.imei1}</span>}
+                        {sale.imei2 && <span className="imei-badge">2: {sale.imei2}</span>}
+                        {!sale.imei1 && !sale.imei2 && <span className="cell-secondary">—</span>}
+                      </div>
+                    </td>
+                    <td>
+                      <span className="price-display">
+                        PKR {Number(sale.price).toLocaleString()}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => onOpenInvoice(sale)}
+                          title="Generate Invoice"
+                        >
+                          <FileText size={14} />
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleDelete(sale._id, sale.modelName)}
+                          title="Delete sale and restore stock"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
