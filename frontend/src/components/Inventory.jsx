@@ -304,7 +304,7 @@ const Inventory = ({ setAlert }) => {
                     {/* Active IMEIs */}
                     <td>
                       {item.imeis && item.imeis.length > 0 ? (
-                        <div className="cell-mono" style={{ fontSize: '11px' }}>
+                        <div className="cell-mono" style={{ fontSize: '12.5px', fontWeight: 700, color: '#090d16' }}>
                           {item.imeis.slice(0, 2).map((im, idx) => (
                             <div key={idx}>{im}</div>
                           ))}

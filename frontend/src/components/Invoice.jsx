@@ -243,7 +243,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
 
                       {/* Phone */}
                       <td>
-                        <span className="cell-mono">{item.customerNumber}</span>
+                        <span className="cell-mono" style={{ fontWeight: 700, color: '#090d16', fontSize: '13px' }}>{item.customerNumber}</span>
                       </td>
 
                       {/* Model */}

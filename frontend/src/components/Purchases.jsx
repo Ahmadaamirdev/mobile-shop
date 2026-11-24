@@ -392,23 +392,23 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
 
                     {/* IMEI & Serial (Parallel Grid) */}
                     <td>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '8px', rowGap: '2px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
                         {item.imei1 && (
                           <>
-                            <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>IMEI 1:</span>
-                            <span style={{ color: '#0f172a' }}>{item.imei1}</span>
+                            <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>IMEI 1:</span>
+                            <span style={{ color: '#090d16', fontWeight: 700, letterSpacing: '0.02em' }}>{item.imei1}</span>
                           </>
                         )}
                         {item.imei2 && (
                           <>
-                            <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>IMEI 2:</span>
-                            <span style={{ color: '#0f172a' }}>{item.imei2}</span>
+                            <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>IMEI 2:</span>
+                            <span style={{ color: '#090d16', fontWeight: 700, letterSpacing: '0.02em' }}>{item.imei2}</span>
                           </>
                         )}
                         {item.serialNumber && (
                           <>
-                            <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>SN:</span>
-                            <span style={{ color: '#475569' }}>{item.serialNumber}</span>
+                            <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>SN:</span>
+                            <span style={{ color: '#0f172a', fontWeight: 600 }}>{item.serialNumber}</span>
                           </>
                         )}
                         {!item.imei1 && !item.imei2 && !item.serialNumber && <span className="cell-sub">—</span>}
@@ -417,11 +417,11 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
 
                     {/* Customer Info (Parallel Grid with Phone and CNIC) */}
                     <td>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '8px', rowGap: '2px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '12px' }}>
-                        <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>Phone:</span>
-                        <span style={{ fontWeight: 600, color: '#0f172a' }}>{item.customerPhone}</span>
-                        <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>CNIC:</span>
-                        <span style={{ color: '#334155' }}>{item.customerIdCard}</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
+                        <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>Phone:</span>
+                        <span style={{ fontWeight: 800, color: '#090d16', fontSize: '13.5px' }}>{item.customerPhone}</span>
+                        <span style={{ color: '#475569', fontSize: '11px', fontWeight: 700 }}>CNIC:</span>
+                        <span style={{ fontWeight: 700, color: '#090d16', letterSpacing: '0.02em' }}>{item.customerIdCard}</span>
                       </div>
                     </td>
 
