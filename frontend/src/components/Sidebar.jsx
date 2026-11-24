@@ -30,10 +30,6 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
         <div className="sidebar-header">
           <div className="sidebar-brand">
             <img src="/logo.jpg" alt="Unity Mobile" className="sidebar-logo" />
-            <div className="sidebar-brand-text">
-              <h2>Unity Mobile</h2>
-              <p>Multan, Pakistan</p>
-            </div>
           </div>
           {/* Close button on mobile */}
           <button
