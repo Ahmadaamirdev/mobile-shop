@@ -197,7 +197,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                 className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
                 onClick={() => setSelectedCategory(cat)}
               >
-                {cat === 'All' ? 'All Categories' : `${cat}s`}
+                {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
               </button>
             ))}
           </div>
