@@ -111,13 +111,16 @@ const start = async () => {
   });
 };
 
-// In local mode, listen on PORT. In Vercel serverless, export app directly and warm DB.
-if (!process.env.VERCEL) {
+// Start server when run directly (local dev or Vercel service runner)
+if (require.main === module) {
   start();
 } else {
-  connectDB().catch((err) => {
-    console.warn('⚠️ Serverless background DB connection:', err.message);
-  });
+  // When imported as a module in serverless mode, pre-warm DB connection
+  if (process.env.VERCEL) {
+    connectDB().catch((err) => {
+      console.warn('⚠️ Serverless background DB connection:', err.message);
+    });
+  }
 }
 
 module.exports = app;
