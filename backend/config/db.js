@@ -3,7 +3,9 @@ const dns = require('dns');
 
 // Configure reliable DNS servers to prevent SRV lookup failures on Windows / local ISPs
 try {
-  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+  if (!process.env.VERCEL) {
+    dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+  }
 } catch (e) {
   // Ignore if not supported in environment
 }
@@ -112,8 +114,8 @@ const connectDB = async () => {
 
 // Express Middleware: Ensures database is ready before processing API request
 const ensureDBConnected = async (req, res, next) => {
-  // If health check endpoint, let it pass through immediately
-  if (req.path === '/health') {
+  // If health check endpoint or root ping, let it pass through immediately
+  if (req.path === '/health' || req.path === '/api/health' || req.path === '/' || req.path === '/api') {
     return next();
   }
 

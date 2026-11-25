@@ -40,14 +40,27 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Root API ping
+app.get(['/api', '/'], (req, res, next) => {
+  if (req.path === '/' && !req.headers['x-vercel-id']) {
+    return next();
+  }
+  res.json({
+    status: 'online',
+    app: 'Unity Mobile API',
+    uptime: process.uptime(),
+  });
+});
+
 // Middleware: Ensure database pool is active before running CRUD operations
 app.use('/api', ensureDBConnected);
+app.use(ensureDBConnected);
 
-// API Routes
-app.use('/api/purchases', require('./routes/purchaseRoutes'));
-app.use('/api/inventory', require('./routes/inventoryRoutes'));
-app.use('/api/sales', require('./routes/saleRoutes'));
-app.use('/api/invoices', require('./routes/invoiceRoutes'));
+// API Routes (mounted with both /api and without for complete serverless rewrite support)
+app.use(['/api/purchases', '/purchases'], require('./routes/purchaseRoutes'));
+app.use(['/api/inventory', '/inventory'], require('./routes/inventoryRoutes'));
+app.use(['/api/sales', '/sales'], require('./routes/saleRoutes'));
+app.use(['/api/invoices', '/invoices'], require('./routes/invoiceRoutes'));
 
 // Global Error Handler
 app.use(errorHandler);
@@ -85,7 +98,7 @@ const handleShutdown = async (signal) => {
 process.on('SIGINT', () => handleShutdown('SIGINT'));
 process.on('SIGTERM', () => handleShutdown('SIGTERM'));
 
-// Connect to MongoDB Atlas first, then bind HTTP port
+// Connect to MongoDB Atlas first, then bind HTTP port (for local development)
 const start = async () => {
   try {
     await connectDB();
@@ -98,6 +111,13 @@ const start = async () => {
   });
 };
 
-start();
+// In local mode, listen on PORT. In Vercel serverless, export app directly and warm DB.
+if (!process.env.VERCEL) {
+  start();
+} else {
+  connectDB().catch((err) => {
+    console.warn('⚠️ Serverless background DB connection:', err.message);
+  });
+}
 
 module.exports = app;
