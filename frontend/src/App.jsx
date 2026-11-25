@@ -96,32 +96,28 @@ function App() {
               </div>
             )}
 
-            {activeTab === 'purchases' && (
-              <Purchases
-                setAlert={setAlert}
-              />
-            )}
+            <div style={{ display: activeTab === 'purchases' ? 'block' : 'none' }}>
+              <Purchases setAlert={setAlert} />
+            </div>
 
-            {activeTab === 'sales' && (
+            <div style={{ display: activeTab === 'sales' ? 'block' : 'none' }}>
               <Sales
                 onOpenInvoice={handleOpenInvoiceFromSale}
                 setAlert={setAlert}
               />
-            )}
+            </div>
 
-            {activeTab === 'inventory' && (
-              <Inventory
-                setAlert={setAlert}
-              />
-            )}
+            <div style={{ display: activeTab === 'inventory' ? 'block' : 'none' }}>
+              <Inventory setAlert={setAlert} />
+            </div>
 
-            {activeTab === 'invoices' && (
+            <div style={{ display: activeTab === 'invoices' ? 'block' : 'none' }}>
               <Invoice
                 initialSale={selectedSaleForInvoice}
                 clearInitialSale={() => setSelectedSaleForInvoice(null)}
                 setAlert={setAlert}
               />
-            )}
+            </div>
           </ErrorBoundary>
         </main>
 

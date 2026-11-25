@@ -21,14 +21,10 @@ const Inventory = ({ setAlert }) => {
     price: '',
   });
 
-  const fetchInventory = async () => {
+  const fetchInventory = async (force = false) => {
     setLoading(true);
     try {
-      const res = await getInventory({
-        category: selectedCategory === 'All' ? '' : selectedCategory,
-        condition: selectedCondition === 'All' ? '' : selectedCondition,
-        search,
-      });
+      const res = await getInventory({}, force);
       if (res.data && res.data.data) {
         setInventory(res.data.data.filter((item) => item.quantity > 0));
       }
@@ -44,7 +40,7 @@ const Inventory = ({ setAlert }) => {
 
   useEffect(() => {
     fetchInventory();
-  }, [selectedCategory, selectedCondition, search]);
+  }, []);
 
   const filteredInventory = inventory.filter((item) => {
     const categoryMatch = selectedCategory === 'All' || item.category?.toLowerCase() === selectedCategory.toLowerCase();
@@ -92,7 +88,7 @@ const Inventory = ({ setAlert }) => {
         price: '',
       });
       setShowAddForm(false);
-      fetchInventory();
+      fetchInventory(true);
     } catch (err) {
       setAlert({
         type: 'error',
@@ -109,7 +105,7 @@ const Inventory = ({ setAlert }) => {
         type: 'success',
         message: 'Item deleted successfully',
       });
-      fetchInventory();
+      fetchInventory(true);
     } catch (err) {
       setAlert({
         type: 'error',

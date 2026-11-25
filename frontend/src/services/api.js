@@ -7,28 +7,109 @@ const api = axios.create({
   },
 });
 
+// Client-Side In-Memory Cache (45-second TTL) for 0ms Section Switching & Navigation
+const clientCache = new Map();
+const CACHE_TTL_MS = 45 * 1000;
+
+export const clearApiCache = () => {
+  clientCache.clear();
+};
+
+export const invalidateApiCache = (keywords = []) => {
+  const keys = Array.isArray(keywords) ? keywords : [keywords];
+  for (const cacheKey of clientCache.keys()) {
+    for (const kw of keys) {
+      if (cacheKey.includes(kw)) {
+        clientCache.delete(cacheKey);
+        break;
+      }
+    }
+  }
+};
+
+const cachedGet = async (url, params = {}, forceRefresh = false) => {
+  const queryStr = Object.keys(params).sort().map(k => `${k}=${params[k]}`).join('&');
+  const cacheKey = `${url}?${queryStr}`;
+
+  if (!forceRefresh) {
+    const cached = clientCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return Promise.resolve({ data: cached.data, fromCache: true });
+    }
+  }
+
+  const res = await api.get(url, { params });
+  if (res.data) {
+    clientCache.set(cacheKey, {
+      timestamp: Date.now(),
+      data: res.data,
+    });
+  }
+  return res;
+};
+
 // Purchases
-export const getPurchases = (params) => api.get('/purchases', { params });
-export const createPurchase = (data) => api.post('/purchases', data);
-export const deletePurchase = (id) => api.delete(`/purchases/${id}`);
+export const getPurchases = (params, force = false) => cachedGet('/purchases', params, force);
+export const createPurchase = async (data) => {
+  const res = await api.post('/purchases', data);
+  invalidateApiCache(['purchases', 'inventory']);
+  return res;
+};
+export const deletePurchase = async (id) => {
+  const res = await api.delete(`/purchases/${id}`);
+  invalidateApiCache(['purchases', 'inventory']);
+  return res;
+};
 
 // Sales
-export const getSales = (params) => api.get('/sales', { params });
-export const createSale = (data) => api.post('/sales', data);
-export const deleteSale = (id) => api.delete(`/sales/${id}`);
+export const getSales = (params, force = false) => cachedGet('/sales', params, force);
+export const createSale = async (data) => {
+  const res = await api.post('/sales', data);
+  invalidateApiCache(['sales', 'inventory', 'invoices']);
+  return res;
+};
+export const deleteSale = async (id) => {
+  const res = await api.delete(`/sales/${id}`);
+  invalidateApiCache(['sales', 'inventory', 'invoices']);
+  return res;
+};
 
 // Inventory
-export const getInventory = (params) => api.get('/inventory', { params });
-export const createInventoryItem = (data) => api.post('/inventory', data);
-export const updateInventoryItem = (id, data) => api.put(`/inventory/${id}`, data);
-export const deleteInventoryItem = (id) => api.delete(`/inventory/${id}`);
+export const getInventory = (params, force = false) => cachedGet('/inventory', params, force);
+export const createInventoryItem = async (data) => {
+  const res = await api.post('/inventory', data);
+  invalidateApiCache(['inventory', 'sales']);
+  return res;
+};
+export const updateInventoryItem = async (id, data) => {
+  const res = await api.put(`/inventory/${id}`, data);
+  invalidateApiCache(['inventory', 'sales']);
+  return res;
+};
+export const deleteInventoryItem = async (id) => {
+  const res = await api.delete(`/inventory/${id}`);
+  invalidateApiCache(['inventory', 'sales']);
+  return res;
+};
 
 // Invoices
-export const getInvoices = (params) => api.get('/invoices', { params });
-export const createInvoice = (data) => api.post('/invoices', data);
-export const updateInvoice = (id, data) => api.put(`/invoices/${id}`, data);
+export const getInvoices = (params, force = false) => cachedGet('/invoices', params, force);
+export const createInvoice = async (data) => {
+  const res = await api.post('/invoices', data);
+  invalidateApiCache(['invoices']);
+  return res;
+};
+export const updateInvoice = async (id, data) => {
+  const res = await api.put(`/invoices/${id}`, data);
+  invalidateApiCache(['invoices']);
+  return res;
+};
 export const getInvoiceById = (id) => api.get(`/invoices/${id}`);
-export const deleteInvoice = (id) => api.delete(`/invoices/${id}`);
+export const deleteInvoice = async (id) => {
+  const res = await api.delete(`/invoices/${id}`);
+  invalidateApiCache(['invoices']);
+  return res;
+};
 
 // Auto-retry on transient database reconnection, proxy glitches, or temporary network hiccup
 api.interceptors.response.use(

@@ -29,15 +29,10 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
 
   const [formErrors, setFormErrors] = useState({});
 
-  const fetchPurchases = async () => {
+  const fetchPurchases = async (force = false) => {
     setLoading(true);
     try {
-      const res = await getPurchases({
-        sort: sortOrder,
-        search,
-        category: selectedCategory === 'All' ? '' : selectedCategory,
-        condition: selectedCondition === 'All' ? '' : selectedCondition,
-      });
+      const res = await getPurchases({ sort: sortOrder }, force);
       if (res.data && res.data.data) {
         setPurchases(res.data.data);
       }
@@ -53,7 +48,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
 
   useEffect(() => {
     fetchPurchases();
-  }, [sortOrder, search, selectedCategory, selectedCondition]);
+  }, [sortOrder]);
 
   const validateForm = () => {
     const errors = {};
@@ -108,7 +103,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
         price: '',
       });
       setShowAddForm(false);
-      fetchPurchases();
+      fetchPurchases(true);
       if (onPurchaseSuccess) onPurchaseSuccess();
     } catch (err) {
       setAlert({
@@ -126,7 +121,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
         type: 'success',
         message: 'Purchase deleted successfully',
       });
-      fetchPurchases();
+      fetchPurchases(true);
     } catch (err) {
       setAlert({
         type: 'error',

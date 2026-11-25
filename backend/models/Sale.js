@@ -67,6 +67,7 @@ const saleSchema = new mongoose.Schema(
 );
 
 saleSchema.index({ createdAt: -1 });
+saleSchema.index({ category: 1, condition: 1, createdAt: -1 });
 saleSchema.index({ customerNumber: 1 });
 saleSchema.index({ imei1: 1, imei2: 1 });
 

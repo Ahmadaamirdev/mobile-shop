@@ -63,6 +63,7 @@ const invoiceSchema = new mongoose.Schema(
   }
 );
 
-invoiceSchema.index({ date: -1 });
+invoiceSchema.index({ date: -1, createdAt: -1 });
+invoiceSchema.index({ condition: 1 });
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

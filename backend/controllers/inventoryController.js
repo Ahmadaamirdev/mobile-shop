@@ -27,7 +27,7 @@ exports.getInventory = async (req, res, next) => {
       ];
     }
 
-    const inventory = await Inventory.find(query).sort({ updatedAt: -1 });
+    const inventory = await Inventory.find(query).sort({ updatedAt: -1 }).lean();
 
     return res.status(200).json({
       success: true,
@@ -43,7 +43,7 @@ exports.getInventory = async (req, res, next) => {
 // @route   GET /api/inventory/:id
 exports.getInventoryById = async (req, res, next) => {
   try {
-    const item = await Inventory.findById(req.params.id);
+    const item = await Inventory.findById(req.params.id).lean();
     if (!item) {
       return res.status(404).json({
         success: false,
@@ -132,7 +132,7 @@ exports.updateInventoryItem = async (req, res, next) => {
   try {
     const { modelName, modelNumber, companyName, quantity, price, imeis, category, condition } = req.body;
 
-    const item = await Inventory.findById(req.params.id);
+    const item = await Inventory.findById(req.params.id).lean();
     if (!item) {
       return res.status(404).json({
         success: false,

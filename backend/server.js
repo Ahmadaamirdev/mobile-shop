@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const { connectDB, closeDB, ensureDBConnected, poolOptions } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const { cacheMiddleware, autoInvalidateMiddleware } = require('./middleware/cache');
 
 // Load environment variables
 dotenv.config();
@@ -55,6 +56,10 @@ app.get(['/api', '/'], (req, res, next) => {
 // Middleware: Ensure database pool is active before running CRUD operations
 app.use('/api', ensureDBConnected);
 app.use(ensureDBConnected);
+
+// Middleware: Fast in-memory caching for GETs & instant invalidation on mutations
+app.use('/api', autoInvalidateMiddleware);
+app.use('/api', cacheMiddleware);
 
 // API Routes (mounted with both /api and without for complete serverless rewrite support)
 app.use(['/api/purchases', '/purchases'], require('./routes/purchaseRoutes'));

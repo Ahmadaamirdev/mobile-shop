@@ -26,12 +26,12 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
 
   const [formErrors, setFormErrors] = useState({});
 
-  const fetchSalesAndInventory = async () => {
+  const fetchSalesAndInventory = async (force = false) => {
     setLoading(true);
     try {
       const [salesRes, invRes] = await Promise.all([
-        getSales({ search }),
-        getInventory(),
+        getSales({}, force),
+        getInventory({}, force),
       ]);
       if (salesRes.data && salesRes.data.data) {
         setSales(salesRes.data.data);
@@ -51,7 +51,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
 
   useEffect(() => {
     fetchSalesAndInventory();
-  }, [search]);
+  }, []);
 
   const handleSelectInventoryItem = (e) => {
     const selectedId = e.target.value;
@@ -134,7 +134,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
         price: '',
       });
       setShowAddForm(false);
-      fetchSalesAndInventory();
+      fetchSalesAndInventory(true);
       if (onSaleSuccess) onSaleSuccess();
     } catch (err) {
       setAlert({
@@ -152,7 +152,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
         type: 'success',
         message: 'Sale deleted successfully',
       });
-      fetchSalesAndInventory();
+      fetchSalesAndInventory(true);
       if (onSaleSuccess) onSaleSuccess();
     } catch (err) {
       setAlert({

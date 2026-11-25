@@ -53,8 +53,10 @@ const inventorySchema = new mongoose.Schema(
   }
 );
 
-// Unique compound index so a model and condition is tracked cleanly
+// Compound indexes for high-speed queries and sorting
 inventorySchema.index({ modelName: 1, modelNumber: 1, condition: 1 }, { unique: true });
+inventorySchema.index({ quantity: 1, updatedAt: -1 });
+inventorySchema.index({ category: 1, condition: 1 });
 inventorySchema.index({ 'imeis': 1 });
 
 module.exports = mongoose.model('Inventory', inventorySchema);

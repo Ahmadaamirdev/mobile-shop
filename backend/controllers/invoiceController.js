@@ -126,7 +126,7 @@ exports.getInvoices = async (req, res, next) => {
       ];
     }
 
-    const invoices = await Invoice.find(query).sort({ date: -1, createdAt: -1 });
+    const invoices = await Invoice.find(query).sort({ date: -1, createdAt: -1 }).lean();
 
     return res.status(200).json({
       success: true,
@@ -142,7 +142,7 @@ exports.getInvoices = async (req, res, next) => {
 // @route   GET /api/invoices/:id
 exports.getInvoiceById = async (req, res, next) => {
   try {
-    const invoice = await Invoice.findById(req.params.id);
+    const invoice = await Invoice.findById(req.params.id).lean();
     if (!invoice) {
       return res.status(404).json({
         success: false,

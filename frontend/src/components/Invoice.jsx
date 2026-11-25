@@ -46,10 +46,10 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
     }
   }, [initialSale]);
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (force = false) => {
     setLoadingHistory(true);
     try {
-      const res = await getInvoices({ search: historySearch });
+      const res = await getInvoices({}, force);
       if (res.data && res.data.data) {
         setInvoices(res.data.data);
       }
@@ -65,7 +65,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
 
   useEffect(() => {
     fetchHistory();
-  }, [viewMode, historySearch]);
+  }, [viewMode]);
 
   const filteredInvoices = invoices.filter((item) => {
     if (!historySearch.trim()) return true;
@@ -90,7 +90,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
         type: 'success',
         message: 'Invoice deleted successfully',
       });
-      fetchHistory();
+      fetchHistory(true);
     } catch (err) {
       setAlert({
         type: 'error',
@@ -154,7 +154,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
           message: 'Invoice generated successfully',
         });
       }
-      fetchHistory();
+      fetchHistory(true);
       return saved || invoiceData;
     } catch (err) {
       console.error('Save invoice error:', err);

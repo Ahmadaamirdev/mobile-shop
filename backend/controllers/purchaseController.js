@@ -143,7 +143,7 @@ exports.getPurchases = async (req, res, next) => {
     }
 
     const sortOrder = sort === 'oldest' ? 1 : -1;
-    const purchases = await Purchase.find(query).sort({ createdAt: sortOrder });
+    const purchases = await Purchase.find(query).sort({ createdAt: sortOrder }).lean();
 
     return res.status(200).json({
       success: true,
@@ -159,7 +159,7 @@ exports.getPurchases = async (req, res, next) => {
 // @route   GET /api/purchases/:id
 exports.getPurchaseById = async (req, res, next) => {
   try {
-    const purchase = await Purchase.findById(req.params.id);
+    const purchase = await Purchase.findById(req.params.id).lean();
     if (!purchase) {
       return res.status(404).json({
         success: false,
@@ -179,7 +179,7 @@ exports.getPurchaseById = async (req, res, next) => {
 // @route   DELETE /api/purchases/:id
 exports.deletePurchase = async (req, res, next) => {
   try {
-    const purchase = await Purchase.findById(req.params.id);
+    const purchase = await Purchase.findById(req.params.id).lean();
     if (!purchase) {
       return res.status(404).json({
         success: false,

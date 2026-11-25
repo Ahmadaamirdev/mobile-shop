@@ -142,7 +142,7 @@ exports.getSales = async (req, res, next) => {
       ];
     }
 
-    const sales = await Sale.find(query).sort({ createdAt: -1 });
+    const sales = await Sale.find(query).sort({ createdAt: -1 }).lean();
 
     return res.status(200).json({
       success: true,
@@ -158,7 +158,7 @@ exports.getSales = async (req, res, next) => {
 // @route   GET /api/sales/:id
 exports.getSaleById = async (req, res, next) => {
   try {
-    const sale = await Sale.findById(req.params.id);
+    const sale = await Sale.findById(req.params.id).lean();
     if (!sale) {
       return res.status(404).json({
         success: false,
@@ -178,7 +178,7 @@ exports.getSaleById = async (req, res, next) => {
 // @route   DELETE /api/sales/:id
 exports.deleteSale = async (req, res, next) => {
   try {
-    const sale = await Sale.findById(req.params.id);
+    const sale = await Sale.findById(req.params.id).lean();
     if (!sale) {
       return res.status(404).json({
         success: false,
