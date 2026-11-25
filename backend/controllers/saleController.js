@@ -7,6 +7,7 @@ exports.createSale = async (req, res, next) => {
   try {
     const {
       category = 'Mobile',
+      condition,
       modelName,
       modelNumber = '',
       customerName,
@@ -45,6 +46,9 @@ exports.createSale = async (req, res, next) => {
     if (modelNumber && modelNumber.trim()) {
       inventoryQuery.modelNumber = { $regex: new RegExp(`^${modelNumber.trim()}$`, 'i') };
     }
+    if (condition && condition.trim()) {
+      inventoryQuery.condition = condition.trim();
+    }
 
     const inventoryItem = await Inventory.findOne(inventoryQuery);
 
@@ -72,6 +76,7 @@ exports.createSale = async (req, res, next) => {
     // Create Sale
     const sale = await Sale.create({
       category: inventoryItem.category || category,
+      condition: condition || inventoryItem.condition || 'New',
       modelName: inventoryItem.modelName,
       modelNumber: inventoryItem.modelNumber || modelNumber.trim(),
       customerName: customerName.trim(),
@@ -111,18 +116,29 @@ exports.createSale = async (req, res, next) => {
 // @route   GET /api/sales
 exports.getSales = async (req, res, next) => {
   try {
-    const { search = '' } = req.query;
+    const { search = '', category = '', condition = '' } = req.query;
 
     const query = {};
+
+    if (category && category !== 'All') {
+      query.category = category;
+    }
+
+    if (condition && condition !== 'All') {
+      query.condition = condition;
+    }
+
     if (search.trim()) {
       const term = search.trim();
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { modelName: { $regex: term, $options: 'i' } },
-        { modelNumber: { $regex: term, $options: 'i' } },
-        { customerName: { $regex: term, $options: 'i' } },
-        { customerNumber: { $regex: term, $options: 'i' } },
-        { imei1: { $regex: term, $options: 'i' } },
-        { imei2: { $regex: term, $options: 'i' } },
+        { modelName: { $regex: escaped, $options: 'i' } },
+        { modelNumber: { $regex: escaped, $options: 'i' } },
+        { customerName: { $regex: escaped, $options: 'i' } },
+        { customerNumber: { $regex: escaped, $options: 'i' } },
+        { condition: { $regex: escaped, $options: 'i' } },
+        { imei1: { $regex: escaped, $options: 'i' } },
+        { imei2: { $regex: escaped, $options: 'i' } },
       ];
     }
 
@@ -162,7 +178,7 @@ exports.getSaleById = async (req, res, next) => {
 // @route   DELETE /api/sales/:id
 exports.deleteSale = async (req, res, next) => {
   try {
-    const sale = await Sale.findByIdAndDelete(req.params.id);
+    const sale = await Sale.findById(req.params.id);
     if (!sale) {
       return res.status(404).json({
         success: false,
@@ -170,10 +186,17 @@ exports.deleteSale = async (req, res, next) => {
       });
     }
 
-    // Restore stock to inventory
-    let inventoryItem = await Inventory.findOne({
+    // Restore stock to inventory with exact condition and model matching
+    const condition = sale.condition || 'New';
+    const inventoryQuery = {
       modelName: { $regex: new RegExp(`^${sale.modelName.trim()}$`, 'i') },
-    });
+      condition: condition,
+    };
+    if (sale.modelNumber && sale.modelNumber.trim()) {
+      inventoryQuery.modelNumber = { $regex: new RegExp(`^${sale.modelNumber.trim()}$`, 'i') };
+    }
+
+    let inventoryItem = await Inventory.findOne(inventoryQuery);
 
     if (inventoryItem) {
       inventoryItem.quantity += 1;
@@ -186,14 +209,18 @@ exports.deleteSale = async (req, res, next) => {
       await inventoryItem.save();
     } else {
       await Inventory.create({
-        category: sale.category,
-        modelName: sale.modelName,
-        modelNumber: sale.modelNumber || '',
+        category: sale.category || 'Mobile',
+        condition: condition,
+        modelName: sale.modelName.trim(),
+        modelNumber: sale.modelNumber ? sale.modelNumber.trim() : 'N/A',
         quantity: 1,
         price: sale.price,
         imeis: [sale.imei1, sale.imei2].filter(Boolean),
       });
     }
+
+    // Safely delete sale document after inventory restoration succeeds
+    await Sale.findByIdAndDelete(req.params.id);
 
     return res.status(200).json({
       success: true,

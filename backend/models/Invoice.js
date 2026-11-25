@@ -37,6 +37,11 @@ const invoiceSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    condition: {
+      type: String,
+      enum: ['New', 'Used'],
+      default: 'New',
+    },
     imei1: {
       type: String,
       trim: true,

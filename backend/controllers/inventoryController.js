@@ -4,20 +4,26 @@ const Inventory = require('../models/Inventory');
 // @route   GET /api/inventory
 exports.getInventory = async (req, res, next) => {
   try {
-    const { search = '', category = '' } = req.query;
+    const { search = '', category = '', condition = '' } = req.query;
 
     const query = { quantity: { $gt: 0 } };
     if (category && category !== 'All') {
       query.category = category;
     }
 
+    if (condition && condition !== 'All') {
+      query.condition = condition;
+    }
+
     if (search.trim()) {
       const term = search.trim();
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { modelName: { $regex: term, $options: 'i' } },
-        { modelNumber: { $regex: term, $options: 'i' } },
-        { companyName: { $regex: term, $options: 'i' } },
-        { imeis: { $regex: term, $options: 'i' } },
+        { modelName: { $regex: escaped, $options: 'i' } },
+        { modelNumber: { $regex: escaped, $options: 'i' } },
+        { companyName: { $regex: escaped, $options: 'i' } },
+        { condition: { $regex: escaped, $options: 'i' } },
+        { imeis: { $regex: escaped, $options: 'i' } },
       ];
     }
 
@@ -59,6 +65,7 @@ exports.createInventoryItem = async (req, res, next) => {
   try {
     const {
       category = 'Mobile',
+      condition = 'New',
       companyName = '',
       modelName,
       modelNumber,
@@ -74,10 +81,11 @@ exports.createInventoryItem = async (req, res, next) => {
       });
     }
 
-    // Check if item already exists
+    // Check if item already exists with matching model and condition
     let item = await Inventory.findOne({
       modelName: { $regex: new RegExp(`^${modelName.trim()}$`, 'i') },
       modelNumber: { $regex: new RegExp(`^${modelNumber.trim()}$`, 'i') },
+      condition: condition === 'Used' ? 'Used' : 'New',
     });
 
     // Validate any IMEIs in list
@@ -98,6 +106,7 @@ exports.createInventoryItem = async (req, res, next) => {
     } else {
       item = await Inventory.create({
         category,
+        condition: condition === 'Used' ? 'Used' : 'New',
         companyName: companyName.trim(),
         modelName: modelName.trim(),
         modelNumber: modelNumber.trim(),
@@ -121,7 +130,7 @@ exports.createInventoryItem = async (req, res, next) => {
 // @route   PUT /api/inventory/:id
 exports.updateInventoryItem = async (req, res, next) => {
   try {
-    const { modelName, modelNumber, companyName, quantity, price, imeis, category } = req.body;
+    const { modelName, modelNumber, companyName, quantity, price, imeis, category, condition } = req.body;
 
     const item = await Inventory.findById(req.params.id);
     if (!item) {
@@ -132,6 +141,7 @@ exports.updateInventoryItem = async (req, res, next) => {
     }
 
     if (category) item.category = category;
+    if (condition) item.condition = condition;
     if (modelName) item.modelName = modelName.trim();
     if (modelNumber) item.modelNumber = modelNumber.trim();
     if (companyName !== undefined) item.companyName = companyName.trim();

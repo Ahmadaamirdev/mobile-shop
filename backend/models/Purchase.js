@@ -21,6 +21,11 @@ const purchaseSchema = new mongoose.Schema(
       default: 'Mobile',
       required: true,
     },
+    condition: {
+      type: String,
+      enum: ['New', 'Used'],
+      default: 'New',
+    },
     companyName: {
       type: String,
       required: [true, 'Company name is required'],

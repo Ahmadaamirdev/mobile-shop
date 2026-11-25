@@ -8,6 +8,11 @@ const inventorySchema = new mongoose.Schema(
       required: [true, 'Category is required'],
       default: 'Mobile',
     },
+    condition: {
+      type: String,
+      enum: ['New', 'Used'],
+      default: 'New',
+    },
     companyName: {
       type: String,
       trim: true,
@@ -48,8 +53,8 @@ const inventorySchema = new mongoose.Schema(
   }
 );
 
-// Unique compound index so a model is tracked cleanly
-inventorySchema.index({ modelName: 1, modelNumber: 1 }, { unique: true });
+// Unique compound index so a model and condition is tracked cleanly
+inventorySchema.index({ modelName: 1, modelNumber: 1, condition: 1 }, { unique: true });
 inventorySchema.index({ 'imeis': 1 });
 
 module.exports = mongoose.model('Inventory', inventorySchema);

@@ -1,18 +1,26 @@
 const Invoice = require('../models/Invoice');
 const Sale = require('../models/Sale');
 
-// Helper to generate next invoice number (e.g. UM-1001)
+// Helper to generate next unique invoice number (e.g. UM-1001)
 const generateInvoiceNumber = async () => {
   const latestInvoice = await Invoice.findOne().sort({ createdAt: -1 });
-  if (!latestInvoice || !latestInvoice.invoiceNumber) {
-    return 'UM-1001';
+  let nextNum = 1001;
+  if (latestInvoice && latestInvoice.invoiceNumber) {
+    const match = latestInvoice.invoiceNumber.match(/UM-(\d+)/);
+    if (match) {
+      nextNum = parseInt(match[1], 10) + 1;
+    }
   }
-  const match = latestInvoice.invoiceNumber.match(/UM-(\d+)/);
-  if (match) {
-    const nextNum = parseInt(match[1], 10) + 1;
-    return `UM-${nextNum}`;
+
+  let candidate = `UM-${nextNum}`;
+  let exists = await Invoice.findOne({ invoiceNumber: candidate });
+  while (exists) {
+    nextNum += 1;
+    candidate = `UM-${nextNum}`;
+    exists = await Invoice.findOne({ invoiceNumber: candidate });
   }
-  return `UM-${Date.now()}`;
+
+  return candidate;
 };
 
 // @desc    Generate new invoice (manual entry OR autofilled from sale)
@@ -25,6 +33,7 @@ exports.createInvoice = async (req, res, next) => {
       customerNumber,
       modelName,
       modelNumber = '',
+      condition = 'New',
       imei1 = '',
       imei2 = '',
       price,
@@ -36,6 +45,7 @@ exports.createInvoice = async (req, res, next) => {
       customerNumber,
       modelName,
       modelNumber,
+      condition,
       imei1,
       imei2,
       price: price !== undefined ? Number(price) : undefined,
@@ -57,6 +67,7 @@ exports.createInvoice = async (req, res, next) => {
       invoiceDetails.customerNumber = customerNumber || sale.customerNumber;
       invoiceDetails.modelName = modelName || sale.modelName;
       invoiceDetails.modelNumber = modelNumber || sale.modelNumber;
+      invoiceDetails.condition = condition || sale.condition || 'New';
       invoiceDetails.imei1 = imei1 !== undefined && imei1 !== '' ? imei1 : (sale.imei1 || '');
       invoiceDetails.imei2 = imei2 !== undefined && imei2 !== '' ? imei2 : (sale.imei2 || '');
       // Price can be edited by user, or default to sale price
@@ -92,17 +103,26 @@ exports.createInvoice = async (req, res, next) => {
 // @route   GET /api/invoices
 exports.getInvoices = async (req, res, next) => {
   try {
-    const { search = '' } = req.query;
+    const { search = '', condition = '' } = req.query;
 
     const query = {};
+
+    if (condition && condition !== 'All') {
+      query.condition = condition;
+    }
+
     if (search.trim()) {
       const term = search.trim();
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { invoiceNumber: { $regex: term, $options: 'i' } },
-        { customerName: { $regex: term, $options: 'i' } },
-        { customerNumber: { $regex: term, $options: 'i' } },
-        { modelName: { $regex: term, $options: 'i' } },
-        { imei1: { $regex: term, $options: 'i' } },
+        { invoiceNumber: { $regex: escaped, $options: 'i' } },
+        { customerName: { $regex: escaped, $options: 'i' } },
+        { customerNumber: { $regex: escaped, $options: 'i' } },
+        { modelName: { $regex: escaped, $options: 'i' } },
+        { modelNumber: { $regex: escaped, $options: 'i' } },
+        { condition: { $regex: escaped, $options: 'i' } },
+        { imei1: { $regex: escaped, $options: 'i' } },
+        { imei2: { $regex: escaped, $options: 'i' } },
       ];
     }
 
@@ -132,6 +152,74 @@ exports.getInvoiceById = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: invoice,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update existing invoice record
+// @route   PUT /api/invoices/:id
+exports.updateInvoice = async (req, res, next) => {
+  try {
+    const {
+      customerName,
+      customerNumber,
+      modelName,
+      modelNumber,
+      condition,
+      imei1,
+      imei2,
+      price,
+      date,
+    } = req.body;
+
+    let invoice = await Invoice.findById(req.params.id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice record not found.',
+      });
+    }
+
+    if (customerName !== undefined) {
+      if (!customerName.trim()) {
+        return res.status(400).json({ success: false, message: 'Customer name is required.' });
+      }
+      invoice.customerName = customerName.trim();
+    }
+    if (customerNumber !== undefined) {
+      if (!customerNumber.trim()) {
+        return res.status(400).json({ success: false, message: 'Customer phone number is required.' });
+      }
+      invoice.customerNumber = customerNumber.trim();
+    }
+    if (modelName !== undefined) {
+      if (!modelName.trim()) {
+        return res.status(400).json({ success: false, message: 'Device model name is required.' });
+      }
+      invoice.modelName = modelName.trim();
+    }
+    if (modelNumber !== undefined) invoice.modelNumber = modelNumber.trim();
+    if (condition !== undefined) invoice.condition = condition;
+    if (imei1 !== undefined) invoice.imei1 = imei1.trim();
+    if (imei2 !== undefined) invoice.imei2 = imei2.trim();
+    if (price !== undefined && price !== '') {
+      if (isNaN(price) || Number(price) < 0) {
+        return res.status(400).json({ success: false, message: 'Valid price is required.' });
+      }
+      invoice.price = Number(price);
+    }
+    if (date) {
+      invoice.date = new Date(date);
+    }
+
+    const updatedInvoice = await invoice.save();
+
+    return res.status(200).json({
+      success: true,
+      data: updatedInvoice,
+      message: 'Invoice updated successfully.',
     });
   } catch (error) {
     next(error);

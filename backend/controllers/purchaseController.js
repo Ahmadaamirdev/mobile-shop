@@ -7,6 +7,7 @@ exports.createPurchase = async (req, res, next) => {
   try {
     const {
       category = 'Mobile',
+      condition = 'New',
       companyName,
       modelName,
       modelNumber,
@@ -45,6 +46,7 @@ exports.createPurchase = async (req, res, next) => {
     // Create Purchase Record
     const purchase = await Purchase.create({
       category,
+      condition: condition === 'Used' ? 'Used' : 'New',
       companyName: companyName ? companyName.trim() : '',
       modelName: modelName.trim(),
       modelNumber: modelNumber.trim(),
@@ -58,10 +60,11 @@ exports.createPurchase = async (req, res, next) => {
     });
 
     // Automatically sync with Inventory:
-    // Match by modelName and modelNumber (case-insensitive regex)
+    // Match by modelName, modelNumber, and condition (case-insensitive regex)
     let inventoryItem = await Inventory.findOne({
       modelName: { $regex: new RegExp(`^${modelName.trim()}$`, 'i') },
       modelNumber: { $regex: new RegExp(`^${modelNumber.trim()}$`, 'i') },
+      condition: condition === 'Used' ? 'Used' : 'New',
     });
 
     const imeisToAdd = [];
@@ -85,6 +88,7 @@ exports.createPurchase = async (req, res, next) => {
       // Create new inventory item
       inventoryItem = await Inventory.create({
         category,
+        condition: condition === 'Used' ? 'Used' : 'New',
         companyName: companyName ? companyName.trim() : '',
         modelName: modelName.trim(),
         modelNumber: modelNumber.trim(),
@@ -109,22 +113,32 @@ exports.createPurchase = async (req, res, next) => {
 // @route   GET /api/purchases
 exports.getPurchases = async (req, res, next) => {
   try {
-    const { sort = 'newest', search = '' } = req.query;
+    const { sort = 'newest', search = '', category = '', condition = '' } = req.query;
 
     const query = {};
 
+    if (category && category !== 'All') {
+      query.category = category;
+    }
+
+    if (condition && condition !== 'All') {
+      query.condition = condition;
+    }
+
     if (search.trim()) {
       const term = search.trim();
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { modelName: { $regex: term, $options: 'i' } },
-        { modelNumber: { $regex: term, $options: 'i' } },
-        { companyName: { $regex: term, $options: 'i' } },
-        { customerName: { $regex: term, $options: 'i' } },
-        { customerPhone: { $regex: term, $options: 'i' } },
-        { customerIdCard: { $regex: term, $options: 'i' } },
-        { imei1: { $regex: term, $options: 'i' } },
-        { imei2: { $regex: term, $options: 'i' } },
-        { serialNumber: { $regex: term, $options: 'i' } },
+        { modelName: { $regex: escaped, $options: 'i' } },
+        { modelNumber: { $regex: escaped, $options: 'i' } },
+        { companyName: { $regex: escaped, $options: 'i' } },
+        { customerName: { $regex: escaped, $options: 'i' } },
+        { customerPhone: { $regex: escaped, $options: 'i' } },
+        { customerIdCard: { $regex: escaped, $options: 'i' } },
+        { condition: { $regex: escaped, $options: 'i' } },
+        { imei1: { $regex: escaped, $options: 'i' } },
+        { imei2: { $regex: escaped, $options: 'i' } },
+        { serialNumber: { $regex: escaped, $options: 'i' } },
       ];
     }
 
@@ -161,17 +175,48 @@ exports.getPurchaseById = async (req, res, next) => {
   }
 };
 
-// @desc    Delete purchase record
+// @desc    Delete purchase record and sync inventory stock
 // @route   DELETE /api/purchases/:id
 exports.deletePurchase = async (req, res, next) => {
   try {
-    const purchase = await Purchase.findByIdAndDelete(req.params.id);
+    const purchase = await Purchase.findById(req.params.id);
     if (!purchase) {
       return res.status(404).json({
         success: false,
         message: 'Purchase record not found.',
       });
     }
+
+    // Automatically sync inventory: reduce stock by 1 and remove IMEIs
+    const condition = purchase.condition || 'New';
+    const inventoryQuery = {
+      modelName: { $regex: new RegExp(`^${purchase.modelName.trim()}$`, 'i') },
+      condition: condition,
+    };
+    if (purchase.modelNumber && purchase.modelNumber.trim()) {
+      inventoryQuery.modelNumber = { $regex: new RegExp(`^${purchase.modelNumber.trim()}$`, 'i') };
+    }
+
+    const inventoryItem = await Inventory.findOne(inventoryQuery);
+    if (inventoryItem) {
+      inventoryItem.quantity = Math.max(0, inventoryItem.quantity - 1);
+      if (purchase.imei1) {
+        inventoryItem.imeis = inventoryItem.imeis.filter((im) => im !== purchase.imei1.trim());
+      }
+      if (purchase.imei2) {
+        inventoryItem.imeis = inventoryItem.imeis.filter((im) => im !== purchase.imei2.trim());
+      }
+
+      if (inventoryItem.quantity <= 0 && (!inventoryItem.imeis || inventoryItem.imeis.length === 0)) {
+        await Inventory.findByIdAndDelete(inventoryItem._id);
+      } else {
+        await inventoryItem.save();
+      }
+    }
+
+    // Safely delete purchase record after inventory sync
+    await Purchase.findByIdAndDelete(req.params.id);
+
     return res.status(200).json({
       success: true,
       message: 'Purchase record deleted successfully.',

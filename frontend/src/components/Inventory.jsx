@@ -7,11 +7,13 @@ const Inventory = ({ setAlert }) => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCondition, setSelectedCondition] = useState('All'); // 'All' | 'New' | 'Used'
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Manual addition form state
   const [formData, setFormData] = useState({
     category: 'Mobile',
+    condition: 'New',
     companyName: '',
     modelName: '',
     modelNumber: '',
@@ -24,6 +26,7 @@ const Inventory = ({ setAlert }) => {
     try {
       const res = await getInventory({
         category: selectedCategory === 'All' ? '' : selectedCategory,
+        condition: selectedCondition === 'All' ? '' : selectedCondition,
         search,
       });
       if (res.data && res.data.data) {
@@ -41,7 +44,23 @@ const Inventory = ({ setAlert }) => {
 
   useEffect(() => {
     fetchInventory();
-  }, [selectedCategory, search]);
+  }, [selectedCategory, selectedCondition, search]);
+
+  const filteredInventory = inventory.filter((item) => {
+    const categoryMatch = selectedCategory === 'All' || item.category?.toLowerCase() === selectedCategory.toLowerCase();
+    const conditionMatch = selectedCondition === 'All' || (item.condition || 'New').toLowerCase() === selectedCondition.toLowerCase();
+    if (!search.trim()) return categoryMatch && conditionMatch;
+    const term = search.trim().toLowerCase();
+    const searchMatch = (
+      item.modelName?.toLowerCase().includes(term) ||
+      item.modelNumber?.toLowerCase().includes(term) ||
+      item.companyName?.toLowerCase().includes(term) ||
+      item.category?.toLowerCase().includes(term) ||
+      (item.condition || 'New').toLowerCase().includes(term) ||
+      (item.imeis && item.imeis.some((im) => im.toLowerCase().includes(term)))
+    );
+    return categoryMatch && conditionMatch && searchMatch;
+  });
 
   const handleManualAdd = async (e) => {
     e.preventDefault();
@@ -65,6 +84,7 @@ const Inventory = ({ setAlert }) => {
       });
       setFormData({
         category: 'Mobile',
+        condition: 'New',
         companyName: '',
         modelName: '',
         modelNumber: '',
@@ -123,19 +143,42 @@ const Inventory = ({ setAlert }) => {
           </div>
         </div>
 
-        {/* Toolbar: Category Filters on Left, Search Input on Right */}
-        <div className="panel-toolbar-row">
-          <div className="panel-filter-pills">
-            {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
-              </button>
-            ))}
+        {/* Toolbar: Category Filters on Left, Subfilter for Condition, Search on Right */}
+        <div className="panel-toolbar-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* Primary Category Filter Pills */}
+            <div className="panel-filter-pills">
+              {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
+                </button>
+              ))}
+            </div>
+
+            <div className="filter-divider hide-on-mobile" />
+
+            {/* Subfilter: Device Condition (All / New / Used) */}
+            <div className="subfilter-group panel-filter-pills">
+              {[
+                { id: 'All', label: 'All Condition' },
+                { id: 'New', label: 'New', pillClass: 'pill-new' },
+                { id: 'Used', label: 'Used', pillClass: 'pill-used' },
+              ].map((cond) => (
+                <button
+                  key={cond.id}
+                  type="button"
+                  className={`filter-pill ${cond.pillClass || ''} ${selectedCondition === cond.id ? 'active' : 'inactive'}`}
+                  onClick={() => setSelectedCondition(cond.id)}
+                >
+                  {cond.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -169,6 +212,17 @@ const Inventory = ({ setAlert }) => {
                   <option value="Mobile">Mobile</option>
                   <option value="Tablet">Tablet</option>
                   <option value="Accessory">Accessory</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label>Device Condition *</label>
+                <select
+                  value={formData.condition}
+                  onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                >
+                  <option value="New">Brand New</option>
+                  <option value="Used">Used / Second Hand</option>
                 </select>
               </div>
 
@@ -265,12 +319,12 @@ const Inventory = ({ setAlert }) => {
                 <tr>
                   <td colSpan="7" className="empty-state">Loading inventory...</td>
                 </tr>
-              ) : inventory.length === 0 ? (
+              ) : filteredInventory.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="empty-state">No items found in stock.</td>
+                  <td colSpan="7" className="empty-state">No items found matching the selected filters.</td>
                 </tr>
               ) : (
-                inventory.map((item) => (
+                filteredInventory.map((item) => (
                   <tr key={item._id}>
                     {/* Category */}
                     <td>
@@ -285,7 +339,12 @@ const Inventory = ({ setAlert }) => {
                     {/* Model */}
                     <td>
                       <span className="cell-title">{item.modelName}</span>
-                      <span className="cell-sub">{item.modelNumber}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px' }}>
+                        <span className="cell-sub">{item.modelNumber}</span>
+                        <span className={`cell-badge ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`}>
+                          {item.condition || 'New'}
+                        </span>
+                      </div>
                     </td>
 
                     {/* Stock Status */}
@@ -345,10 +404,10 @@ const Inventory = ({ setAlert }) => {
         <div className="show-on-mobile mobile-card-container">
           {loading ? (
             <div className="empty-state">Loading inventory...</div>
-          ) : inventory.length === 0 ? (
-            <div className="empty-state">No items in inventory.</div>
+          ) : filteredInventory.length === 0 ? (
+            <div className="empty-state">No items found matching the selected filters.</div>
           ) : (
-            inventory.map((item) => (
+            filteredInventory.map((item) => (
               <div key={item._id} className="mobile-card">
                 <div className="mobile-card-top">
                   <div>
@@ -362,8 +421,13 @@ const Inventory = ({ setAlert }) => {
 
                 <div className="mobile-card-meta-grid">
                   <div className="mobile-meta-cell">
-                    <div className="mobile-meta-label">Category</div>
-                    <div className="mobile-meta-val">{item.category}</div>
+                    <div className="mobile-meta-label">Category / Condition</div>
+                    <div className="mobile-meta-val" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>{item.category}</span>
+                      <span className={`cell-badge ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`}>
+                        {item.condition || 'New'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="mobile-meta-cell">

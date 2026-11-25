@@ -14,6 +14,11 @@ const saleSchema = new mongoose.Schema(
       default: 'Mobile',
       required: true,
     },
+    condition: {
+      type: String,
+      enum: ['New', 'Used'],
+      default: 'New',
+    },
     modelName: {
       type: String,
       required: [true, 'Model name is required'],

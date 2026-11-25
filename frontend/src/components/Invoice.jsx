@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { getInvoices, createInvoice, deleteInvoice } from '../services/api';
-import { Trash2, Printer, Search, FileText, Download } from 'lucide-react';
+import { getInvoices, createInvoice, updateInvoice, deleteInvoice } from '../services/api';
+import { Trash2, Printer, Search, FileText, Download, Edit3, Plus, Check } from 'lucide-react';
 
 const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   const [viewMode, setViewMode] = useState('generator'); // 'generator' | 'history'
@@ -9,8 +8,8 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
 
-  // Invoice current document data
-  const [invoiceData, setInvoiceData] = useState({
+  const initialFormState = {
+    _id: null,
     saleId: null,
     invoiceNumber: '',
     date: new Date().toISOString().split('T')[0],
@@ -18,10 +17,14 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
     customerNumber: '',
     modelName: '',
     modelNumber: '',
+    condition: 'New',
     imei1: '',
     imei2: '',
     price: '',
-  });
+  };
+
+  // Invoice current document data
+  const [invoiceData, setInvoiceData] = useState(initialFormState);
 
   // When initialSale is passed from Sales tab "Generate Invoice"
   useEffect(() => {
@@ -34,6 +37,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
         customerNumber: initialSale.customerNumber || '',
         modelName: initialSale.modelName || '',
         modelNumber: initialSale.modelNumber || '',
+        condition: initialSale.condition || 'New',
         imei1: initialSale.imei1 || '',
         imei2: initialSale.imei2 || '',
         price: initialSale.price !== undefined ? initialSale.price : '',
@@ -60,10 +64,23 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   };
 
   useEffect(() => {
-    if (viewMode === 'history') {
-      fetchHistory();
-    }
+    fetchHistory();
   }, [viewMode, historySearch]);
+
+  const filteredInvoices = invoices.filter((item) => {
+    if (!historySearch.trim()) return true;
+    const term = historySearch.trim().toLowerCase();
+    return (
+      item.invoiceNumber?.toLowerCase().includes(term) ||
+      item.customerName?.toLowerCase().includes(term) ||
+      item.customerNumber?.toLowerCase().includes(term) ||
+      item.modelName?.toLowerCase().includes(term) ||
+      item.modelNumber?.toLowerCase().includes(term) ||
+      item.condition?.toLowerCase().includes(term) ||
+      item.imei1?.toLowerCase().includes(term) ||
+      item.imei2?.toLowerCase().includes(term)
+    );
+  });
 
   const handleDeleteInvoice = async (id, invoiceNumber) => {
     if (!window.confirm(`Are you sure you want to delete invoice ${invoiceNumber}?`)) return;
@@ -83,30 +100,77 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   };
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleDownloadPDF = async () => {
-    // 1. If not already assigned an invoice number, auto-save first so it gets a real UM-XXXX number
-    let currentInvoiceNum = invoiceData.invoiceNumber;
+  // Automatically save or update invoice in records
+  const saveInvoiceRecord = async () => {
     if (
-      !currentInvoiceNum &&
-      invoiceData.customerName?.trim() &&
-      invoiceData.customerNumber?.trim() &&
-      invoiceData.modelName?.trim() &&
-      invoiceData.price !== ''
+      !invoiceData.customerName?.trim() ||
+      !invoiceData.customerNumber?.trim() ||
+      !invoiceData.modelName?.trim() ||
+      invoiceData.price === '' ||
+      invoiceData.price === undefined
     ) {
-      try {
-        const res = await createInvoice(invoiceData);
-        if (res.data?.data?.invoiceNumber) {
-          currentInvoiceNum = res.data.data.invoiceNumber;
+      setAlert({
+        type: 'error',
+        message: 'Please fill in Customer Name, Phone, Model Name, and Sale Price.',
+      });
+      return null;
+    }
+
+    setIsSaving(true);
+    try {
+      let saved;
+      if (invoiceData._id) {
+        // Update existing invoice record in database
+        const res = await updateInvoice(invoiceData._id, invoiceData);
+        saved = res.data?.data;
+        if (saved) {
           setInvoiceData((prev) => ({
             ...prev,
-            invoiceNumber: currentInvoiceNum,
+            ...saved,
+            date: saved.date ? new Date(saved.date).toISOString().split('T')[0] : prev.date,
           }));
         }
-      } catch (err) {
-        // Proceed even if background save encounters issue
+        setAlert({
+          type: 'success',
+          message: 'Invoice updated successfully',
+        });
+      } else {
+        // Generate and save new invoice record in database
+        const res = await createInvoice(invoiceData);
+        saved = res.data?.data;
+        if (saved) {
+          setInvoiceData((prev) => ({
+            ...prev,
+            _id: saved._id,
+            invoiceNumber: saved.invoiceNumber,
+            date: saved.date ? new Date(saved.date).toISOString().split('T')[0] : prev.date,
+          }));
+        }
+        // Requirement: "pop up should be on top left invoice generated successfully."
+        setAlert({
+          type: 'success',
+          message: 'Invoice generated successfully',
+        });
       }
+      fetchHistory();
+      return saved || invoiceData;
+    } catch (err) {
+      console.error('Save invoice error:', err);
+      setAlert({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to save invoice record.',
+      });
+      return null;
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleDownloadPDF = async () => {
+    const saved = await saveInvoiceRecord();
+    if (!saved) return;
 
     const element = document.querySelector('.a4-sheet');
     if (!element) return;
@@ -116,10 +180,11 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
       const html2pdfModule = await import('html2pdf.js');
       const html2pdf = html2pdfModule.default || html2pdfModule;
 
+      const currentInvoiceNum = saved.invoiceNumber || invoiceData.invoiceNumber || 'Draft';
       const safeCustomer = invoiceData.customerName
         ? invoiceData.customerName.replace(/[^a-zA-Z0-9]/g, '_')
         : 'Customer';
-      const filename = `Invoice_${currentInvoiceNum || 'Draft'}_${safeCustomer}.pdf`;
+      const filename = `Invoice_${currentInvoiceNum}_${safeCustomer}.pdf`;
 
       const opt = {
         margin: [6, 6, 6, 6],
@@ -130,10 +195,6 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
       };
 
       await html2pdf().set(opt).from(element).save();
-      setAlert({
-        type: 'success',
-        message: 'Invoice PDF downloaded successfully!',
-      });
     } catch (error) {
       console.error('PDF Generation Error:', error);
       setAlert({
@@ -146,31 +207,48 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
   };
 
   const handlePrint = async () => {
-    // If not already assigned an invoice number, auto-save so it is tracked in billing history
-    if (
-      !invoiceData.invoiceNumber &&
-      invoiceData.customerName?.trim() &&
-      invoiceData.customerNumber?.trim() &&
-      invoiceData.modelName?.trim() &&
-      invoiceData.price !== ''
-    ) {
-      try {
-        const res = await createInvoice(invoiceData);
-        if (res.data?.data?.invoiceNumber) {
-          setInvoiceData((prev) => ({
-            ...prev,
-            invoiceNumber: res.data.data.invoiceNumber,
-          }));
-        }
-      } catch (err) {
-        // Proceed to print dialog even if auto-record encounters network issue
-      }
-    }
-    window.print();
+    const saved = await saveInvoiceRecord();
+    if (!saved) return;
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
+
+  const handleStartNewInvoice = () => {
+    setInvoiceData(initialFormState);
+    if (clearInitialSale) clearInitialSale();
+    setAlert({
+      type: 'success',
+      message: 'New invoice initialized',
+    });
+  };
+
+  const handleEditFromHistory = (item) => {
+    setInvoiceData({
+      _id: item._id,
+      saleId: item.saleId || null,
+      invoiceNumber: item.invoiceNumber,
+      date: item.date ? new Date(item.date).toISOString().split('T')[0] : '',
+      customerName: item.customerName || '',
+      customerNumber: item.customerNumber || '',
+      modelName: item.modelName || '',
+      modelNumber: item.modelNumber || '',
+      condition: item.condition || 'New',
+      imei1: item.imei1 || '',
+      imei2: item.imei2 || '',
+      price: item.price !== undefined ? item.price : '',
+    });
+    setViewMode('generator');
+    setAlert({
+      type: 'success',
+      message: `Editing invoice ${item.invoiceNumber}`,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleLoadFromHistory = (item) => {
     setInvoiceData({
+      _id: item._id,
       saleId: item.saleId || null,
       invoiceNumber: item.invoiceNumber,
       date: item.date ? new Date(item.date).toISOString().split('T')[0] : '',
@@ -178,6 +256,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
       customerNumber: item.customerNumber,
       modelName: item.modelName,
       modelNumber: item.modelNumber || '',
+      condition: item.condition || 'New',
       imei1: item.imei1 || '',
       imei2: item.imei2 || '',
       price: item.price,
@@ -220,7 +299,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
         {viewMode === 'history' && (
           <div className="panel-toolbar-row">
             <div style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>
-              Showing {invoices.length} billing history record{invoices.length === 1 ? '' : 's'}
+              Showing {filteredInvoices.length} billing history record{filteredInvoices.length === 1 ? '' : 's'}
             </div>
             <div className="panel-search-box">
               <Search size={14} className="search-icon" />
@@ -256,12 +335,12 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                   <tr>
                     <td colSpan="7" className="empty-state">Loading invoice history...</td>
                   </tr>
-                ) : invoices.length === 0 ? (
+                ) : filteredInvoices.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="empty-state">No invoice records found.</td>
                   </tr>
                 ) : (
-                  invoices.map((item) => (
+                  filteredInvoices.map((item) => (
                     <tr key={item._id}>
                       {/* Invoice No */}
                       <td>
@@ -289,7 +368,12 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
 
                       {/* Model */}
                       <td>
-                        <span className="cell-title">{item.modelName}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="cell-title">{item.modelName}</span>
+                          <span className={`status-badge ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
+                            {item.condition || 'New'}
+                          </span>
+                        </div>
                         {item.modelNumber && <span className="cell-sub">{item.modelNumber}</span>}
                       </td>
 
@@ -306,9 +390,17 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                           <button
                             className="action-btn-primary"
                             onClick={() => handleLoadFromHistory(item)}
-                            title="View / Print Invoice"
+                            title="View & Print Invoice"
                           >
                             <Printer size={12} />
+                          </button>
+                          <button
+                            className="action-btn-primary"
+                            style={{ background: '#f1f5f9', color: '#1e293b', border: '1px solid var(--border-card)' }}
+                            onClick={() => handleEditFromHistory(item)}
+                            title="Edit Invoice"
+                          >
+                            <Edit3 size={12} />
                           </button>
                           <button
                             className="action-btn-danger"
@@ -330,10 +422,10 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
           <div className="show-on-mobile mobile-card-container">
             {loadingHistory ? (
               <div className="empty-state">Loading invoice history...</div>
-            ) : invoices.length === 0 ? (
+            ) : filteredInvoices.length === 0 ? (
               <div className="empty-state">No invoice records found.</div>
             ) : (
-              invoices.map((item) => (
+              filteredInvoices.map((item) => (
                 <div key={item._id} className="mobile-card">
                   <div className="mobile-card-top">
                     <div>
@@ -357,7 +449,12 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
 
                     <div className="mobile-meta-cell">
                       <div className="mobile-meta-label">Model</div>
-                      <div className="mobile-meta-val">{item.modelName}</div>
+                      <div className="mobile-meta-val" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>{item.modelName}</span>
+                        <span className={`status-badge ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '9px', padding: '1px 5px' }}>
+                          {item.condition || 'New'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -366,7 +463,13 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                       className="btn-primary"
                       onClick={() => handleLoadFromHistory(item)}
                     >
-                      <Printer size={13} /> View &amp; Print
+                      <Printer size={13} /> View
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => handleEditFromHistory(item)}
+                    >
+                      <Edit3 size={13} /> Edit
                     </button>
                     <button
                       className="action-btn-danger"
@@ -386,9 +489,37 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
         <div>
           {/* Editable Fields Form Card */}
           <div className="card-form hide-on-print">
-            <div className="card-form-title">
-              <span>Invoice Editor (Modifications reflect instantly on preview below)</span>
+            <div className="card-form-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <span>
+                {invoiceData._id
+                  ? `Editing Invoice: ${invoiceData.invoiceNumber || 'Saved Record'}`
+                  : 'Invoice Editor (Modifications reflect instantly on preview below)'}
+              </span>
+              {invoiceData._id && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ height: '30px', fontSize: '12px', padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  onClick={handleStartNewInvoice}
+                  title="Clear form and create a new invoice"
+                >
+                  <Plus size={13} /> Create New Instead
+                </button>
+              )}
             </div>
+
+            {/* Editing Notice Banner */}
+            {invoiceData._id && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', padding: '10px 14px', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: '#92400e' }}>
+                  <Edit3 size={15} />
+                  <span>Editing Mode: Invoice #{invoiceData.invoiceNumber}</span>
+                </div>
+                <span style={{ fontSize: '12px', color: '#b45309', fontWeight: 500 }}>
+                  Clicking Print or Download PDF will automatically update this record.
+                </span>
+              </div>
+            )}
             <div className="form-grid-3">
               <div className="form-field">
                 <label>Customer Full Name *</label>
@@ -404,7 +535,6 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                 <label>Customer Phone Number *</label>
                 <input
                   type="text"
-                  placeholder="e.g. 03001234567"
                   value={invoiceData.customerNumber}
                   onChange={(e) => setInvoiceData({ ...invoiceData, customerNumber: e.target.value })}
                 />
@@ -428,6 +558,17 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                   value={invoiceData.modelNumber}
                   onChange={(e) => setInvoiceData({ ...invoiceData, modelNumber: e.target.value })}
                 />
+              </div>
+
+              <div className="form-field">
+                <label>Device Condition *</label>
+                <select
+                  value={invoiceData.condition || 'New'}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, condition: e.target.value })}
+                >
+                  <option value="New">Brand New</option>
+                  <option value="Used">Used / Pre-Owned</option>
+                </select>
               </div>
 
               <div className="form-field">
@@ -480,8 +621,8 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                   <img src="/logo.jpg" alt="Unity Mobile" className="invoice-brand-logo" />
                   <div className="invoice-brand-title">
                     <h2>UNITY MOBILE</h2>
-                    <p>Shop #14, Rehma Center, Kachery Road, Multan</p>
-                    <p>Phone: +92 300 1234567 • Email: support@unitymobile.pk</p>
+                    <p>Shop Number 14, Rehma Center, Kachery Road, Multan</p>
+                    <p>Phone: 03326421749</p>
                   </div>
                 </div>
 
@@ -502,7 +643,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
 
                 <div className="invoice-col">
                   <h4>DEVICE &amp; SALE INFO</h4>
-                  <p><strong>Model:</strong> {invoiceData.modelName || '—'} {invoiceData.modelNumber ? `(${invoiceData.modelNumber})` : ''}</p>
+                  <p><strong>Model:</strong> {invoiceData.modelName || '—'} {invoiceData.modelNumber ? `(${invoiceData.modelNumber})` : ''} {invoiceData.condition ? `[${invoiceData.condition}]` : ''}</p>
                   {invoiceData.imei1 && <p><strong>IMEI 1:</strong> {invoiceData.imei1}</p>}
                   {invoiceData.imei2 && <p><strong>IMEI 2:</strong> {invoiceData.imei2}</p>}
                 </div>
@@ -522,7 +663,7 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
                   <tr>
                     <td>1</td>
                     <td>
-                      <strong>{invoiceData.modelName || 'Device Sale'}</strong>
+                      <strong>{invoiceData.modelName || 'Device Sale'} {invoiceData.condition ? `(${invoiceData.condition})` : ''}</strong>
                       {invoiceData.modelNumber && <div style={{ fontSize: '12px', color: '#555' }}>Model: {invoiceData.modelNumber}</div>}
                       {invoiceData.imei1 && <div style={{ fontSize: '11px', color: '#666', fontFamily: 'JetBrains Mono' }}>IMEI: {invoiceData.imei1}</div>}
                       {invoiceData.imei2 && <div style={{ fontSize: '11px', color: '#666', fontFamily: 'JetBrains Mono' }}>IMEI 2: {invoiceData.imei2}</div>}
@@ -563,31 +704,40 @@ const Invoice = ({ initialSale, clearInitialSale, setAlert }) => {
             </div>
           </div>
 
-          {/* Floating Action Buttons Sticking Firmly at Bottom Right (Rendered to body via Portal so they NEVER scroll) */}
-          {typeof document !== 'undefined' && createPortal(
-            <div className="floating-invoice-actions hide-on-print">
-              <button
-                type="button"
-                className="btn-secondary floating-btn"
-                onClick={handleDownloadPDF}
-                disabled={isGeneratingPDF}
-                title="Download Invoice as PDF document"
-              >
-                <Download size={16} />
-                <span>{isGeneratingPDF ? 'Generating...' : 'Download PDF'}</span>
-              </button>
-              <button
-                type="button"
-                className="btn-primary floating-btn"
-                onClick={handlePrint}
-                title="Print A4 Invoice"
-              >
-                <Printer size={16} />
-                <span>Print A4 Invoice</span>
-              </button>
-            </div>,
-            document.body
-          )}
+          {/* Action Buttons Firmly Below Invoice Preview */}
+          <div className="invoice-bottom-actions hide-on-print">
+            <button
+              type="button"
+              className="btn-primary action-btn-lg"
+              style={{ background: '#16a34a', borderColor: '#15803d' }}
+              onClick={saveInvoiceRecord}
+              disabled={isSaving}
+              title={invoiceData._id ? 'Save modifications to database' : 'Save invoice to database'}
+            >
+              <Check size={16} />
+              <span>{isSaving ? 'Saving...' : invoiceData._id ? 'Save Updates' : 'Save Record'}</span>
+            </button>
+            <button
+              type="button"
+              className="btn-secondary action-btn-lg"
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPDF || isSaving}
+              title="Download Invoice as PDF document"
+            >
+              <Download size={16} />
+              <span>{isGeneratingPDF ? 'Generating...' : 'Download PDF'}</span>
+            </button>
+            <button
+              type="button"
+              className="btn-primary action-btn-lg"
+              onClick={handlePrint}
+              disabled={isSaving}
+              title="Print A4 Invoice"
+            >
+              <Printer size={16} />
+              <span>Print A4 Invoice</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

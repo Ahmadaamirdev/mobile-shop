@@ -8,11 +8,13 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState('newest');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCondition, setSelectedCondition] = useState('All'); // 'All' | 'New' | 'Used'
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
     category: 'Mobile',
+    condition: 'New',
     companyName: '',
     modelName: '',
     modelNumber: '',
@@ -30,7 +32,12 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
   const fetchPurchases = async () => {
     setLoading(true);
     try {
-      const res = await getPurchases({ sort: sortOrder, search });
+      const res = await getPurchases({
+        sort: sortOrder,
+        search,
+        category: selectedCategory === 'All' ? '' : selectedCategory,
+        condition: selectedCondition === 'All' ? '' : selectedCondition,
+      });
       if (res.data && res.data.data) {
         setPurchases(res.data.data);
       }
@@ -46,7 +53,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
 
   useEffect(() => {
     fetchPurchases();
-  }, [sortOrder, search]);
+  }, [sortOrder, search, selectedCategory, selectedCondition]);
 
   const validateForm = () => {
     const errors = {};
@@ -88,6 +95,7 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
       });
       setFormData({
         category: 'Mobile',
+        condition: 'New',
         companyName: '',
         modelName: '',
         modelNumber: '',
@@ -128,8 +136,23 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
   };
 
   const filteredPurchases = purchases.filter((item) => {
-    if (selectedCategory === 'All') return true;
-    return item.category?.toLowerCase() === selectedCategory.toLowerCase();
+    const categoryMatch = selectedCategory === 'All' || item.category?.toLowerCase() === selectedCategory.toLowerCase();
+    const conditionMatch = selectedCondition === 'All' || (item.condition || 'New').toLowerCase() === selectedCondition.toLowerCase();
+    if (!search.trim()) return categoryMatch && conditionMatch;
+    const term = search.trim().toLowerCase();
+    const searchMatch = (
+      item.modelName?.toLowerCase().includes(term) ||
+      item.modelNumber?.toLowerCase().includes(term) ||
+      item.companyName?.toLowerCase().includes(term) ||
+      item.customerName?.toLowerCase().includes(term) ||
+      item.customerPhone?.toLowerCase().includes(term) ||
+      item.customerIdCard?.toLowerCase().includes(term) ||
+      item.imei1?.toLowerCase().includes(term) ||
+      item.imei2?.toLowerCase().includes(term) ||
+      item.serialNumber?.toLowerCase().includes(term) ||
+      (item.condition || 'New').toLowerCase().includes(term)
+    );
+    return categoryMatch && conditionMatch && searchMatch;
   });
 
   return (
@@ -157,19 +180,42 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
           </div>
         </div>
 
-        {/* Toolbar: Category Filters on Left, Search Input on Right */}
-        <div className="panel-toolbar-row">
-          <div className="panel-filter-pills">
-            {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
-              </button>
-            ))}
+        {/* Toolbar: Category Filters on Left, Subfilter for Condition, Search on Right */}
+        <div className="panel-toolbar-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* Primary Category Filter Pills */}
+            <div className="panel-filter-pills">
+              {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
+                </button>
+              ))}
+            </div>
+
+            <div className="filter-divider hide-on-mobile" />
+
+            {/* Subfilter: Device Condition (All / New / Used) */}
+            <div className="subfilter-group panel-filter-pills">
+              {[
+                { id: 'All', label: 'All Condition' },
+                { id: 'New', label: 'New', pillClass: 'pill-new' },
+                { id: 'Used', label: 'Used', pillClass: 'pill-used' },
+              ].map((cond) => (
+                <button
+                  key={cond.id}
+                  type="button"
+                  className={`filter-pill ${cond.pillClass || ''} ${selectedCondition === cond.id ? 'active' : 'inactive'}`}
+                  onClick={() => setSelectedCondition(cond.id)}
+                >
+                  {cond.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -203,6 +249,17 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                   <option value="Mobile">Mobile</option>
                   <option value="Tablet">Tablet</option>
                   <option value="Accessory">Accessory</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label>Device Condition *</label>
+                <select
+                  value={formData.condition}
+                  onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                >
+                  <option value="New">Brand New</option>
+                  <option value="Used">Used / Second Hand</option>
                 </select>
               </div>
 
@@ -406,9 +463,12 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
                     {/* Brand & Category */}
                     <td>
                       <span className="cell-title">{item.companyName}</span>
-                      <span className="cell-sub">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
                         <span className="cell-badge badge-gray">{item.category}</span>
-                      </span>
+                        <span className={`cell-badge ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`}>
+                          {item.condition || 'New'}
+                        </span>
+                      </div>
                     </td>
 
                     {/* IMEI & Serial (Parallel Grid) */}
@@ -497,8 +557,13 @@ const Purchases = ({ onPurchaseSuccess, setAlert }) => {
 
                 <div className="mobile-card-meta-grid">
                   <div className="mobile-meta-cell">
-                    <div className="mobile-meta-label">Category</div>
-                    <div className="mobile-meta-val">{item.category}</div>
+                    <div className="mobile-meta-label">Category / Condition</div>
+                    <div className="mobile-meta-val" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>{item.category}</span>
+                      <span className={`cell-badge ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`}>
+                        {item.condition || 'New'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="mobile-meta-cell">

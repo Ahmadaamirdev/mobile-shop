@@ -8,11 +8,13 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCondition, setSelectedCondition] = useState('All');
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
     category: 'Mobile',
+    condition: 'New',
     modelName: '',
     modelNumber: '',
     customerName: '',
@@ -60,6 +62,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
       setFormData((prev) => ({
         ...prev,
         category: item.category || 'Mobile',
+        condition: item.condition || 'New',
         modelName: item.modelName,
         modelNumber: item.modelNumber,
         price: item.price || '',
@@ -72,6 +75,9 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
   const matchedInventoryItem = inventoryList.find((item) => {
     const nameMatch = item.modelName.trim().toLowerCase() === formData.modelName.trim().toLowerCase();
     if (!nameMatch) return false;
+    if (formData.condition && item.condition && item.condition !== formData.condition) {
+      return false;
+    }
     if (formData.modelNumber && formData.modelNumber.trim() && item.modelNumber) {
       return item.modelNumber.trim().toLowerCase() === formData.modelNumber.trim().toLowerCase();
     }
@@ -118,6 +124,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
       });
       setFormData({
         category: 'Mobile',
+        condition: 'New',
         modelName: '',
         modelNumber: '',
         customerName: '',
@@ -129,13 +136,6 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
       setShowAddForm(false);
       fetchSalesAndInventory();
       if (onSaleSuccess) onSaleSuccess();
-
-      // Offer immediate invoice generation
-      if (res.data && res.data.data && onOpenInvoice) {
-        if (window.confirm('Sale recorded! Would you like to generate and print an invoice for this sale now?')) {
-          onOpenInvoice(res.data.data);
-        }
-      }
     } catch (err) {
       setAlert({
         type: 'error',
@@ -163,8 +163,21 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
   };
 
   const filteredSales = sales.filter((item) => {
-    if (selectedCategory === 'All') return true;
-    return item.category?.toLowerCase() === selectedCategory.toLowerCase();
+    const categoryMatch = selectedCategory === 'All' || item.category?.toLowerCase() === selectedCategory.toLowerCase();
+    const conditionMatch = selectedCondition === 'All' || (item.condition || 'New').toLowerCase() === selectedCondition.toLowerCase();
+    if (!search.trim()) return categoryMatch && conditionMatch;
+    const term = search.trim().toLowerCase();
+    const searchMatch = (
+      item.modelName?.toLowerCase().includes(term) ||
+      item.modelNumber?.toLowerCase().includes(term) ||
+      item.category?.toLowerCase().includes(term) ||
+      item.customerName?.toLowerCase().includes(term) ||
+      item.customerNumber?.toLowerCase().includes(term) ||
+      item.imei1?.toLowerCase().includes(term) ||
+      item.imei2?.toLowerCase().includes(term) ||
+      (item.condition || 'New').toLowerCase().includes(term)
+    );
+    return categoryMatch && conditionMatch && searchMatch;
   });
 
   return (
@@ -192,19 +205,42 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
           </div>
         </div>
 
-        {/* Toolbar: Category Filters on Left, Search Input on Right */}
-        <div className="panel-toolbar-row">
-          <div className="panel-filter-pills">
-            {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
-              </button>
-            ))}
+        {/* Toolbar: Category Filters on Left, Subfilter for Condition, Search on Right */}
+        <div className="panel-toolbar-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* Primary Category Filter Pills */}
+            <div className="panel-filter-pills">
+              {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
+                </button>
+              ))}
+            </div>
+
+            <div className="filter-divider hide-on-mobile" />
+
+            {/* Subfilter: Device Condition (All / New / Used) */}
+            <div className="subfilter-group panel-filter-pills">
+              {[
+                { id: 'All', label: 'All Condition' },
+                { id: 'New', label: 'New', pillClass: 'pill-new' },
+                { id: 'Used', label: 'Used', pillClass: 'pill-used' },
+              ].map((cond) => (
+                <button
+                  key={cond.id}
+                  type="button"
+                  className={`filter-pill ${cond.pillClass || ''} ${selectedCondition === cond.id ? 'active' : 'inactive'}`}
+                  onClick={() => setSelectedCondition(cond.id)}
+                >
+                  {cond.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -243,7 +279,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                 .filter((inv) => inv.quantity > 0)
                 .map((inv) => (
                   <option key={inv._id} value={inv._id}>
-                    {inv.modelName} ({inv.modelNumber}) - Stock: {inv.quantity} - PKR {Number(inv.price).toLocaleString()}
+                    {inv.modelName} ({inv.modelNumber}) [{inv.condition || 'New'}] - Stock: {inv.quantity} - PKR {Number(inv.price).toLocaleString()}
                   </option>
                 ))}
             </select>
@@ -260,6 +296,17 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
                   <option value="Mobile">Mobile</option>
                   <option value="Tablet">Tablet</option>
                   <option value="Accessory">Accessory</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label>Condition *</label>
+                <select
+                  value={formData.condition}
+                  onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                >
+                  <option value="New">Brand New</option>
+                  <option value="Used">Used / Pre-Owned</option>
                 </select>
               </div>
 
@@ -408,7 +455,12 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
 
                     {/* Device */}
                     <td>
-                      <span className="cell-title">{item.modelName}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className="cell-title">{item.modelName}</span>
+                        <span className={`status-badge ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
+                          {item.condition || 'New'}
+                        </span>
+                      </div>
                       <span className="cell-sub">{item.modelNumber} • {item.category}</span>
                     </td>
 
@@ -486,7 +538,12 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
               <div key={item._id} className="mobile-card">
                 <div className="mobile-card-top">
                   <div>
-                    <div className="mobile-card-title">{item.modelName}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="mobile-card-title">{item.modelName}</span>
+                      <span className={`status-badge ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
+                        {item.condition || 'New'}
+                      </span>
+                    </div>
                     <div className="mobile-card-subtitle">{item.modelNumber} • {item.category}</div>
                   </div>
                   <div className="mobile-card-price">
