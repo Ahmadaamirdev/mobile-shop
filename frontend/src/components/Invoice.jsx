@@ -1123,43 +1123,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
             </div>
           )}
 
-          {/* Action Buttons — above invoice preview on desktop, below on mobile via CSS */}
-          <div className="invoice-bottom-actions hide-on-print" style={{ marginBottom: '12px' }}>
-            {viewMode === 'generator' && (
-              <button
-                type="button"
-                className="btn-primary action-btn-lg"
-                style={{ background: '#16a34a', borderColor: '#15803d' }}
-                onClick={() => saveInvoiceRecord({ switchToHistory: true })}
-                disabled={isSaving}
-                title={invoiceData._id ? 'Save modifications to database' : 'Save invoice to database'}
-              >
-                <Check size={16} />
-                <span>{isSaving ? 'Saving...' : invoiceData._id ? 'Save' : 'Save'}</span>
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn-secondary action-btn-lg"
-              onClick={handleDownloadPDF}
-              disabled={isGeneratingPDF || isSaving}
-              title="Download Invoice as PDF document"
-            >
-              <Download size={16} />
-              <span>{isGeneratingPDF ? 'PDF...' : 'Download PDF'}</span>
-            </button>
-            <button
-              type="button"
-              className="btn-primary action-btn-lg"
-              onClick={handlePrint}
-              disabled={isSaving}
-              title="Print A4 Invoice"
-            >
-              <Printer size={16} />
-              <span>Print</span>
-            </button>
-          </div>
-
           {/* Centered A4 Printable Sheet */}
           <div className="invoice-preview-container">
             <div className="a4-sheet">
@@ -1257,6 +1220,43 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Action Buttons at Bottom of Invoice */}
+          <div className="invoice-bottom-actions hide-on-print" style={{ marginTop: '16px' }}>
+            {viewMode === 'generator' && (
+              <button
+                type="button"
+                className="btn-primary action-btn-lg"
+                style={{ background: '#16a34a', borderColor: '#15803d' }}
+                onClick={() => saveInvoiceRecord({ switchToHistory: true })}
+                disabled={isSaving}
+                title={invoiceData._id ? 'Save modifications to database' : 'Save invoice to database'}
+              >
+                <Check size={16} />
+                <span>{isSaving ? 'Saving...' : invoiceData._id ? 'Save' : 'Save'}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-secondary action-btn-lg"
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPDF || isSaving}
+              title="Download Invoice as PDF document"
+            >
+              <Download size={16} />
+              <span>{isGeneratingPDF ? 'PDF...' : 'Download PDF'}</span>
+            </button>
+            <button
+              type="button"
+              className="btn-primary action-btn-lg"
+              onClick={handlePrint}
+              disabled={isSaving}
+              title="Print A4 Invoice"
+            >
+              <Printer size={16} />
+              <span>Print</span>
+            </button>
           </div>
         </div>
       )}
