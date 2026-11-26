@@ -443,41 +443,100 @@ samp {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.date-sort-select {
+.date-range-single-wrapper {
+  position: relative;
+}
+
+.date-range-single-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   height: 36px;
-  padding: 0 10px;
+  min-width: 210px;
+  padding: 0 12px;
   font-size: 12.5px;
   font-weight: 500;
+  color: #334155;
+  background-color: #ffffff;
   border: 1px solid var(--border-card);
   border-radius: 8px;
-  background-color: #ffffff;
-  color: #0f172a;
-  outline: none;
   cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
 }
 
-.date-range-inputs {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+.date-range-single-box:hover {
+  border-color: #cbd5e1;
 }
 
-.date-input-wrap {
-  display: flex;
+.date-range-single-box.has-value {
+  border-color: var(--brand-black);
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.date-range-icon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.date-range-label {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date-range-chevron {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.date-range-inline-clear {
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 36px;
-  padding: 0 8px;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #dc2626;
+  background: #fef2f2;
+  flex-shrink: 0;
+}
+
+.date-range-inline-clear:hover {
+  background: #fee2e2;
+}
+
+.date-range-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  width: 310px;
+  padding: 12px;
+  background: #ffffff;
   border: 1px solid var(--border-card);
-  border-radius: 8px;
-  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
 }
 
-.date-input-label {
+.date-range-popover-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.date-popover-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.date-popover-field label {
   font-size: 11px;
   font-weight: 600;
   color: #64748b;
@@ -485,29 +544,61 @@ samp {
 }
 
 .date-filter-input {
-  border: none;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--border-card);
+  border-radius: 7px;
   outline: none;
-  font-size: 12.5px;
+  font-size: 12px;
   color: #0f172a;
-  background: transparent;
+  background: #f8fafc;
   font-family: inherit;
 }
 
+.date-filter-input:focus {
+  border-color: var(--brand-black);
+  background: #ffffff;
+}
+
+.date-range-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-card);
+}
+
 .date-clear-btn {
-  height: 36px;
-  padding: 0 10px;
+  height: 32px;
+  padding: 0 12px;
   font-size: 12px;
   font-weight: 600;
   color: #dc2626;
   background: #fef2f2;
   border: 1px solid #fecaca;
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .date-clear-btn:hover {
   background: #fee2e2;
+}
+
+.date-done-btn {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--brand-black);
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .panel-filter-pills {
@@ -1678,42 +1769,33 @@ samp {
   }
 
   .date-filter-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
     width: 100%;
   }
 
-  .date-sort-select {
+  .date-range-single-wrapper {
+    width: 100%;
+  }
+
+  .date-range-single-box {
     width: 100%;
     height: 40px;
     font-size: 13px;
   }
 
-  .date-range-inputs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  .date-range-popover {
+    left: 0;
+    right: 0;
     width: 100%;
   }
 
-  .date-input-wrap {
-    width: 100%;
-    min-width: 0;
-    height: 40px;
-    padding: 0 8px;
+  .date-range-popover-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
   .date-filter-input {
-    width: 100%;
-    min-width: 0;
+    height: 40px;
     font-size: 12px;
-  }
-
-  .date-clear-btn {
-    grid-column: 1 / -1;
-    width: 100%;
-    height: 38px;
   }
 
   /* Form Panels on Mobile */

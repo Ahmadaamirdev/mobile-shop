@@ -18,6 +18,7 @@ import {
   Phone,
 } from 'lucide-react';
 import DetailModal from './DetailModal';
+import DateRangeFilter from './DateRangeFilter';
 
 /**
  * Client-side Canvas Image Compression
@@ -600,46 +601,13 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="date-filter-controls">
-                <select
-                  className="date-sort-select"
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value)}
-                  aria-label="Sort purchases"
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                </select>
-                <div className="date-range-inputs">
-                  <div className="date-input-wrap">
-                    <span className="date-input-label">From</span>
-                    <input
-                      type="date"
-                      className="date-filter-input"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      aria-label="From date"
-                    />
-                  </div>
-                  <div className="date-input-wrap">
-                    <span className="date-input-label">To</span>
-                    <input
-                      type="date"
-                      className="date-filter-input"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      aria-label="To date"
-                    />
-                  </div>
-                  {(startDate || endDate) && (
-                    <button
-                      type="button"
-                      className="date-clear-btn"
-                      onClick={() => { setStartDate(''); setEndDate(''); }}
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
+                <DateRangeFilter
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChangeStart={setStartDate}
+                  onChangeEnd={setEndDate}
+                  onClear={() => { setStartDate(''); setEndDate(''); }}
+                />
               </div>
             </div>
           </div>

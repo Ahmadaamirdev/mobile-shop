@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getInvoices, createInvoice, updateInvoice, deleteInvoice, getSales } from '../services/api';
 import { Trash2, Printer, Search, FileText, Download, Edit3, Plus, Check, Smartphone, Phone } from 'lucide-react';
 import SmartDropdown from './SmartDropdown';
+import DateRangeFilter from './DateRangeFilter';
 
 const emptyDevice = {
   modelName: '',
@@ -586,46 +587,13 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                 />
               </div>
               <div className="date-filter-controls">
-                <select
-                  className="date-sort-select"
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value)}
-                  aria-label="Sort invoices"
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                </select>
-                <div className="date-range-inputs">
-                  <div className="date-input-wrap">
-                    <span className="date-input-label">From</span>
-                    <input
-                      type="date"
-                      className="date-filter-input"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      aria-label="From date"
-                    />
-                  </div>
-                  <div className="date-input-wrap">
-                    <span className="date-input-label">To</span>
-                    <input
-                      type="date"
-                      className="date-filter-input"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      aria-label="To date"
-                    />
-                  </div>
-                  {(startDate || endDate) && (
-                    <button
-                      type="button"
-                      className="date-clear-btn"
-                      onClick={() => { setStartDate(''); setEndDate(''); }}
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
+                <DateRangeFilter
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChangeStart={setStartDate}
+                  onChangeEnd={setEndDate}
+                  onClear={() => { setStartDate(''); setEndDate(''); }}
+                />
               </div>
             </div>
           </div>
