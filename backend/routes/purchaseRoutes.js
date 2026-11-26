@@ -5,11 +5,14 @@ const {
   getPurchases,
   getPurchaseById,
   deletePurchase,
+  uploadIdCard,
 } = require('../controllers/purchaseController');
 
 router.route('/')
   .post(createPurchase)
   .get(getPurchases);
+
+router.post('/upload-id', uploadIdCard);
 
 router.route('/:id')
   .get(getPurchaseById)

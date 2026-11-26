@@ -50,6 +50,7 @@ const cachedGet = async (url, params = {}, forceRefresh = false) => {
 
 // Purchases
 export const getPurchases = (params, force = false) => cachedGet('/purchases', params, force);
+export const uploadIdCard = (data) => api.post('/purchases/upload-id', data);
 export const createPurchase = async (data) => {
   const res = await api.post('/purchases', data);
   invalidateApiCache(['purchases', 'inventory']);
@@ -78,7 +79,7 @@ export const deleteSale = async (id) => {
 export const getInventory = (params, force = false) => cachedGet('/inventory', params, force);
 export const createInventoryItem = async (data) => {
   const res = await api.post('/inventory', data);
-  invalidateApiCache(['inventory', 'sales']);
+  invalidateApiCache(['inventory', 'sales', 'purchases']);
   return res;
 };
 export const updateInventoryItem = async (id, data) => {
@@ -96,18 +97,18 @@ export const deleteInventoryItem = async (id) => {
 export const getInvoices = (params, force = false) => cachedGet('/invoices', params, force);
 export const createInvoice = async (data) => {
   const res = await api.post('/invoices', data);
-  invalidateApiCache(['invoices']);
+  invalidateApiCache(['invoices', 'sales']);
   return res;
 };
 export const updateInvoice = async (id, data) => {
   const res = await api.put(`/invoices/${id}`, data);
-  invalidateApiCache(['invoices']);
+  invalidateApiCache(['invoices', 'sales']);
   return res;
 };
 export const getInvoiceById = (id) => api.get(`/invoices/${id}`);
 export const deleteInvoice = async (id) => {
   const res = await api.delete(`/invoices/${id}`);
-  invalidateApiCache(['invoices']);
+  invalidateApiCache(['invoices', 'sales']);
   return res;
 };
 
@@ -130,7 +131,7 @@ api.interceptors.response.use(
       errorMsg.includes('econnreset') ||
       errorMsg.includes('reconnect');
 
-    // Retry up to 2 times for transient network or 502/503/504 or transient DB connection errors
+    // Retry up to 4 times with exponential backoff for transient 502/503/504 or initial DB connection buffering
     const isTransient =
       !error.response ||
       error.response.status === 503 ||
@@ -138,9 +139,14 @@ api.interceptors.response.use(
       error.response.status === 504 ||
       (error.response.status === 500 && isDbConnectionIssue);
 
-    if (isTransient && config.__retryCount < 2) {
+    // Retry only safe GET requests (or 503 DB-warmup) to avoid duplicate POST writes
+    const method = (config.method || 'get').toLowerCase();
+    const isSafeToRetry = method === 'get' || error.response?.status === 503;
+
+    if (isTransient && isSafeToRetry && config.__retryCount < 4) {
       config.__retryCount += 1;
-      const delay = (config.__retryCount === 1 ? 700 : 1400);
+      const delays = [800, 1500, 2500, 3500];
+      const delay = delays[config.__retryCount - 1] || 2000;
       await new Promise((resolve) => setTimeout(resolve, delay));
       return api(config);
     }

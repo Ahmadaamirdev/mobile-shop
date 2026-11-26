@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { getSales, createSale, deleteSale, getInventory } from '../services/api';
-import { Trash2, FileText, Search, Plus, Tag } from 'lucide-react';
+import { Trash2, Search, Plus, Tag, Eye, Smartphone, User, Phone } from 'lucide-react';
+import SmartDropdown from './SmartDropdown';
+import DetailModal from './DetailModal';
 
-const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
+const emptySaleDevice = {
+  category: 'Mobile',
+  condition: 'New',
+  status: 'PTA',
+  modelName: '',
+  modelNumber: '',
+  imei1: '',
+  imei2: '',
+  price: '',
+};
+
+const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
   const [sales, setSales] = useState([]);
   const [inventoryList, setInventoryList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -10,18 +23,13 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCondition, setSelectedCondition] = useState('All');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [detailItem, setDetailItem] = useState(null);
 
-  // Form state
+  // Multi-device Form state
   const [formData, setFormData] = useState({
-    category: 'Mobile',
-    condition: 'New',
-    modelName: '',
-    modelNumber: '',
     customerName: '',
     customerNumber: '',
-    imei1: '',
-    imei2: '',
-    price: '',
+    items: [{ ...emptySaleDevice }],
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -53,60 +61,102 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
     fetchSalesAndInventory();
   }, []);
 
-  const handleSelectInventoryItem = (e) => {
-    const selectedId = e.target.value;
-    if (!selectedId) return;
+  useEffect(() => {
+    if (isActive) {
+      setShowAddForm(false);
+      fetchSalesAndInventory();
+    }
+  }, [isActive]);
 
+  const handleAddDeviceRow = () => {
+    setFormData((prev) => ({
+      ...prev,
+      items: [...prev.items, { ...emptySaleDevice }],
+    }));
+  };
+
+  const handleRemoveDeviceRow = (index) => {
+    if (formData.items.length <= 1) return;
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleDeviceChange = (index, field, value) => {
+    setFormData((prev) => {
+      const updated = [...prev.items];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, items: updated };
+    });
+  };
+
+  const handleSelectInventoryItem = (index, selectedId) => {
+    if (!selectedId) return;
     const item = inventoryList.find((inv) => inv._id === selectedId);
-    if (item) {
-      setFormData((prev) => ({
-        ...prev,
+    if (!item) return;
+
+    setFormData((prev) => {
+      const updated = [...prev.items];
+      updated[index] = {
+        ...updated[index],
         category: item.category || 'Mobile',
         condition: item.condition || 'New',
+        status: item.status || 'PTA',
         modelName: item.modelName,
-        modelNumber: item.modelNumber,
+        modelNumber: item.modelNumber || '',
         price: item.price || '',
         imei1: item.imeis && item.imeis.length > 0 ? item.imeis[0] : '',
         imei2: item.imeis && item.imeis.length > 1 ? item.imeis[1] : '',
-      }));
-    }
+      };
+      return { ...prev, items: updated };
+    });
   };
 
-  const matchedInventoryItem = inventoryList.find((item) => {
-    const nameMatch = item.modelName.trim().toLowerCase() === formData.modelName.trim().toLowerCase();
-    if (!nameMatch) return false;
-    if (formData.condition && item.condition && item.condition !== formData.condition) {
-      return false;
-    }
-    if (formData.modelNumber && formData.modelNumber.trim() && item.modelNumber) {
-      return item.modelNumber.trim().toLowerCase() === formData.modelNumber.trim().toLowerCase();
-    }
-    return true;
-  });
+  const findMatchingInventory = (device) =>
+    inventoryList.find((item) => {
+      const nameMatch = item.modelName.trim().toLowerCase() === (device.modelName || '').trim().toLowerCase();
+      if (!nameMatch) return false;
+      if (device.condition && item.condition && item.condition !== device.condition) {
+        return false;
+      }
+      if (device.modelNumber && device.modelNumber.trim() && item.modelNumber) {
+        return item.modelNumber.trim().toLowerCase() === device.modelNumber.trim().toLowerCase();
+      }
+      return true;
+    });
+
+  const calculateSaleTotal = () =>
+    formData.items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.modelName.trim()) {
-      errors.modelName = 'Model name is required';
-    } else {
-      if (!matchedInventoryItem || matchedInventoryItem.quantity <= 0) {
-        errors.modelName = 'Item is not available in inventory or has zero stock';
-      }
-    }
-
     if (!formData.customerName.trim()) errors.customerName = 'Customer name is required';
-    if (!formData.customerNumber.trim()) errors.customerNumber = 'Customer phone number is required';
-
-    if (formData.imei1 && !/^\d{15}$/.test(formData.imei1.trim())) {
-      errors.imei1 = 'IMEI 1 must be exactly 15 digits';
-    }
-    if (formData.imei2 && !/^\d{15}$/.test(formData.imei2.trim())) {
-      errors.imei2 = 'IMEI 2 must be exactly 15 digits';
+    if (!/^\d{11}$/.test(formData.customerNumber.trim())) {
+      errors.customerNumber = 'Customer phone number must contain exactly 11 digits';
     }
 
-    if (formData.price === '' || isNaN(formData.price) || Number(formData.price) < 0) {
-      errors.price = 'Valid price is required';
-    }
+    formData.items.forEach((dev, idx) => {
+      if (!dev.modelName.trim()) {
+        errors[`modelName_${idx}`] = 'Model name is required';
+      } else {
+        const matched = findMatchingInventory(dev);
+        if (!matched || matched.quantity <= 0) {
+          errors[`modelName_${idx}`] = 'Item is not available in inventory or has zero stock';
+        }
+      }
+
+      if (dev.imei1 && !/^\d{15}$/.test(dev.imei1.trim())) {
+        errors[`imei1_${idx}`] = 'IMEI 1 must be exactly 15 digits';
+      }
+      if (dev.imei2 && !/^\d{15}$/.test(dev.imei2.trim())) {
+        errors[`imei2_${idx}`] = 'IMEI 2 must be exactly 15 digits';
+      }
+
+      if (dev.price === '' || isNaN(dev.price) || Number(dev.price) < 0) {
+        errors[`price_${idx}`] = 'Valid price is required';
+      }
+    });
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -117,22 +167,26 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
     if (!validateForm()) return;
 
     try {
-      const res = await createSale(formData);
+      await createSale({
+        customerName: formData.customerName,
+        customerNumber: formData.customerNumber,
+        items: formData.items.map((it) => ({
+          ...it,
+          inventoryId: it.selectedInventoryId || undefined,
+          price: Number(it.price) || 0,
+          quantity: 1,
+        })),
+      });
       setAlert({
         type: 'success',
         message: 'Sale recorded successfully',
       });
       setFormData({
-        category: 'Mobile',
-        condition: 'New',
-        modelName: '',
-        modelNumber: '',
         customerName: '',
         customerNumber: '',
-        imei1: '',
-        imei2: '',
-        price: '',
+        items: [{ ...emptySaleDevice }],
       });
+      setFormErrors({});
       setShowAddForm(false);
       fetchSalesAndInventory(true);
       if (onSaleSuccess) onSaleSuccess();
@@ -163,11 +217,16 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
   };
 
   const filteredSales = sales.filter((item) => {
-    const categoryMatch = selectedCategory === 'All' || item.category?.toLowerCase() === selectedCategory.toLowerCase();
-    const conditionMatch = selectedCondition === 'All' || (item.condition || 'New').toLowerCase() === selectedCondition.toLowerCase();
+    const itemList = Array.isArray(item.items) && item.items.length > 0 ? item.items : [item];
+    const categoryMatch =
+      selectedCategory === 'All' ||
+      itemList.some((d) => d.category?.toLowerCase() === selectedCategory.toLowerCase());
+    const conditionMatch =
+      selectedCondition === 'All' ||
+      itemList.some((d) => (d.condition || 'New').toLowerCase() === selectedCondition.toLowerCase());
     if (!search.trim()) return categoryMatch && conditionMatch;
     const term = search.trim().toLowerCase();
-    const searchMatch = (
+    const searchMatch =
       item.modelName?.toLowerCase().includes(term) ||
       item.modelNumber?.toLowerCase().includes(term) ||
       item.category?.toLowerCase().includes(term) ||
@@ -175,14 +234,20 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
       item.customerNumber?.toLowerCase().includes(term) ||
       item.imei1?.toLowerCase().includes(term) ||
       item.imei2?.toLowerCase().includes(term) ||
-      (item.condition || 'New').toLowerCase().includes(term)
-    );
+      (item.condition || 'New').toLowerCase().includes(term) ||
+      itemList.some(
+        (d) =>
+          d.modelName?.toLowerCase().includes(term) ||
+          d.modelNumber?.toLowerCase().includes(term) ||
+          d.imei1?.toLowerCase().includes(term) ||
+          d.imei2?.toLowerCase().includes(term)
+      );
     return categoryMatch && conditionMatch && searchMatch;
   });
 
   return (
     <div>
-      {/* 1. Header Card (Reference: Al Haditha Top Card) */}
+      {/* 1. Header Card */}
       <div className="panel-header-card">
         <div className="panel-header-row">
           <div className="panel-header-left">
@@ -191,7 +256,7 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
             </div>
             <div className="panel-header-text">
               <h2>Customer Sales &amp; Dispatch Registry</h2>
-              <p>Record customer sales, deduct live inventory &amp; generate verified billing invoices.</p>
+              <p>Record single or multi-device customer sales &amp; automatically deduct live inventory.</p>
             </div>
           </div>
           <div>
@@ -205,132 +270,68 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
           </div>
         </div>
 
-        {/* Toolbar: Category Filters on Left, Subfilter for Condition, Search on Right */}
-        <div className="panel-toolbar-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            {/* Primary Category Filter Pills */}
-            <div className="panel-filter-pills">
-              {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
-                  onClick={() => setSelectedCategory(cat)}
-                >
-                  {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
-                </button>
-              ))}
+        {/* Toolbar: Category Filters, Condition Subfilter, Search (Hidden when form is open) */}
+        {!showAddForm && (
+          <div className="panel-toolbar-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <div className="panel-filter-pills">
+                {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
+                    onClick={() => setSelectedCategory(cat)}
+                  >
+                    {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
+                  </button>
+                ))}
+              </div>
+
+              <div className="filter-divider hide-on-mobile" />
+
+              <div className="subfilter-group panel-filter-pills">
+                {[
+                  { id: 'All', label: 'All Condition' },
+                  { id: 'New', label: 'New', pillClass: 'pill-new' },
+                  { id: 'Used', label: 'Used', pillClass: 'pill-used' },
+                ].map((cond) => (
+                  <button
+                    key={cond.id}
+                    type="button"
+                    className={`filter-pill ${cond.pillClass || ''} ${selectedCondition === cond.id ? 'active' : 'inactive'}`}
+                    onClick={() => setSelectedCondition(cond.id)}
+                  >
+                    {cond.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="filter-divider hide-on-mobile" />
-
-            {/* Subfilter: Device Condition (All / New / Used) */}
-            <div className="subfilter-group panel-filter-pills">
-              {[
-                { id: 'All', label: 'All Condition' },
-                { id: 'New', label: 'New', pillClass: 'pill-new' },
-                { id: 'Used', label: 'Used', pillClass: 'pill-used' },
-              ].map((cond) => (
-                <button
-                  key={cond.id}
-                  type="button"
-                  className={`filter-pill ${cond.pillClass || ''} ${selectedCondition === cond.id ? 'active' : 'inactive'}`}
-                  onClick={() => setSelectedCondition(cond.id)}
-                >
-                  {cond.label}
-                </button>
-              ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="panel-search-box">
+                <Search size={14} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search sales by model, customer, IMEI..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
             </div>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div className="panel-search-box">
-              <Search size={14} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search sales by model, customer, IMEI..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* 2. Collapsible Add Sale Form */}
+      {/* 2. Collapsible Multi-Device Add Sale Form */}
       {showAddForm && (
         <div className="card-form">
           <div className="card-form-title">
             <span>Record New Sale</span>
           </div>
 
-          {/* Quick Select from In-Stock Inventory */}
-          <div style={{ marginBottom: '14px', background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-card)' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '5px' }}>
-              Select Available Device from Live Inventory
-            </label>
-            <select
-              style={{ width: '100%', minHeight: '40px', padding: '0 10px', borderRadius: '7px', border: '1px solid var(--border-card)', background: '#ffffff', fontSize: '13px' }}
-              onChange={handleSelectInventoryItem}
-              defaultValue=""
-            >
-              <option value="">-- Choose an in-stock device --</option>
-              {inventoryList
-                .filter((inv) => inv.quantity > 0)
-                .map((inv) => (
-                  <option key={inv._id} value={inv._id}>
-                    {inv.modelName} ({inv.modelNumber}) [{inv.condition || 'New'}] - Stock: {inv.quantity} - PKR {Number(inv.price).toLocaleString()}
-                  </option>
-                ))}
-            </select>
-          </div>
-
           <form onSubmit={handleSubmit}>
-            <div className="form-grid-3">
-              <div className="form-field">
-                <label>Category *</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <option value="Mobile">Mobile</option>
-                  <option value="Tablet">Tablet</option>
-                  <option value="Accessory">Accessory</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label>Condition *</label>
-                <select
-                  value={formData.condition}
-                  onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                >
-                  <option value="New">Brand New</option>
-                  <option value="Used">Used / Pre-Owned</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label>Model Name *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Galaxy S22"
-                  value={formData.modelName}
-                  onChange={(e) => setFormData({ ...formData, modelName: e.target.value })}
-                />
-                {formErrors.modelName && <span className="form-field-error">{formErrors.modelName}</span>}
-              </div>
-
-              <div className="form-field">
-                <label>Model Number *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. SM-S901B"
-                  value={formData.modelNumber}
-                  onChange={(e) => setFormData({ ...formData, modelNumber: e.target.value })}
-                />
-              </div>
-
+            {/* Customer Fields */}
+            <div className="form-grid-3" style={{ marginBottom: '16px' }}>
               <div className="form-field">
                 <label>Customer Name *</label>
                 <input
@@ -343,64 +344,271 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Customer Phone Number *</label>
+                <label>
+                  Customer Phone Number * (11 digits)
+                  {formData.customerNumber && (
+                    <span style={{ marginLeft: '6px', color: formData.customerNumber.length === 11 ? 'var(--success-color)' : 'var(--text-muted)' }}>
+                      ({formData.customerNumber.length}/11)
+                    </span>
+                  )}
+                </label>
                 <input
                   type="tel"
+                  maxLength={11}
                   placeholder="e.g. 03001234567"
                   value={formData.customerNumber}
-                  onChange={(e) => setFormData({ ...formData, customerNumber: e.target.value.replace(/[^0-9+]/g, '') })}
+                  onChange={(e) => setFormData({ ...formData, customerNumber: e.target.value.replace(/\D/g, '').slice(0, 11) })}
                 />
                 {formErrors.customerNumber && <span className="form-field-error">{formErrors.customerNumber}</span>}
               </div>
 
               <div className="form-field">
-                <label>Sale Price (PKR) *</label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                />
-                {formErrors.price && <span className="form-field-error">{formErrors.price}</span>}
-              </div>
-
-              <div className="form-field">
-                <label>
-                  IMEI 1 (Optional - 15 digits)
-                  {formData.imei1 && (
-                    <span style={{ marginLeft: '6px', color: formData.imei1.length === 15 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                      ({formData.imei1.length}/15)
-                    </span>
-                  )}
-                </label>
+                <label>Total Sale Amount (PKR)</label>
                 <input
                   type="text"
-                  maxLength={15}
-                  placeholder="15 digits"
-                  value={formData.imei1}
-                  onChange={(e) => setFormData({ ...formData, imei1: e.target.value.replace(/\D/g, '') })}
+                  readOnly
+                  value={`PKR ${calculateSaleTotal().toLocaleString()}`}
+                  style={{ background: '#f8fafc', fontWeight: 700, color: '#059669' }}
                 />
-                {formErrors.imei1 && <span className="form-field-error">{formErrors.imei1}</span>}
+              </div>
+            </div>
+
+            {/* Multiple Devices Section */}
+            <div className="invoice-devices-section">
+              <div className="invoice-devices-section-header">
+                <span className="invoice-devices-section-title">
+                  <Smartphone size={16} /> Devices in Sale
+                  <span className="invoice-devices-count-pill">
+                    {formData.items.length} {formData.items.length === 1 ? 'Device' : 'Devices'}
+                  </span>
+                </span>
               </div>
 
-              <div className="form-field">
-                <label>
-                  IMEI 2 (Optional - 15 digits)
-                  {formData.imei2 && (
-                    <span style={{ marginLeft: '6px', color: formData.imei2.length === 15 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                      ({formData.imei2.length}/15)
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  maxLength={15}
-                  placeholder="15 digits"
-                  value={formData.imei2}
-                  onChange={(e) => setFormData({ ...formData, imei2: e.target.value.replace(/\D/g, '') })}
-                />
-                {formErrors.imei2 && <span className="form-field-error">{formErrors.imei2}</span>}
-              </div>
+              {formData.items.map((dev, index) => (
+                <div key={index} className="invoice-device-card">
+                  <div className="invoice-device-header">
+                    <div className="invoice-device-title">
+                      <span className="invoice-device-badge">#{index + 1}</span>
+                      <span>{dev.modelName ? dev.modelName : `Device #${index + 1}`}</span>
+                      {dev.price !== '' && !isNaN(dev.price) && (
+                        <span style={{ color: '#059669', fontSize: '12px', fontWeight: 700 }}>
+                          — PKR {Number(dev.price).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                    {formData.items.length > 1 && (
+                      <button
+                        type="button"
+                        className="action-btn-danger"
+                        onClick={() => handleRemoveDeviceRow(index)}
+                        title="Remove device"
+                        style={{ padding: '4px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Trash2 size={12} /> Remove
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Quick Select from In-Stock Inventory for this row */}
+                  <div style={{ marginBottom: '12px', background: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-card)' }}>
+                    <SmartDropdown
+                      compact
+                      label="Quick Select Available Device from Live Inventory"
+                      placeholder="Choose an in-stock device — or type details below"
+                      searchPlaceholder="Search inventory by model, brand, condition, IMEI..."
+                      value={dev.selectedInventoryId || ''}
+                      onChange={(selectedId) => {
+                        handleDeviceChange(index, 'selectedInventoryId', selectedId);
+                        handleSelectInventoryItem(index, selectedId);
+                      }}
+                      emptyText="No in-stock devices match your search."
+                      options={inventoryList
+                        .filter((inv) => inv.quantity > 0)
+                        .map((inv) => ({
+                          value: inv._id,
+                          label: inv.modelName,
+                          searchText: `${inv.modelName} ${inv.modelNumber || ''} ${inv.companyName || ''} ${inv.category || ''} ${inv.condition || 'New'} ${(inv.imeis || []).join(' ')}`,
+                          inv,
+                        }))}
+                      renderSelected={(opt) => (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 700, color: '#090d16', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                              {opt.inv.modelName}
+                            </span>
+                            {opt.inv.modelNumber && (
+                              <span style={{ color: '#64748b', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                                ({opt.inv.modelNumber})
+                              </span>
+                            )}
+                            <span className={`cell-badge condition-pill ${opt.inv.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
+                              {opt.inv.condition || 'New'}
+                            </span>
+                          </div>
+                          <span style={{ fontWeight: 700, color: '#059669', fontSize: '12.5px', flexShrink: 0 }}>
+                            PKR {Number(opt.inv.price).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      renderOption={(opt) => (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%' }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <span style={{ fontWeight: 700, fontSize: '13px', color: '#090d16' }}>
+                                {opt.inv.modelName}
+                              </span>
+                              <span className={`cell-badge condition-pill ${opt.inv.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
+                                {opt.inv.condition || 'New'}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                              <span>{opt.inv.companyName || opt.inv.category}</span>
+                              {opt.inv.status && <span>• {opt.inv.status}</span>}
+                              {opt.inv.modelNumber && <span>• {opt.inv.modelNumber}</span>}
+                              {opt.inv.imeis && opt.inv.imeis.length > 0 && (
+                                <span>• IMEI: {opt.inv.imeis[0]}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+                            <span style={{ fontWeight: 700, fontSize: '13px', color: '#059669' }}>
+                              PKR {Number(opt.inv.price).toLocaleString()}
+                            </span>
+                            <span className="cell-badge badge-success" style={{ fontSize: '10px', padding: '2px 7px' }}>
+                              • {opt.inv.quantity} in stock
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    />
+                  </div>
+
+                  <div className="form-grid-3">
+                    <div className="form-field">
+                      <label>Category *</label>
+                      <select
+                        value={dev.category}
+                        onChange={(e) => handleDeviceChange(index, 'category', e.target.value)}
+                      >
+                        <option value="Mobile">Mobile</option>
+                        <option value="Tablet">Tablet</option>
+                        <option value="Accessory">Accessory</option>
+                      </select>
+                    </div>
+
+                    <div className="form-field">
+                      <label>Condition *</label>
+                      <select
+                        value={dev.condition}
+                        onChange={(e) => handleDeviceChange(index, 'condition', e.target.value)}
+                      >
+                        <option value="New">Brand New</option>
+                        <option value="Used">Used / Pre-Owned</option>
+                      </select>
+                    </div>
+
+                    <div className="form-field">
+                      <label>Status *</label>
+                      <select
+                        value={dev.status || 'PTA'}
+                        onChange={(e) => handleDeviceChange(index, 'status', e.target.value)}
+                      >
+                        <option value="PTA">PTA</option>
+                        <option value="JV">JV</option>
+                        <option value="Non-PTA">Non-PTA</option>
+                        <option value="CPID">CPID</option>
+                      </select>
+                    </div>
+
+                    <div className="form-field">
+                      <label>Model Name *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Galaxy S22"
+                        value={dev.modelName}
+                        onChange={(e) => handleDeviceChange(index, 'modelName', e.target.value)}
+                      />
+                      {formErrors[`modelName_${index}`] && (
+                        <span className="form-field-error">{formErrors[`modelName_${index}`]}</span>
+                      )}
+                    </div>
+
+                    <div className="form-field">
+                      <label>Model Number (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. SM-S901B"
+                        value={dev.modelNumber}
+                        onChange={(e) => handleDeviceChange(index, 'modelNumber', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="form-field">
+                      <label>Sale Price (PKR) *</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={dev.price}
+                        onChange={(e) => handleDeviceChange(index, 'price', e.target.value)}
+                      />
+                      {formErrors[`price_${index}`] && (
+                        <span className="form-field-error">{formErrors[`price_${index}`]}</span>
+                      )}
+                    </div>
+
+                    <div className="form-field">
+                      <label>
+                        IMEI 1 (Optional - 15 digits)
+                        {dev.imei1 && (
+                          <span style={{ marginLeft: '6px', color: dev.imei1.length === 15 ? 'var(--success-color)' : 'var(--text-muted)' }}>
+                            ({dev.imei1.length}/15)
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={15}
+                        placeholder="15 digits"
+                        value={dev.imei1}
+                        onChange={(e) => handleDeviceChange(index, 'imei1', e.target.value.replace(/\D/g, ''))}
+                      />
+                      {formErrors[`imei1_${index}`] && (
+                        <span className="form-field-error">{formErrors[`imei1_${index}`]}</span>
+                      )}
+                    </div>
+
+                    <div className="form-field">
+                      <label>
+                        IMEI 2 (Optional - 15 digits)
+                        {dev.imei2 && (
+                          <span style={{ marginLeft: '6px', color: dev.imei2.length === 15 ? 'var(--success-color)' : 'var(--text-muted)' }}>
+                            ({dev.imei2.length}/15)
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={15}
+                        placeholder="15 digits"
+                        value={dev.imei2}
+                        onChange={(e) => handleDeviceChange(index, 'imei2', e.target.value.replace(/\D/g, ''))}
+                      />
+                      {formErrors[`imei2_${index}`] && (
+                        <span className="form-field-error">{formErrors[`imei2_${index}`]}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                className="btn-add-device"
+                onClick={handleAddDeviceRow}
+              >
+                <Plus size={15} /> Add Another Device
+              </button>
             </div>
 
             <div className="card-form-actions">
@@ -419,187 +627,325 @@ const Sales = ({ onSaleSuccess, onOpenInvoice, setAlert }) => {
         </div>
       )}
 
-      {/* 3. Table Card (Reference: Al Haditha Table) */}
-      <div className="table-card">
-        {/* Desktop Proportional Table */}
-        <div className="hide-on-mobile desktop-table-container">
-          <table className="pro-table">
-            <thead>
-              <tr>
-                <th style={{ width: '11%' }}>Date</th>
-                <th style={{ width: '21%' }}>Device Model</th>
-                <th style={{ width: '20%' }}>Customer</th>
-                <th style={{ width: '20%' }}>IMEI Sold</th>
-                <th style={{ width: '13%' }}>Sale Price</th>
-                <th style={{ width: '15%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+      {/* 3. Table Card (Hidden when form is open) */}
+      {!showAddForm && (
+        <div className="table-card">
+          {/* Desktop Proportional Table */}
+          <div className="hide-on-mobile desktop-table-container">
+            <table className="pro-table">
+              <thead>
                 <tr>
-                  <td colSpan="6" className="empty-state">Loading sales records...</td>
+                  <th style={{ width: '12%' }}>Date</th>
+                  <th style={{ width: '11%' }}>Category</th>
+                  <th style={{ width: '21%' }}>Device Model</th>
+                  <th style={{ width: '11%' }}>Condition</th>
+                  <th style={{ width: '20%' }}>Customer</th>
+                  <th style={{ width: '14%' }}>Sale Price</th>
+                  <th style={{ width: '11%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
                 </tr>
-              ) : filteredSales.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="empty-state">No sales recorded yet.</td>
-                </tr>
-              ) : (
-                filteredSales.map((item) => (
-                  <tr key={item._id}>
-                    {/* Date */}
-                    <td>
-                      <span className="cell-mono">
-                        {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </span>
-                    </td>
-
-                    {/* Device */}
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span className="cell-title">{item.modelName}</span>
-                        <span className={`status-badge ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
-                          {item.condition || 'New'}
-                        </span>
-                      </div>
-                      <span className="cell-sub">{item.modelNumber} • {item.category}</span>
-                    </td>
-
-                    {/* Customer (Parallel Grid) */}
-                    <td>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
-                        <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>Name:</span>
-                        <span style={{ fontWeight: 500, color: '#0f172a', fontFamily: 'Inter', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.customerName}</span>
-                        <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>Phone:</span>
-                        <span style={{ color: '#334155', fontWeight: 400, whiteSpace: 'nowrap' }}>{item.customerNumber}</span>
-                      </div>
-                    </td>
-
-                    {/* IMEI (Parallel Grid) */}
-                    <td>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '8px', rowGap: '3px', alignItems: 'baseline', fontFamily: 'JetBrains Mono', fontSize: '13px' }}>
-                        {item.imei1 && (
-                          <>
-                            <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>IMEI 1:</span>
-                            <span style={{ color: '#334155', fontWeight: 400, letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>{item.imei1}</span>
-                          </>
-                        )}
-                        {item.imei2 && (
-                          <>
-                            <span style={{ color: '#090d16', fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>IMEI 2:</span>
-                            <span style={{ color: '#334155', fontWeight: 400, letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>{item.imei2}</span>
-                          </>
-                        )}
-                        {!item.imei1 && !item.imei2 && <span className="cell-sub">—</span>}
-                      </div>
-                    </td>
-
-                    {/* Price */}
-                    <td>
-                      <span className="cell-price">
-                        PKR {Number(item.price).toLocaleString()}
-                      </span>
-                    </td>
-
-                    {/* Actions */}
-                    <td style={{ textAlign: 'center', paddingRight: '14px' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
-                        <button
-                          className="action-btn-primary"
-                          onClick={() => onOpenInvoice && onOpenInvoice(item)}
-                          title="Generate Invoice"
-                        >
-                          <FileText size={12} />
-                          <span>Invoice</span>
-                        </button>
-                        <button
-                          className="action-btn-danger"
-                          onClick={() => handleDelete(item._id, item.modelName)}
-                          title="Delete sale and return stock"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </td>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="empty-state">Loading sales records...</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : filteredSales.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="empty-state">No sales recorded yet.</td>
+                  </tr>
+                ) : (
+                  filteredSales.map((item) => {
+                    const saleDevices =
+                      Array.isArray(item.items) && item.items.length > 0 ? item.items : [item];
+                    return (
+                        <tr key={item._id}>
+                          {/* Date */}
+                          <td>
+                            <span className="cell-mono">
+                              {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </span>
+                          </td>
 
-        {/* Mobile View Cards */}
-        <div className="show-on-mobile mobile-card-container">
-          {loading ? (
-            <div className="empty-state">Loading sales records...</div>
-          ) : filteredSales.length === 0 ? (
-            <div className="empty-state">No sales recorded yet.</div>
-          ) : (
-            filteredSales.map((item) => (
-              <div key={item._id} className="mobile-card">
-                <div className="mobile-card-top">
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="mobile-card-title">{item.modelName}</span>
-                      <span className={`status-badge ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
-                        {item.condition || 'New'}
-                      </span>
-                    </div>
-                    <div className="mobile-card-subtitle">{item.modelNumber} • {item.category}</div>
-                  </div>
-                  <div className="mobile-card-price">
-                    PKR {Number(item.price).toLocaleString()}
-                  </div>
-                </div>
+                          {/* Category */}
+                          <td>
+                            {saleDevices.length > 1 ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                {saleDevices.map((d, idx) => (
+                                  <span key={idx} className="cell-badge badge-gray category-pill">
+                                    {d.category || item.category}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="cell-badge badge-gray category-pill">
+                                {saleDevices[0].category || item.category}
+                              </span>
+                            )}
+                          </td>
 
-                <div className="mobile-card-meta-grid">
-                  <div className="mobile-meta-cell">
-                    <div className="mobile-meta-label">Customer</div>
-                    <div className="mobile-meta-val">{item.customerName}</div>
-                  </div>
+                          {/* Device(s) */}
+                          <td>
+                            {saleDevices.length > 1 ? (
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px' }}>
+                                  <span className="cell-badge badge-gray" style={{ fontWeight: 700 }}>
+                                    {saleDevices.length} Devices
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.4 }}>
+                                  {saleDevices.map((d, idx) => (
+                                    <div key={idx}>• {d.modelName}</div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="cell-title">{saleDevices[0].modelName}</span>
+                                {saleDevices[0].modelNumber && (
+                                  <span className="cell-sub">{saleDevices[0].modelNumber}</span>
+                                )}
+                              </div>
+                            )}
+                          </td>
 
-                  <div className="mobile-meta-cell">
-                    <div className="mobile-meta-label">Phone</div>
-                    <div className="mobile-meta-val" style={{ fontFamily: 'monospace' }}>{item.customerNumber}</div>
-                  </div>
+                          {/* Condition */}
+                          <td>
+                            {saleDevices.length > 1 ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                {saleDevices.map((d, idx) => (
+                                  <span
+                                    key={idx}
+                                    className={`cell-badge condition-pill ${(d.condition || 'New') === 'Used' ? 'badge-warning' : 'badge-success'}`}
+                                  >
+                                    {d.condition || 'New'}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className={`cell-badge condition-pill ${(saleDevices[0].condition || 'New') === 'Used' ? 'badge-warning' : 'badge-success'}`}>
+                                {saleDevices[0].condition || 'New'}
+                              </span>
+                            )}
+                          </td>
 
-                  <div className="mobile-meta-cell">
-                    <div className="mobile-meta-label">Date</div>
-                    <div className="mobile-meta-val">
-                      {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </div>
-                  </div>
+                          {/* Customer */}
+                          <td>
+                            <span className="cell-title">{item.customerName}</span>
+                            <span className="cell-sub" style={{ color: '#090d16', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <Phone size={11} style={{ color: '#64748b', flexShrink: 0 }} />
+                              {item.customerNumber}
+                            </span>
+                          </td>
 
-                  {(item.imei1 || item.imei2) && (
-                    <div className="mobile-meta-cell full-width">
-                      <div className="mobile-meta-label">IMEIs Sold</div>
-                      <div className="mobile-meta-val" style={{ fontFamily: 'monospace', fontSize: '11px' }}>
-                        {item.imei1 && <div>1: {item.imei1}</div>}
-                        {item.imei2 && <div>2: {item.imei2}</div>}
+                          {/* Price */}
+                          <td>
+                            <span className="cell-price">
+                              PKR {Number(item.price).toLocaleString()}
+                            </span>
+                          </td>
+
+                          {/* Actions: Spectate Icon & Delete */}
+                          <td style={{ textAlign: 'center', paddingRight: '14px' }}>
+                            <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                              <button
+                                type="button"
+                                className="btn-details-toggle"
+                                onClick={() => setDetailItem(item)}
+                                title="View IMEI & customer details"
+                              >
+                                <Eye size={13} />
+                              </button>
+                              <button
+                                className="action-btn-danger"
+                                onClick={() => handleDelete(item._id, item.modelName)}
+                                title="Delete sale and return stock"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile View Cards */}
+          <div className="show-on-mobile mobile-card-container">
+            {loading ? (
+              <div className="empty-state">Loading sales records...</div>
+            ) : filteredSales.length === 0 ? (
+              <div className="empty-state">No sales recorded yet.</div>
+            ) : (
+              filteredSales.map((item) => {
+                const saleDevices =
+                  Array.isArray(item.items) && item.items.length > 0 ? item.items : [item];
+                return (
+                  <div key={item._id} className="mobile-card">
+                    <div className="mobile-card-top">
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div className="mobile-card-title">
+                            {saleDevices.length > 1 ? `${saleDevices.length} Devices` : saleDevices[0].modelName}
+                          </div>
+                          {saleDevices.length === 1 && (
+                            <span className={`cell-badge condition-pill ${(saleDevices[0].condition || 'New') === 'Used' ? 'badge-warning' : 'badge-success'}`}>
+                              {saleDevices[0].condition || 'New'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mobile-card-subtitle">
+                          {saleDevices.length > 1
+                            ? saleDevices.map((d) => d.modelName).join(', ')
+                            : `${saleDevices[0].modelNumber ? `${saleDevices[0].modelNumber} • ` : ''}${saleDevices[0].category || item.category}`}
+                        </div>
+                      </div>
+                      <div className="mobile-card-price">
+                        PKR {Number(item.price).toLocaleString()}
                       </div>
                     </div>
-                  )}
-                </div>
 
-                <div className="mobile-card-actions">
-                  <button
-                    className="btn-primary"
-                    onClick={() => onOpenInvoice && onOpenInvoice(item)}
+                    <div className="mobile-card-meta-grid">
+                      <div className="mobile-meta-cell">
+                        <div className="mobile-meta-label">Customer</div>
+                        <div className="mobile-meta-val" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <strong>{item.customerName}</strong>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            • <Phone size={11} style={{ color: '#64748b' }} /> {item.customerNumber}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mobile-meta-cell">
+                        <div className="mobile-meta-label">Date</div>
+                        <div className="mobile-meta-val">
+                          {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mobile-card-actions">
+                      <button
+                        type="button"
+                        className="btn-details-toggle"
+                        style={{ flex: 1, minHeight: '38px', justifyContent: 'center' }}
+                        onClick={() => setDetailItem(item)}
+                        title="View details"
+                      >
+                        <Eye size={14} /> View Details
+                      </button>
+                      <button
+                        className="action-btn-danger"
+                        style={{ minHeight: '38px' }}
+                        onClick={() => handleDelete(item._id, item.modelName)}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 4. Sale Details Popup Modal */}
+      <DetailModal
+        isOpen={Boolean(detailItem)}
+        onClose={() => setDetailItem(null)}
+        icon={Tag}
+        title={
+          detailItem
+            ? Array.isArray(detailItem.items) && detailItem.items.length > 1
+              ? `${detailItem.items.length} Devices Sold`
+              : detailItem.modelName
+            : 'Sale Details'
+        }
+        subtitle={
+          detailItem
+            ? `${new Date(detailItem.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} • Total: PKR ${Number(detailItem.price).toLocaleString()}`
+            : ''
+        }
+      >
+        {detailItem && (() => {
+          const modalDevices =
+            Array.isArray(detailItem.items) && detailItem.items.length > 0
+              ? detailItem.items
+              : [detailItem];
+          return (
+            <>
+              <div className="expanded-detail-card">
+                <div className="expanded-detail-header">
+                  <Smartphone size={13} /> Device &amp; Identifiers
+                </div>
+                {modalDevices.map((d, dIdx) => (
+                  <div
+                    key={dIdx}
+                    style={
+                      modalDevices.length > 1
+                        ? { borderBottom: dIdx < modalDevices.length - 1 ? '1px dashed #e2e8f0' : 'none', paddingBottom: '8px', marginBottom: '8px' }
+                        : {}
+                    }
                   >
-                    <FileText size={13} /> Generate Invoice
-                  </button>
-                  <button
-                    className="action-btn-danger"
-                    style={{ padding: '0 12px' }}
-                    onClick={() => handleDelete(item._id, item.modelName)}
-                  >
-                    <Trash2 size={13} /> Delete
-                  </button>
+                    <div className="expanded-info-row">
+                      <span className="expanded-info-label">
+                        {modalDevices.length > 1 ? `Device #${dIdx + 1}:` : 'Model Name:'}
+                      </span>
+                      <span className="expanded-info-val">{d.modelName}</span>
+                    </div>
+                    <div className="expanded-info-row">
+                      <span className="expanded-info-label">Model Number:</span>
+                      <span className="expanded-info-val">{d.modelNumber || '—'}</span>
+                    </div>
+                    <div className="expanded-info-row">
+                      <span className="expanded-info-label">Category / Cond:</span>
+                      <span className="expanded-info-val">{d.category || detailItem.category} • {d.condition || 'New'}</span>
+                    </div>
+                    <div className="expanded-info-row">
+                      <span className="expanded-info-label">Status:</span>
+                      <span className="expanded-info-val">{d.status || detailItem.status || 'PTA'}</span>
+                    </div>
+                    <div className="expanded-info-row">
+                      <span className="expanded-info-label">IMEI 1:</span>
+                      <span className="expanded-info-val">{d.imei1 || '—'}</span>
+                    </div>
+                    <div className="expanded-info-row">
+                      <span className="expanded-info-label">IMEI 2:</span>
+                      <span className="expanded-info-val">{d.imei2 || '—'}</span>
+                    </div>
+                    {modalDevices.length > 1 && (
+                      <div className="expanded-info-row">
+                        <span className="expanded-info-label">Price:</span>
+                        <span className="expanded-info-val">PKR {Number(d.price).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="expanded-detail-card">
+                <div className="expanded-detail-header">
+                  <User size={13} /> Customer Identity
+                </div>
+                <div className="expanded-info-row">
+                  <span className="expanded-info-label">Full Name:</span>
+                  <span className="expanded-info-val">{detailItem.customerName}</span>
+                </div>
+                <div className="expanded-info-row">
+                  <span className="expanded-info-label">Phone Number:</span>
+                  <span className="expanded-info-val" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <Phone size={11} style={{ color: '#64748b', flexShrink: 0 }} />
+                    {detailItem.customerNumber}
+                  </span>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </div>
+            </>
+          );
+        })()}
+      </DetailModal>
     </div>
   );
 };

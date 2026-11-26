@@ -65,9 +65,9 @@ const autoInvalidateMiddleware = (req, res, next) => {
         } else if (url.includes('/sales')) {
           invalidateCache(['/sales', '/inventory', '/invoices']);
         } else if (url.includes('/inventory')) {
-          invalidateCache(['/inventory', '/sales']);
+          invalidateCache(['/inventory', '/sales', '/purchases']);
         } else if (url.includes('/invoices')) {
-          invalidateCache(['/invoices']);
+          invalidateCache(['/invoices', '/sales']);
         } else {
           cacheStore.clear();
         }

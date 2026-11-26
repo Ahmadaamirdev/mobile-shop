@@ -13,7 +13,8 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Health & Connection Monitoring API (open even during reconnect to inspect status)
 app.get('/api/health', (req, res) => {
@@ -54,8 +55,7 @@ app.get(['/api', '/'], (req, res, next) => {
 });
 
 // Middleware: Ensure database pool is active before running CRUD operations
-app.use('/api', ensureDBConnected);
-app.use(ensureDBConnected);
+app.use(['/api', '/purchases', '/inventory', '/sales', '/invoices'], ensureDBConnected);
 
 // Middleware: Fast in-memory caching for GETs & instant invalidation on mutations
 app.use('/api', autoInvalidateMiddleware);
@@ -103,16 +103,14 @@ const handleShutdown = async (signal) => {
 process.on('SIGINT', () => handleShutdown('SIGINT'));
 process.on('SIGTERM', () => handleShutdown('SIGTERM'));
 
-// Connect to MongoDB Atlas first, then bind HTTP port (for local development)
-const start = async () => {
-  try {
-    await connectDB();
-  } catch (err) {
-    console.warn('⚠️  Initial MongoDB connection pending, auto-reconnect will establish pool...');
-  }
-
+// Bind HTTP port immediately so Vite proxy never sees ECONNREFUSED, and connect MongoDB in parallel
+const start = () => {
   server = app.listen(PORT, () => {
     console.log(`🚀 Unity Mobile Server running on port ${PORT}`);
+  });
+
+  connectDB().catch(() => {
+    console.warn('⚠️  Initial MongoDB connection pending, auto-reconnect will establish pool...');
   });
 };
 

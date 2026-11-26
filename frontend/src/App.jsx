@@ -97,22 +97,24 @@ function App() {
             )}
 
             <div style={{ display: activeTab === 'purchases' ? 'block' : 'none' }}>
-              <Purchases setAlert={setAlert} />
+              <Purchases isActive={activeTab === 'purchases'} setAlert={setAlert} />
             </div>
 
             <div style={{ display: activeTab === 'sales' ? 'block' : 'none' }}>
               <Sales
+                isActive={activeTab === 'sales'}
                 onOpenInvoice={handleOpenInvoiceFromSale}
                 setAlert={setAlert}
               />
             </div>
 
             <div style={{ display: activeTab === 'inventory' ? 'block' : 'none' }}>
-              <Inventory setAlert={setAlert} />
+              <Inventory isActive={activeTab === 'inventory'} setAlert={setAlert} />
             </div>
 
             <div style={{ display: activeTab === 'invoices' ? 'block' : 'none' }}>
               <Invoice
+                isActive={activeTab === 'invoices'}
                 initialSale={selectedSaleForInvoice}
                 clearInitialSale={() => setSelectedSaleForInvoice(null)}
                 setAlert={setAlert}

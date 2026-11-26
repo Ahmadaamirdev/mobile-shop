@@ -6,11 +6,17 @@ const validateIMEI = (val) => {
   return /^\d{15}$/.test(val.trim());
 };
 
-// Helper validator for 13-digit ID Card / CNIC
+// Helper validator for 13-digit ID Card / CNIC (optional for manual inventory inward)
 const validateIDCard = (val) => {
-  if (!val) return false;
+  if (!val || val.trim() === '') return true; // optional for direct inventory inward
   const digitsOnly = val.replace(/\D/g, '');
   return digitsOnly.length === 13;
+};
+
+// Helper validator for 11-digit phone number (optional for manual inventory inward)
+const validatePhone11 = (val) => {
+  if (!val || val.trim() === '') return true;
+  return /^\d{11}$/.test(val.trim());
 };
 
 const purchaseSchema = new mongoose.Schema(
@@ -26,6 +32,11 @@ const purchaseSchema = new mongoose.Schema(
       enum: ['New', 'Used'],
       default: 'New',
     },
+    status: {
+      type: String,
+      enum: ['PTA', 'JV', 'Non-PTA', 'CPID'],
+      default: 'PTA',
+    },
     companyName: {
       type: String,
       required: [true, 'Company name is required'],
@@ -38,8 +49,13 @@ const purchaseSchema = new mongoose.Schema(
     },
     modelNumber: {
       type: String,
-      required: [true, 'Model number is required'],
       trim: true,
+      default: '',
+    },
+    quantity: {
+      type: Number,
+      default: 1,
+      min: [1, 'Quantity must be at least 1'],
     },
     imei1: {
       type: String,
@@ -69,17 +85,34 @@ const purchaseSchema = new mongoose.Schema(
     },
     customerPhone: {
       type: String,
-      required: [true, 'Customer phone number is required'],
+      default: '',
       trim: true,
+      validate: {
+        validator: validatePhone11,
+        message: 'Customer phone number must contain exactly 11 digits',
+      },
     },
     customerIdCard: {
       type: String,
-      required: [true, 'Customer ID card number is required'],
+      default: '',
       trim: true,
       validate: {
         validator: validateIDCard,
         message: 'Customer ID card number must contain exactly 13 digits',
       },
+    },
+    customerAddress: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    idCardFront: {
+      type: String,
+      default: '',
+    },
+    idCardBack: {
+      type: String,
+      default: '',
     },
     price: {
       type: Number,

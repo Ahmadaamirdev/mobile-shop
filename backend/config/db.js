@@ -12,11 +12,14 @@ try {
 
 // Production-grade Atlas Connection pool & lifecycle configuration options
 const poolOptions = {
-  maxPoolSize: parseInt(process.env.DB_MAX_POOL_SIZE, 10) || 20,
-  minPoolSize: parseInt(process.env.DB_MIN_POOL_SIZE, 10) || 2,
-  serverSelectionTimeoutMS: parseInt(process.env.DB_SERVER_TIMEOUT_MS, 10) || 30000,
-  connectTimeoutMS: 30000,
+  maxPoolSize: parseInt(process.env.DB_MAX_POOL_SIZE, 10) || 10,
+  minPoolSize: parseInt(process.env.DB_MIN_POOL_SIZE, 10) || 1,
+  serverSelectionTimeoutMS: parseInt(process.env.DB_SERVER_TIMEOUT_MS, 10) || 15000,
+  connectTimeoutMS: 15000,
+  socketTimeoutMS: 45000,
+  maxIdleTimeMS: 45000,
   heartbeatFrequencyMS: 10000,
+  family: 4, // Force IPv4 to avoid slow IPv6-first DNS/TCP fallback on Windows
   retryWrites: true,
   w: 'majority',
 };
@@ -24,6 +27,7 @@ const poolOptions = {
 let isConnected = false;
 let isShuttingDown = false;
 let retryTimer = null;
+let connectingPromise = null;
 
 // Helper to remove any obsolete legacy indexes from MongoDB Atlas
 const cleanLegacyIndexes = async () => {
@@ -60,11 +64,11 @@ mongoose.connection.on('disconnected', () => {
   isConnected = false;
   console.warn('⚠️  MongoDB disconnected from cluster.');
   if (!isShuttingDown && !retryTimer && mongoose.connection.readyState === 0) {
-    console.log('🔄 Attempting automatic reconnection to MongoDB in 5 seconds...');
+    console.log('🔄 Attempting automatic reconnection to MongoDB in 3 seconds...');
     retryTimer = setTimeout(() => {
       retryTimer = null;
-      connectDB();
-    }, 5000);
+      connectDB().catch(() => {});
+    }, 3000);
   }
 });
 
@@ -81,66 +85,79 @@ const connectDB = async () => {
     return mongoose.connection;
   }
 
-  try {
-    const connUri = process.env.MONGODB_URI;
-    if (!connUri || connUri.includes('username:password')) {
-      console.warn('⚠️  MONGODB_URI is not configured yet with valid credentials in .env.');
-      console.warn('    Please paste your MongoDB Atlas connection string into backend/.env.');
-      return;
-    }
-
-    if (retryTimer) {
-      clearTimeout(retryTimer);
-      retryTimer = null;
-    }
-
-    const conn = await mongoose.connect(connUri, poolOptions);
-    console.log(`✅ MongoDB Connected to host: ${conn.connection.host}`);
-    await cleanLegacyIndexes();
-    return conn;
-  } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    // Auto-retry connection every 5 seconds if initial connect fails
-    if (!isShuttingDown && !retryTimer) {
-      console.log('🔄 Reconnecting to MongoDB in 5 seconds...');
-      retryTimer = setTimeout(() => {
-        retryTimer = null;
-        connectDB();
-      }, 5000);
-    }
-    throw error;
+  // If a connection attempt is currently in flight, reuse the same promise to prevent socket collisions
+  if (connectingPromise) {
+    return connectingPromise;
   }
+
+  connectingPromise = (async () => {
+    try {
+      const connUri = process.env.MONGODB_URI;
+      if (!connUri || connUri.includes('username:password')) {
+        console.warn('⚠️  MONGODB_URI is not configured yet with valid credentials in .env.');
+        console.warn('    Please paste your MongoDB Atlas connection string into backend/.env.');
+        return null;
+      }
+
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+
+      const conn = await mongoose.connect(connUri, poolOptions);
+      console.log(`✅ MongoDB Connected to host: ${conn.connection.host}`);
+      await cleanLegacyIndexes();
+      return conn;
+    } catch (error) {
+      console.error(`❌ MongoDB Connection Error: ${error.message}`);
+      // Auto-retry connection every 3 seconds if initial connect fails
+      if (!isShuttingDown && !retryTimer) {
+        console.log('🔄 Reconnecting to MongoDB in 3 seconds...');
+        retryTimer = setTimeout(() => {
+          retryTimer = null;
+          connectDB().catch(() => {});
+        }, 3000);
+      }
+      throw error;
+    } finally {
+      connectingPromise = null;
+    }
+  })();
+
+  return connectingPromise;
 };
 
-// Express Middleware: Ensures database is ready before processing API request
+// Express Middleware: Ensures database is ready before processing API requests
 const ensureDBConnected = async (req, res, next) => {
   // If health check endpoint or root ping, let it pass through immediately
   if (req.path === '/health' || req.path === '/api/health' || req.path === '/' || req.path === '/api') {
     return next();
   }
 
+  // Fast path: already connected
   if (mongoose.connection.readyState === 1) {
     return next();
   }
 
-  // If disconnected (0) and not currently connecting, trigger reconnect
-  if (mongoose.connection.readyState === 0) {
-    connectDB().catch(() => {});
-  }
-
-  // Wait up to 5 seconds for connection to become ready
-  const start = Date.now();
-  while (Date.now() - start < 5000) {
+  try {
+    // If disconnected (0) or connecting (2), await the shared connecting promise
+    await connectDB();
     if (mongoose.connection.readyState === 1) {
       return next();
     }
-    await new Promise((r) => setTimeout(r, 150));
+  } catch (err) {
+    console.warn(`⏳ Waiting for database connection: ${err.message}`);
   }
 
-  // If still not connected after 5 seconds, return 503 so frontend retries seamlessly
+  // Quick poll check in case connection was just established
+  if (mongoose.connection.readyState === 1) {
+    return next();
+  }
+
+  // Only return 503 if connection could not be established
   return res.status(503).json({
     success: false,
-    message: 'Database is currently establishing connection. Retrying request...',
+    message: 'Database is currently connecting to Atlas cluster. Retrying request...',
     retryAfterMs: 800,
   });
 };

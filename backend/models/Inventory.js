@@ -13,6 +13,11 @@ const inventorySchema = new mongoose.Schema(
       enum: ['New', 'Used'],
       default: 'New',
     },
+    status: {
+      type: String,
+      enum: ['PTA', 'JV', 'Non-PTA', 'CPID'],
+      default: 'PTA',
+    },
     companyName: {
       type: String,
       trim: true,
@@ -25,8 +30,8 @@ const inventorySchema = new mongoose.Schema(
     },
     modelNumber: {
       type: String,
-      required: [true, 'Model number is required'],
       trim: true,
+      default: '',
     },
     quantity: {
       type: Number,

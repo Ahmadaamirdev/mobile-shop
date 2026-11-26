@@ -1,7 +1,8 @@
 const Sale = require('../models/Sale');
 const Inventory = require('../models/Inventory');
+const Invoice = require('../models/Invoice');
 
-// @desc    Record a new sale, check inventory, and auto-subtract stock
+// @desc    Record a new sale (single or multiple devices), check inventory, and auto-subtract stock
 // @route   POST /api/sales
 exports.createSale = async (req, res, next) => {
   try {
@@ -15,96 +16,195 @@ exports.createSale = async (req, res, next) => {
       imei1,
       imei2,
       price,
+      items,
     } = req.body;
 
-    if (!modelName || !customerName || !customerNumber || price === undefined) {
+    if (!customerName || !customerName.trim() || !customerNumber || !customerNumber.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Model name, customer name, customer number, and price are required.',
+        message: 'Customer name and customer phone number are required.',
       });
     }
 
-    // Optional 15-digit IMEI check
-    if (imei1 && !/^\d{15}$/.test(imei1.trim())) {
+    const cleanedPhone = customerNumber.replace(/\D/g, '');
+    if (cleanedPhone.length !== 11) {
       return res.status(400).json({
         success: false,
-        message: 'IMEI 1 must be exactly 15 digits.',
-      });
-    }
-    if (imei2 && !/^\d{15}$/.test(imei2.trim())) {
-      return res.status(400).json({
-        success: false,
-        message: 'IMEI 2 must be exactly 15 digits.',
+        message: 'Customer phone number must contain exactly 11 digits.',
       });
     }
 
-    // Find in inventory: user can select or type model name
-    // Match modelName (and modelNumber if provided)
-    const inventoryQuery = {
-      modelName: { $regex: new RegExp(`^${modelName.trim()}$`, 'i') },
-    };
-    if (modelNumber && modelNumber.trim()) {
-      inventoryQuery.modelNumber = { $regex: new RegExp(`^${modelNumber.trim()}$`, 'i') };
-    }
-    if (condition && condition.trim()) {
-      inventoryQuery.condition = condition.trim();
-    }
-
-    const inventoryItem = await Inventory.findOne(inventoryQuery);
-
-    // Rule: "if its not in inventory or purchase it wont allow to be entered."
-    if (!inventoryItem || inventoryItem.quantity <= 0) {
+    // Normalize input into a list of device items
+    let rawItems = [];
+    if (Array.isArray(items) && items.length > 0) {
+      rawItems = items;
+    } else if (modelName && price !== undefined) {
+      rawItems = [
+        {
+          category,
+          condition,
+          modelName,
+          modelNumber,
+          imei1,
+          imei2,
+          price,
+          quantity: 1,
+        },
+      ];
+    } else {
       return res.status(400).json({
         success: false,
-        message: `Item "${modelName.trim()}" is not available in inventory or has zero stock. Sale cannot proceed.`,
+        message: 'At least one device with model name and price is required.',
       });
     }
 
-    // If an IMEI is provided and inventory tracks IMEIs for this device, verify it exists in stock
-    const cleanImei1 = imei1 ? imei1.trim() : null;
-    const cleanImei2 = imei2 ? imei2.trim() : null;
+    // Validate every item & resolve matching Inventory documents before deducting
+    const resolvedEntries = [];
+    const requestedQtyByInvId = new Map();
 
-    if (cleanImei1 && inventoryItem.imeis && inventoryItem.imeis.length > 0) {
-      if (!inventoryItem.imeis.includes(cleanImei1)) {
+    for (let i = 0; i < rawItems.length; i++) {
+      const it = rawItems[i];
+      const itModel = it.modelName ? it.modelName.trim() : '';
+      const itModelNum = it.modelNumber ? it.modelNumber.trim() : '';
+      const itCondition = it.condition ? it.condition.trim() : '';
+      const itCategory = it.category || 'Mobile';
+      const itPrice = Number(it.price);
+      const itQty = Number(it.quantity) || 1;
+      const cleanImei1 = it.imei1 ? it.imei1.trim() : '';
+      const cleanImei2 = it.imei2 ? it.imei2.trim() : '';
+
+      if (!itModel || it.price === undefined || isNaN(itPrice) || itPrice < 0) {
         return res.status(400).json({
           success: false,
-          message: `IMEI ${cleanImei1} is not present in available inventory stock for ${inventoryItem.modelName}.`,
+          message: `Device #${i + 1} requires a valid model name and price.`,
         });
       }
+
+      if (cleanImei1 && !/^\d{15}$/.test(cleanImei1)) {
+        return res.status(400).json({
+          success: false,
+          message: `Device #${i + 1} (${itModel}): IMEI 1 must be exactly 15 digits.`,
+        });
+      }
+      if (cleanImei2 && !/^\d{15}$/.test(cleanImei2)) {
+        return res.status(400).json({
+          success: false,
+          message: `Device #${i + 1} (${itModel}): IMEI 2 must be exactly 15 digits.`,
+        });
+      }
+
+      let inventoryItem = null;
+      if (it.inventoryId) {
+        inventoryItem = await Inventory.findById(it.inventoryId);
+      }
+      if (!inventoryItem) {
+        const inventoryQuery = {
+          modelName: { $regex: new RegExp(`^${itModel}$`, 'i') },
+          quantity: { $gt: 0 },
+        };
+        if (itModelNum) {
+          inventoryQuery.modelNumber = { $regex: new RegExp(`^${itModelNum}$`, 'i') };
+        }
+        if (itCondition) {
+          inventoryQuery.condition = itCondition;
+        }
+        inventoryItem = await Inventory.findOne(inventoryQuery);
+      }
+
+      if (!inventoryItem || inventoryItem.quantity <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Item "${itModel}" is not available in inventory or has zero stock. Sale cannot proceed.`,
+        });
+      }
+
+      const invKey = String(inventoryItem._id);
+      const newReqQty = (requestedQtyByInvId.get(invKey) || 0) + itQty;
+      if (inventoryItem.quantity < newReqQty) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient stock for "${inventoryItem.modelName}" (available: ${inventoryItem.quantity}, requested: ${newReqQty}).`,
+        });
+      }
+      requestedQtyByInvId.set(invKey, newReqQty);
+
+      if (cleanImei1 && inventoryItem.imeis && inventoryItem.imeis.length > 0) {
+        if (!inventoryItem.imeis.includes(cleanImei1)) {
+          return res.status(400).json({
+            success: false,
+            message: `IMEI ${cleanImei1} is not present in available inventory stock for ${inventoryItem.modelName}.`,
+          });
+        }
+      }
+
+      resolvedEntries.push({
+        inventoryItem,
+        saleItem: {
+          category: inventoryItem.category || itCategory,
+          condition: itCondition || inventoryItem.condition || 'New',
+          status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(it.status)
+            ? it.status
+            : (inventoryItem.status || 'PTA'),
+          modelName: inventoryItem.modelName,
+          modelNumber: inventoryItem.modelNumber || itModelNum,
+          imei1: cleanImei1 || undefined,
+          imei2: cleanImei2 || undefined,
+          price: itPrice,
+          quantity: itQty,
+        },
+        cleanImei1,
+        cleanImei2,
+        itQty,
+      });
     }
 
-    // Create Sale
+    const totalPrice = resolvedEntries.reduce(
+      (sum, entry) => sum + entry.saleItem.price * entry.saleItem.quantity,
+      0
+    );
+    const firstEntry = resolvedEntries[0].saleItem;
+
+    // Create Sale with items array and top-level summary fields
     const sale = await Sale.create({
-      category: inventoryItem.category || category,
-      condition: condition || inventoryItem.condition || 'New',
-      modelName: inventoryItem.modelName,
-      modelNumber: inventoryItem.modelNumber || modelNumber.trim(),
+      category: firstEntry.category,
+      condition: firstEntry.condition,
+      status: firstEntry.status || 'PTA',
+      modelName: resolvedEntries.map((e) => e.saleItem.modelName).join(', '),
+      modelNumber: firstEntry.modelNumber || '',
       customerName: customerName.trim(),
       customerNumber: customerNumber.trim(),
-      imei1: cleanImei1 || undefined,
-      imei2: cleanImei2 || undefined,
-      price: Number(price),
+      imei1: firstEntry.imei1,
+      imei2: firstEntry.imei2,
+      items: resolvedEntries.map((e) => e.saleItem),
+      price: totalPrice,
     });
 
-    // Automatically subtract from inventory
-    inventoryItem.quantity -= 1;
-    if (cleanImei1) {
-      inventoryItem.imeis = inventoryItem.imeis.filter((im) => im !== cleanImei1);
-    }
-    if (cleanImei2) {
-      inventoryItem.imeis = inventoryItem.imeis.filter((im) => im !== cleanImei2);
+    // Deduct stock from inventory for every item
+    const invUpdates = new Map();
+    for (const entry of resolvedEntries) {
+      const invId = String(entry.inventoryItem._id);
+      const invDoc = invUpdates.get(invId) || entry.inventoryItem;
+      invDoc.quantity -= entry.itQty;
+      if (entry.cleanImei1) {
+        invDoc.imeis = invDoc.imeis.filter((im) => im !== entry.cleanImei1);
+      }
+      if (entry.cleanImei2) {
+        invDoc.imeis = invDoc.imeis.filter((im) => im !== entry.cleanImei2);
+      }
+      invUpdates.set(invId, invDoc);
     }
 
-    if (inventoryItem.quantity <= 0) {
-      await Inventory.findByIdAndDelete(inventoryItem._id);
-    } else {
-      await inventoryItem.save();
+    for (const invDoc of invUpdates.values()) {
+      if (invDoc.quantity <= 0) {
+        await Inventory.findByIdAndDelete(invDoc._id);
+      } else {
+        await invDoc.save();
+      }
     }
 
     return res.status(201).json({
       success: true,
       data: sale,
-      remainingStock: inventoryItem.quantity,
       message: 'Sale recorded and inventory stock deducted successfully.',
     });
   } catch (error) {
@@ -134,20 +234,49 @@ exports.getSales = async (req, res, next) => {
       query.$or = [
         { modelName: { $regex: escaped, $options: 'i' } },
         { modelNumber: { $regex: escaped, $options: 'i' } },
+        { 'items.modelName': { $regex: escaped, $options: 'i' } },
+        { 'items.modelNumber': { $regex: escaped, $options: 'i' } },
         { customerName: { $regex: escaped, $options: 'i' } },
         { customerNumber: { $regex: escaped, $options: 'i' } },
         { condition: { $regex: escaped, $options: 'i' } },
+        { status: { $regex: escaped, $options: 'i' } },
+        { 'items.status': { $regex: escaped, $options: 'i' } },
+        { status: { $regex: escaped, $options: 'i' } },
+        { 'items.status': { $regex: escaped, $options: 'i' } },
         { imei1: { $regex: escaped, $options: 'i' } },
         { imei2: { $regex: escaped, $options: 'i' } },
+        { 'items.imei1': { $regex: escaped, $options: 'i' } },
+        { 'items.imei2': { $regex: escaped, $options: 'i' } },
       ];
     }
 
     const sales = await Sale.find(query).sort({ createdAt: -1 }).lean();
 
+    const saleIds = sales.map((s) => s._id);
+    const linkedInvoices =
+      saleIds.length > 0
+        ? await Invoice.find({ saleId: { $in: saleIds } })
+            .select('saleId invoiceNumber')
+            .lean()
+        : [];
+
+    const invoiceBySaleId = new Map();
+    linkedInvoices.forEach((inv) => {
+      if (inv.saleId) {
+        invoiceBySaleId.set(String(inv.saleId), inv.invoiceNumber);
+      }
+    });
+
+    const salesWithInvoiceStatus = sales.map((s) => ({
+      ...s,
+      hasInvoice: invoiceBySaleId.has(String(s._id)),
+      invoiceNumber: invoiceBySaleId.get(String(s._id)) || null,
+    }));
+
     return res.status(200).json({
       success: true,
-      count: sales.length,
-      data: sales,
+      count: salesWithInvoiceStatus.length,
+      data: salesWithInvoiceStatus,
     });
   } catch (error) {
     next(error);
@@ -186,37 +315,56 @@ exports.deleteSale = async (req, res, next) => {
       });
     }
 
-    // Restore stock to inventory with exact condition and model matching
-    const condition = sale.condition || 'New';
-    const inventoryQuery = {
-      modelName: { $regex: new RegExp(`^${sale.modelName.trim()}$`, 'i') },
-      condition: condition,
-    };
-    if (sale.modelNumber && sale.modelNumber.trim()) {
-      inventoryQuery.modelNumber = { $regex: new RegExp(`^${sale.modelNumber.trim()}$`, 'i') };
-    }
+    // Restore stock to inventory for every device in the sale
+    const itemsToRestore =
+      Array.isArray(sale.items) && sale.items.length > 0
+        ? sale.items
+        : [
+            {
+              category: sale.category || 'Mobile',
+              condition: sale.condition || 'New',
+              modelName: sale.modelName,
+              modelNumber: sale.modelNumber || '',
+              imei1: sale.imei1,
+              imei2: sale.imei2,
+              price: sale.price,
+              quantity: 1,
+            },
+          ];
 
-    let inventoryItem = await Inventory.findOne(inventoryQuery);
-
-    if (inventoryItem) {
-      inventoryItem.quantity += 1;
-      if (sale.imei1 && !inventoryItem.imeis.includes(sale.imei1)) {
-        inventoryItem.imeis.push(sale.imei1);
-      }
-      if (sale.imei2 && !inventoryItem.imeis.includes(sale.imei2)) {
-        inventoryItem.imeis.push(sale.imei2);
-      }
-      await inventoryItem.save();
-    } else {
-      await Inventory.create({
-        category: sale.category || 'Mobile',
+    for (const sItem of itemsToRestore) {
+      const condition = sItem.condition || 'New';
+      const restoreQty = Number(sItem.quantity) || 1;
+      const inventoryQuery = {
+        modelName: { $regex: new RegExp(`^${(sItem.modelName || '').trim()}$`, 'i') },
         condition: condition,
-        modelName: sale.modelName.trim(),
-        modelNumber: sale.modelNumber ? sale.modelNumber.trim() : 'N/A',
-        quantity: 1,
-        price: sale.price,
-        imeis: [sale.imei1, sale.imei2].filter(Boolean),
-      });
+      };
+      if (sItem.modelNumber && sItem.modelNumber.trim()) {
+        inventoryQuery.modelNumber = { $regex: new RegExp(`^${sItem.modelNumber.trim()}$`, 'i') };
+      }
+
+      let inventoryItem = await Inventory.findOne(inventoryQuery);
+
+      if (inventoryItem) {
+        inventoryItem.quantity += restoreQty;
+        if (sItem.imei1 && !inventoryItem.imeis.includes(sItem.imei1)) {
+          inventoryItem.imeis.push(sItem.imei1);
+        }
+        if (sItem.imei2 && !inventoryItem.imeis.includes(sItem.imei2)) {
+          inventoryItem.imeis.push(sItem.imei2);
+        }
+        await inventoryItem.save();
+      } else {
+        await Inventory.create({
+          category: sItem.category || 'Mobile',
+          condition: condition,
+          modelName: (sItem.modelName || '').trim(),
+          modelNumber: sItem.modelNumber ? sItem.modelNumber.trim() : '',
+          quantity: restoreQty,
+          price: sItem.price,
+          imeis: [sItem.imei1, sItem.imei2].filter(Boolean),
+        });
+      }
     }
 
     // Safely delete sale document after inventory restoration succeeds

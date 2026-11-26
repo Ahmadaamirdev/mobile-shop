@@ -1,5 +1,25 @@
 const Purchase = require('../models/Purchase');
 const Inventory = require('../models/Inventory');
+const { uploadCompressedImage } = require('../config/cloudinary');
+
+// @desc    Upload & compress single ID card image to Cloudinary
+// @route   POST /api/purchases/upload-id
+exports.uploadIdCard = async (req, res, next) => {
+  try {
+    const { image, side = 'front' } = req.body;
+    if (!image) {
+      return res.status(400).json({ success: false, message: 'Image data is required.' });
+    }
+    const url = await uploadCompressedImage(image, `unity_mobile/id_cards/${side}`);
+    return res.status(200).json({
+      success: true,
+      url,
+      message: 'ID Card image uploaded and compressed successfully.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // @desc    Create new purchase and auto-add to inventory
 // @route   POST /api/purchases
@@ -8,17 +28,31 @@ exports.createPurchase = async (req, res, next) => {
     const {
       category = 'Mobile',
       condition = 'New',
+      status = 'PTA',
       companyName,
       modelName,
-      modelNumber,
+      modelNumber = '',
+      quantity = 1,
       imei1,
       imei2,
       serialNumber,
       customerName,
       customerPhone,
       customerIdCard,
+      customerAddress = '',
+      idCardFront = '',
+      idCardBack = '',
       price,
     } = req.body;
+
+    // Validate 11-digit Phone Number
+    const cleanedPhone = customerPhone ? customerPhone.replace(/\D/g, '') : '';
+    if (cleanedPhone.length !== 11) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer phone number must contain exactly 11 digits.',
+      });
+    }
 
     // Validate 13-digit ID Card
     const cleanedIdCard = customerIdCard ? customerIdCard.replace(/\D/g, '') : '';
@@ -43,19 +77,38 @@ exports.createPurchase = async (req, res, next) => {
       });
     }
 
+    // Upload and compress ID Card Front and Back to Cloudinary if provided
+    let frontUrl = '';
+    let backUrl = '';
+
+    if (idCardFront && idCardFront.trim()) {
+      frontUrl = await uploadCompressedImage(idCardFront, 'unity_mobile/id_cards/front');
+    }
+    if (idCardBack && idCardBack.trim()) {
+      backUrl = await uploadCompressedImage(idCardBack, 'unity_mobile/id_cards/back');
+    }
+
+    const cleanModelNumber = modelNumber ? modelNumber.trim() : '';
+    const purchaseQty = Math.max(1, Number(quantity) || 1);
+
     // Create Purchase Record
     const purchase = await Purchase.create({
       category,
       condition: condition === 'Used' ? 'Used' : 'New',
+      status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
       companyName: companyName ? companyName.trim() : '',
       modelName: modelName.trim(),
-      modelNumber: modelNumber.trim(),
+      modelNumber: cleanModelNumber,
+      quantity: purchaseQty,
       imei1: imei1 ? imei1.trim() : undefined,
       imei2: imei2 ? imei2.trim() : undefined,
       serialNumber: serialNumber ? serialNumber.trim() : '',
       customerName: customerName ? customerName.trim() : '',
       customerPhone: customerPhone.trim(),
       customerIdCard: cleanedIdCard,
+      customerAddress: customerAddress ? customerAddress.trim() : '',
+      idCardFront: frontUrl,
+      idCardBack: backUrl,
       price: Number(price),
     });
 
@@ -63,7 +116,9 @@ exports.createPurchase = async (req, res, next) => {
     // Match by modelName, modelNumber, and condition (case-insensitive regex)
     let inventoryItem = await Inventory.findOne({
       modelName: { $regex: new RegExp(`^${modelName.trim()}$`, 'i') },
-      modelNumber: { $regex: new RegExp(`^${modelNumber.trim()}$`, 'i') },
+      modelNumber: cleanModelNumber
+        ? { $regex: new RegExp(`^${cleanModelNumber}$`, 'i') }
+        : '',
       condition: condition === 'Used' ? 'Used' : 'New',
     });
 
@@ -73,9 +128,10 @@ exports.createPurchase = async (req, res, next) => {
 
     if (inventoryItem) {
       // Increment stock quantity
-      inventoryItem.quantity += 1;
+      inventoryItem.quantity += purchaseQty;
       inventoryItem.price = Number(price); // sync price or update latest purchase price
       if (companyName) inventoryItem.companyName = companyName.trim();
+      if (['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status)) inventoryItem.status = status;
       
       // Append IMEIs if not already present
       imeisToAdd.forEach((im) => {
@@ -89,10 +145,11 @@ exports.createPurchase = async (req, res, next) => {
       inventoryItem = await Inventory.create({
         category,
         condition: condition === 'Used' ? 'Used' : 'New',
+        status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
         companyName: companyName ? companyName.trim() : '',
         modelName: modelName.trim(),
-        modelNumber: modelNumber.trim(),
-        quantity: 1,
+        modelNumber: cleanModelNumber,
+        quantity: purchaseQty,
         price: Number(price),
         imeis: imeisToAdd,
       });
@@ -135,7 +192,9 @@ exports.getPurchases = async (req, res, next) => {
         { customerName: { $regex: escaped, $options: 'i' } },
         { customerPhone: { $regex: escaped, $options: 'i' } },
         { customerIdCard: { $regex: escaped, $options: 'i' } },
+        { customerAddress: { $regex: escaped, $options: 'i' } },
         { condition: { $regex: escaped, $options: 'i' } },
+        { status: { $regex: escaped, $options: 'i' } },
         { imei1: { $regex: escaped, $options: 'i' } },
         { imei2: { $regex: escaped, $options: 'i' } },
         { serialNumber: { $regex: escaped, $options: 'i' } },
@@ -199,7 +258,8 @@ exports.deletePurchase = async (req, res, next) => {
 
     const inventoryItem = await Inventory.findOne(inventoryQuery);
     if (inventoryItem) {
-      inventoryItem.quantity = Math.max(0, inventoryItem.quantity - 1);
+      const purchaseQty = Math.max(1, Number(purchase.quantity) || 1);
+      inventoryItem.quantity = Math.max(0, inventoryItem.quantity - purchaseQty);
       if (purchase.imei1) {
         inventoryItem.imeis = inventoryItem.imeis.filter((im) => im !== purchase.imei1.trim());
       }
