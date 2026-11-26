@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getInventory, createInventoryItem, deleteInventoryItem } from '../services/api';
-import { Trash2, Search, Plus, Package, Eye, Smartphone } from 'lucide-react';
+import { getInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem } from '../services/api';
+import { Trash2, Search, Plus, Package, Eye, Smartphone, Edit3, Check, X } from 'lucide-react';
 import DetailModal from './DetailModal';
 
 const Inventory = ({ isActive, setAlert }) => {
@@ -12,6 +12,19 @@ const Inventory = ({ isActive, setAlert }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editForm, setEditForm] = useState({
+    category: 'Mobile',
+    condition: 'New',
+    status: 'PTA',
+    companyName: '',
+    modelName: '',
+    modelNumber: '',
+    quantity: 1,
+    price: '',
+    imeisText: '',
+  });
 
   // Manual addition form state
   const [formData, setFormData] = useState({
@@ -132,6 +145,82 @@ const Inventory = ({ isActive, setAlert }) => {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openEditModal = (item) => {
+    setEditingItem(item);
+    setEditForm({
+      category: item.category || 'Mobile',
+      condition: item.condition || 'New',
+      status: item.status || 'PTA',
+      companyName: item.companyName || '',
+      modelName: item.modelName || '',
+      modelNumber: item.modelNumber || '',
+      quantity: item.quantity !== undefined ? item.quantity : 0,
+      price: item.price !== undefined ? item.price : '',
+      imeisText: Array.isArray(item.imeis) ? item.imeis.join('\n') : '',
+    });
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingItem || savingEdit) return;
+
+    const isAccessory = editForm.category === 'Accessory';
+    if (!isAccessory && !editForm.modelName.trim()) {
+      setAlert({ type: 'error', message: 'Model name is required for Mobiles and Tablets.' });
+      return;
+    }
+
+    const parsedQty = editForm.quantity === '' ? 0 : Number(editForm.quantity);
+    if (isNaN(parsedQty) || parsedQty < 0) {
+      setAlert({ type: 'error', message: 'Quantity cannot be negative.' });
+      return;
+    }
+
+    const parsedPrice = editForm.price === '' ? 0 : Number(editForm.price);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      setAlert({ type: 'error', message: 'Price cannot be negative.' });
+      return;
+    }
+
+    const parsedImeis = editForm.imeisText
+      .split(/[\n,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const invalidImei = parsedImeis.find((im) => !/^\d{15}$/.test(im));
+    if (invalidImei) {
+      setAlert({ type: 'error', message: `Invalid IMEI "${invalidImei}". Each IMEI must be exactly 15 digits.` });
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      const res = await updateInventoryItem(editingItem._id, {
+        category: editForm.category,
+        condition: editForm.condition,
+        status: editForm.status,
+        companyName: editForm.companyName.trim(),
+        modelName: editForm.modelName.trim() || 'Accessory',
+        modelNumber: editForm.modelNumber.trim(),
+        quantity: parsedQty,
+        price: parsedPrice,
+        imeis: parsedImeis,
+      });
+      setAlert({
+        type: 'success',
+        message: res.data?.message || 'Inventory item updated successfully.',
+      });
+      setEditingItem(null);
+      fetchInventory(true);
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to update inventory item.',
+      });
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -510,7 +599,7 @@ const Inventory = ({ isActive, setAlert }) => {
                         </span>
                       </td>
 
-                      {/* Actions: Spectate & Delete */}
+                      {/* Actions: Spectate, Edit & Delete */}
                       <td style={{ textAlign: 'center', paddingRight: '14px' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                           <button
@@ -520,6 +609,14 @@ const Inventory = ({ isActive, setAlert }) => {
                             title="View brand, model number & IMEIs"
                           >
                             <Eye size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-details-toggle"
+                            onClick={() => openEditModal(item)}
+                            title="Edit inventory item"
+                          >
+                            <Edit3 size={13} />
                           </button>
                           <button
                             className="action-btn-danger"
@@ -591,6 +688,15 @@ const Inventory = ({ isActive, setAlert }) => {
                     title="View details"
                   >
                     <Eye size={14} /><span className="view-label"> View Details</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-details-toggle"
+                    style={{ minHeight: '38px', justifyContent: 'center' }}
+                    onClick={() => openEditModal(item)}
+                    title="Edit inventory item"
+                  >
+                    <Edit3 size={14} />
                   </button>
                   <button
                     className="action-btn-danger"
@@ -676,6 +782,156 @@ const Inventory = ({ isActive, setAlert }) => {
         </>
       )}
     </DetailModal>
+
+    {/* 5. Edit Inventory Modal */}
+    {editingItem && (
+      <div className="detail-modal-backdrop" onClick={() => setEditingItem(null)}>
+        <div className="detail-modal-card edit-inventory-modal-card" onClick={(e) => e.stopPropagation()}>
+          <div className="detail-modal-header">
+            <div className="detail-modal-header-left">
+              <div className="panel-icon-box">
+                <Edit3 size={18} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <h3 className="detail-modal-title">Edit Inventory Item</h3>
+                <p className="detail-modal-subtitle">{editingItem.modelName}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="detail-modal-close"
+              onClick={() => setEditingItem(null)}
+              aria-label="Close edit modal"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSaveEdit}>
+            <div className="detail-modal-body">
+              <div className="form-grid-3">
+                <div className="form-field">
+                  <label>Category</label>
+                  <select
+                    value={editForm.category}
+                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                  >
+                    <option value="Mobile">Mobile</option>
+                    <option value="Tablet">Tablet</option>
+                    <option value="Accessory">Accessory</option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label>Condition</label>
+                  <select
+                    value={editForm.condition}
+                    onChange={(e) => setEditForm({ ...editForm, condition: e.target.value })}
+                  >
+                    <option value="New">Brand New</option>
+                    <option value="Used">Used / Second Hand</option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label>Status</label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                  >
+                    <option value="PTA">PTA</option>
+                    <option value="JV">JV</option>
+                    <option value="Non-PTA">Non-PTA</option>
+                    <option value="CPID">CPID</option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label>Company / Brand</label>
+                  <input
+                    type="text"
+                    value={editForm.companyName}
+                    onChange={(e) => setEditForm({ ...editForm, companyName: e.target.value })}
+                    placeholder="e.g. Apple, Samsung"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label>Model Name {editForm.category !== 'Accessory' ? '*' : '(Optional)'}</label>
+                  <input
+                    type="text"
+                    value={editForm.modelName}
+                    onChange={(e) => setEditForm({ ...editForm, modelName: e.target.value })}
+                    required={editForm.category !== 'Accessory'}
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label>Model Number</label>
+                  <input
+                    type="text"
+                    value={editForm.modelNumber}
+                    onChange={(e) => setEditForm({ ...editForm, modelNumber: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label>Quantity in Stock</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.quantity}
+                    onChange={(e) => setEditForm({ ...editForm, quantity: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label>Unit Price (PKR)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.price}
+                    onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-field" style={{ marginTop: '12px' }}>
+                <label>IMEIs in Stock (Optional, 15 digits each, comma or line separated)</label>
+                <textarea
+                  rows={3}
+                  value={editForm.imeisText}
+                  onChange={(e) => setEditForm({ ...editForm, imeisText: e.target.value })}
+                  placeholder="Enter 15-digit IMEIs separated by comma or new line"
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-card)', fontFamily: 'inherit', fontSize: '13px', resize: 'vertical' }}
+                />
+              </div>
+            </div>
+
+            <div className="detail-modal-footer" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setEditingItem(null)}
+                disabled={savingEdit}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={savingEdit}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Check size={15} />
+                {savingEdit ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
   </div>
   );
 };

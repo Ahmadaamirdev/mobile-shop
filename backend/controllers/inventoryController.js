@@ -242,13 +242,48 @@ exports.updateInventoryItem = async (req, res, next) => {
     if (category) item.category = category;
     if (condition) item.condition = condition;
     if (['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status)) item.status = status;
-    if (modelName) item.modelName = modelName.trim();
-    if (modelNumber) item.modelNumber = modelNumber.trim();
+    if (modelName !== undefined) {
+      const cleanedModel = modelName.trim();
+      if (!cleanedModel && (item.category || category) !== 'Accessory') {
+        return res.status(400).json({
+          success: false,
+          message: 'Model name is required for Mobiles and Tablets.',
+        });
+      }
+      item.modelName = cleanedModel || 'Accessory';
+    }
+    if (modelNumber !== undefined) item.modelNumber = modelNumber.trim();
     if (companyName !== undefined) item.companyName = companyName.trim();
-    if (quantity !== undefined) item.quantity = Number(quantity);
-    if (price !== undefined) item.price = Number(price);
+    if (quantity !== undefined) {
+      const parsedQty = Number(quantity);
+      if (isNaN(parsedQty) || parsedQty < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Quantity cannot be negative.',
+        });
+      }
+      item.quantity = parsedQty;
+    }
+    if (price !== undefined) {
+      const parsedPrice = Number(price);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Price cannot be negative.',
+        });
+      }
+      item.price = parsedPrice;
+    }
     if (imeis !== undefined && Array.isArray(imeis)) {
-      item.imeis = imeis.map((im) => String(im).trim()).filter((im) => /^\d{15}$/.test(im));
+      const cleanedImeis = imeis.map((im) => String(im).trim()).filter(Boolean);
+      const invalidImei = cleanedImeis.find((im) => !/^\d{15}$/.test(im));
+      if (invalidImei) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid IMEI "${invalidImei}". Each IMEI must be exactly 15 digits.`,
+        });
+      }
+      item.imeis = cleanedImeis;
     }
 
     await item.save();

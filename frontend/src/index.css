@@ -4287,3 +4287,8 @@ samp {
     padding: 2px 7px;
   }
 }
+
+.edit-inventory-modal-card {
+  max-width: 720px;
+  width: 95%;
+}
