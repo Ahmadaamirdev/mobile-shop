@@ -691,14 +691,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>
-                  IMEI 1 (Optional - 15 digits)
-                  {formData.imei1 && (
-                    <span style={{ marginLeft: '6px', color: formData.imei1.length === 15 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                      ({formData.imei1.length}/15)
-                    </span>
-                  )}
-                </label>
+                <label>IMEI 1 (Optional - 15 digits)</label>
                 <input
                   type="text"
                   maxLength={15}
@@ -710,14 +703,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>
-                  IMEI 2 (Optional - 15 digits)
-                  {formData.imei2 && (
-                    <span style={{ marginLeft: '6px', color: formData.imei2.length === 15 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                      ({formData.imei2.length}/15)
-                    </span>
-                  )}
-                </label>
+                <label>IMEI 2 (Optional - 15 digits)</label>
                 <input
                   type="text"
                   maxLength={15}
@@ -752,11 +738,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               <div className="form-field">
                 <label>
                   Customer Phone Number {formData.category !== 'Accessory' ? '* (11 digits)' : '(Optional)'}
-                  {formData.customerPhone && (
-                    <span style={{ marginLeft: '6px', color: formData.customerPhone.length === 11 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                      ({formData.customerPhone.length}/11)
-                    </span>
-                  )}
                 </label>
                 <input
                   type="tel"
@@ -771,11 +752,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               <div className="form-field">
                 <label>
                   Customer ID Card Number {formData.category !== 'Accessory' ? '* (13 digits)' : '(Optional)'}
-                  {formData.customerIdCard && (
-                    <span style={{ marginLeft: '6px', color: formData.customerIdCard.length === 13 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                      ({formData.customerIdCard.length}/13)
-                    </span>
-                  )}
                 </label>
                 <input
                   type="text"

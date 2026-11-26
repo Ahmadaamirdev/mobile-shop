@@ -946,14 +946,7 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                 </div>
 
                 <div className="form-field">
-                  <label>
-                    Customer Phone Number * (11 digits)
-                    {invoiceData.customerNumber && (
-                      <span style={{ marginLeft: '6px', color: invoiceData.customerNumber.length === 11 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                        ({invoiceData.customerNumber.length}/11)
-                      </span>
-                    )}
-                  </label>
+                  <label>Customer Phone Number * (11 digits)</label>
                   <input
                     type="tel"
                     maxLength={11}

@@ -399,14 +399,7 @@ const Inventory = ({ isActive, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>
-                  Supplier Contact Phone (Optional - 11 digits)
-                  {formData.customerPhone && (
-                    <span style={{ marginLeft: '6px', color: formData.customerPhone.length === 11 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                      ({formData.customerPhone.length}/11)
-                    </span>
-                  )}
-                </label>
+                <label>Supplier Contact Phone (Optional - 11 digits)</label>
                 <input
                   type="tel"
                   maxLength={11}

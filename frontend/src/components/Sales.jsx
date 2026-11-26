@@ -422,11 +422,6 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
               <div className="form-field">
                 <label>
                   Customer Phone Number {!isAccessoryOnlySale ? '* (11 digits)' : '(Optional)'}
-                  {formData.customerNumber && (
-                    <span style={{ marginLeft: '6px', color: formData.customerNumber.length === 11 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                      ({formData.customerNumber.length}/11)
-                    </span>
-                  )}
                 </label>
                 <input
                   type="tel"
@@ -623,14 +618,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                     </div>
 
                     <div className="form-field">
-                      <label>
-                        IMEI 1 (Optional - 15 digits)
-                        {dev.imei1 && (
-                          <span style={{ marginLeft: '6px', color: dev.imei1.length === 15 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                            ({dev.imei1.length}/15)
-                          </span>
-                        )}
-                      </label>
+                      <label>IMEI 1 (Optional - 15 digits)</label>
                       <input
                         type="text"
                         maxLength={15}
@@ -644,14 +632,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                     </div>
 
                     <div className="form-field">
-                      <label>
-                        IMEI 2 (Optional - 15 digits)
-                        {dev.imei2 && (
-                          <span style={{ marginLeft: '6px', color: dev.imei2.length === 15 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                            ({dev.imei2.length}/15)
-                          </span>
-                        )}
-                      </label>
+                      <label>IMEI 2 (Optional - 15 digits)</label>
                       <input
                         type="text"
                         maxLength={15}
