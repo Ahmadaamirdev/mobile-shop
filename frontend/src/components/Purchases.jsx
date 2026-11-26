@@ -489,8 +489,8 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
         {/* Toolbar: Category Filters on Left, Subfilter for Condition, Search on Right (Hidden when form is open) */}
         {!showAddForm && (
           <div className="panel-toolbar-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
+            {/* Desktop: pill buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              {/* Primary Category Filter Pills */}
               <div className="panel-filter-pills">
                 {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
                   <button
@@ -503,10 +503,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
                   </button>
                 ))}
               </div>
-
               <div className="filter-divider hide-on-mobile" />
-
-              {/* Subfilter: Device Condition (All / New / Used) */}
               <div className="subfilter-group panel-filter-pills">
                 {[
                   { id: 'All', label: 'All Condition' },
@@ -523,6 +520,29 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Mobile: compact select dropdowns */}
+            <div className="mobile-filter-row">
+              <select
+                className="mobile-filter-select"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="All">All Categories</option>
+                <option value="Mobile">Mobiles</option>
+                <option value="Tablet">Tablets</option>
+                <option value="Accessory">Accessories</option>
+              </select>
+              <select
+                className="mobile-filter-select"
+                value={selectedCondition}
+                onChange={(e) => setSelectedCondition(e.target.value)}
+              >
+                <option value="All">All Condition</option>
+                <option value="New">New</option>
+                <option value="Used">Used</option>
+              </select>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -962,7 +982,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
                         style={{ flex: 1, minHeight: '40px', justifyContent: 'center' }}
                         onClick={() => setDetailItem(item)}
                       >
-                        <Eye size={14} /> View Details
+                        <Eye size={14} /><span className="view-label"> View Details</span>
                       </button>
                       <button
                         className="action-btn-danger"

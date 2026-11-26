@@ -1050,8 +1050,8 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
             </div>
           )}
 
-          {/* Action Buttons Above Invoice Preview (Always visible without scrolling A4 sheet) */}
-          <div className="invoice-bottom-actions hide-on-print">
+          {/* Action Buttons — above invoice preview on desktop, below on mobile via CSS */}
+          <div className="invoice-bottom-actions hide-on-print" style={{ marginBottom: '12px' }}>
             {viewMode === 'generator' && (
               <button
                 type="button"
@@ -1062,7 +1062,7 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                 title={invoiceData._id ? 'Save modifications to database' : 'Save invoice to database'}
               >
                 <Check size={16} />
-                <span>{isSaving ? 'Saving...' : invoiceData._id ? 'Save Updates' : 'Save Record'}</span>
+                <span>{isSaving ? 'Saving...' : invoiceData._id ? 'Save' : 'Save'}</span>
               </button>
             )}
             <button
@@ -1073,7 +1073,7 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
               title="Download Invoice as PDF document"
             >
               <Download size={16} />
-              <span>{isGeneratingPDF ? 'Generating...' : 'Download PDF'}</span>
+              <span>{isGeneratingPDF ? 'PDF...' : 'Download PDF'}</span>
             </button>
             <button
               type="button"
@@ -1083,7 +1083,7 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
               title="Print A4 Invoice"
             >
               <Printer size={16} />
-              <span>Print A4 Invoice</span>
+              <span>Print</span>
             </button>
           </div>
 
