@@ -427,7 +427,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                         .map((inv) => ({
                           value: inv._id,
                           label: inv.modelName,
-                          searchText: `${inv.modelName} ${inv.modelNumber || ''} ${inv.companyName || ''} ${inv.category || ''} ${inv.condition || 'New'} ${(inv.imeis || []).join(' ')}`,
+                          searchText: `${inv.modelName} ${inv.modelNumber || ''} ${inv.companyName || ''} ${inv.category || ''} ${inv.condition || 'New'} ${inv.status || ''} ${inv.price || ''} ${(inv.imeis || []).join(' ')}`,
                           inv,
                         }))}
                       renderSelected={(opt) => (

@@ -52,8 +52,9 @@ const SmartDropdown = ({
 
   const filteredOptions = options.filter((opt) => {
     if (!query.trim()) return true;
-    const term = query.trim().toLowerCase();
-    return (opt.searchText || opt.label || '').toLowerCase().includes(term);
+    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const haystack = `${opt.searchText || ''} ${opt.label || ''}`.toLowerCase();
+    return words.every((w) => haystack.includes(w));
   });
 
   const handleSelect = (val) => {
@@ -107,7 +108,11 @@ const SmartDropdown = ({
       {isOpen && (
         <div className="smart-dropdown-menu">
           {/* Search Input */}
-          <div className="smart-dropdown-search-wrap">
+          <div
+            className="smart-dropdown-search-wrap"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <Search size={13} className="smart-dropdown-search-icon" />
             <input
               ref={searchInputRef}
@@ -117,6 +122,22 @@ const SmartDropdown = ({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            <div className="smart-dropdown-search-meta">
+              {query && (
+                <button
+                  type="button"
+                  className="smart-dropdown-search-clear"
+                  onClick={() => {
+                    setQuery('');
+                    searchInputRef.current?.focus();
+                  }}
+                  title="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+              <span className="smart-dropdown-count">{filteredOptions.length}</span>
+            </div>
           </div>
 
           <div className="smart-dropdown-list">
@@ -127,10 +148,10 @@ const SmartDropdown = ({
                 className={`smart-dropdown-item manual ${value === '' ? 'selected' : ''}`}
                 onClick={() => handleSelect('')}
               >
-                <div className="smart-dropdown-item-main">
-                  <div className="smart-dropdown-item-title">{manualOption.label}</div>
+                <div className="smart-dropdown-item-main" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span className="smart-dropdown-item-title">{manualOption.label}</span>
                   {manualOption.description && (
-                    <div className="smart-dropdown-item-sub">{manualOption.description}</div>
+                    <span className="smart-dropdown-item-sub">— {manualOption.description}</span>
                   )}
                 </div>
                 {value === '' && <Check size={14} className="smart-dropdown-check" />}

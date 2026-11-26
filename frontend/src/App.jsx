@@ -1,4 +1,4 @@
-import React, { useState, Component } from 'react';
+import React, { useState, useEffect, Component } from 'react';
 import Sidebar from './components/Sidebar';
 import MobileTopBar from './components/MobileTopBar';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -6,6 +6,8 @@ import Purchases from './components/Purchases';
 import Sales from './components/Sales';
 import Inventory from './components/Inventory';
 import Invoice from './components/Invoice';
+import Login from './components/Login';
+import { verifyAuth, logoutUser } from './services/api';
 import { CheckCircle2, AlertCircle, X, RefreshCw } from 'lucide-react';
 
 class ErrorBoundary extends Component {
@@ -36,10 +38,46 @@ class ErrorBoundary extends Component {
 }
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [activeTab, setActiveTab] = useState('purchases');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedSaleForInvoice, setSelectedSaleForInvoice] = useState(null);
   const [alert, setAlertState] = useState(null);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const token = localStorage.getItem('unity_auth_token');
+      if (!token) {
+        setIsAuthenticated(false);
+        setCheckingAuth(false);
+        return;
+      }
+      try {
+        await verifyAuth();
+        setIsAuthenticated(true);
+      } catch {
+        logoutUser();
+        setIsAuthenticated(false);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkSession();
+
+    const handleAuthExpired = () => {
+      setIsAuthenticated(false);
+    };
+    window.addEventListener('unity-auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('unity-auth-expired', handleAuthExpired);
+  }, []);
+
+  const handleLogout = () => {
+    logoutUser();
+    setIsAuthenticated(false);
+    setIsSidebarOpen(false);
+  };
 
   const setAlert = (newAlert) => {
     setAlertState(newAlert);
@@ -55,6 +93,20 @@ function App() {
     setActiveTab('invoices');
   };
 
+  if (checkingAuth) {
+    return (
+      <div className="login-page">
+        <div style={{ textAlign: 'center', color: '#ffffff', fontSize: '14px', fontWeight: 600 }}>
+          Loading Unity Mobile...
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <div className="app-layout">
       {/* Sidebar (Desktop Persistent / Mobile Drawer) */}
@@ -63,6 +115,7 @@ function App() {
         setActiveTab={setActiveTab}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}

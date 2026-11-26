@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const { connectDB, closeDB, ensureDBConnected, poolOptions } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const { cacheMiddleware, autoInvalidateMiddleware } = require('./middleware/cache');
+const { requireAuth } = require('./middleware/auth');
 
 // Load environment variables
 dotenv.config();
@@ -54,8 +55,17 @@ app.get(['/api', '/'], (req, res, next) => {
   });
 });
 
+// Public Auth Routes
+app.use(['/api/auth', '/auth'], require('./routes/authRoutes'));
+
 // Middleware: Ensure database pool is active before running CRUD operations
 app.use(['/api', '/purchases', '/inventory', '/sales', '/invoices'], ensureDBConnected);
+
+// Middleware: Require valid session token for all inventory/sales/purchases/invoice routes
+app.use(['/api/purchases', '/purchases'], requireAuth);
+app.use(['/api/inventory', '/inventory'], requireAuth);
+app.use(['/api/sales', '/sales'], requireAuth);
+app.use(['/api/invoices', '/invoices'], requireAuth);
 
 // Middleware: Fast in-memory caching for GETs & instant invalidation on mutations
 app.use('/api', autoInvalidateMiddleware);

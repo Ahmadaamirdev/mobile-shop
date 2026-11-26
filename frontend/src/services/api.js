@@ -7,6 +7,24 @@ const api = axios.create({
   },
 });
 
+// Attach session Bearer token to all outgoing requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('unity_auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Auth endpoints
+export const loginUser = (credentials) => api.post('/auth/login', credentials);
+export const verifyAuth = () => api.get('/auth/verify');
+export const logoutUser = () => {
+  localStorage.removeItem('unity_auth_token');
+  localStorage.removeItem('unity_auth_user');
+  clearApiCache();
+};
+
 // Client-Side In-Memory Cache (45-second TTL) for 0ms Section Switching & Navigation
 const clientCache = new Map();
 const CACHE_TTL_MS = 45 * 1000;
@@ -118,6 +136,12 @@ api.interceptors.response.use(
   async (error) => {
     const config = error.config;
     if (!config) return Promise.reject(error);
+
+    if (error.response?.status === 401 && !config.url?.includes('/auth/login')) {
+      logoutUser();
+      window.dispatchEvent(new Event('unity-auth-expired'));
+      return Promise.reject(error);
+    }
 
     config.__retryCount = config.__retryCount || 0;
 

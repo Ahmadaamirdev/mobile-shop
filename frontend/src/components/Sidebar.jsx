@@ -1,7 +1,7 @@
 import React from 'react';
-import { ShoppingBag, Tag, Package, FileText, X } from 'lucide-react';
+import { ShoppingBag, Tag, Package, FileText, X, LogOut } from 'lucide-react';
 
-const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
+const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen, onLogout }) => {
   const navItems = [
     { id: 'purchases', label: 'Purchases', icon: ShoppingBag },
     { id: 'sales', label: 'Sales', icon: Tag },
@@ -70,6 +70,16 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
               <span>Rehma Center, Kachery Rd</span>
             </div>
           </div>
+          {onLogout && (
+            <button
+              type="button"
+              className="sidebar-logout-btn"
+              onClick={onLogout}
+            >
+              <LogOut size={15} />
+              <span>Sign Out</span>
+            </button>
+          )}
         </div>
       </aside>
     </>

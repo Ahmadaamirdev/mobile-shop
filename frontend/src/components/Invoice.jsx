@@ -839,7 +839,7 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                         return {
                           value: sale._id,
                           label: `${sale.customerName} — ${deviceLabel}`,
-                          searchText: `${sale.customerName} ${sale.customerNumber} ${deviceLabel} ${dateStr} ${sale.invoiceNumber || ''}`,
+                          searchText: `${sale.customerName} ${sale.customerNumber} ${deviceLabel} ${dateStr} ${sale.price} ${sale.status || ''} ${deviceList.map((d) => `${d.modelNumber || ''} ${d.imei1 || ''} ${d.status || ''}`).join(' ')}`,
                           sale,
                           deviceLabel,
                           dateStr,
