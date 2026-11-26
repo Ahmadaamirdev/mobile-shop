@@ -284,6 +284,8 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState('newest');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCondition, setSelectedCondition] = useState('All');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -439,27 +441,52 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
     }
   };
 
-  const filteredPurchases = purchases.filter((item) => {
-    const categoryMatch = selectedCategory === 'All' || item.category?.toLowerCase() === selectedCategory.toLowerCase();
-    const conditionMatch = selectedCondition === 'All' || (item.condition || 'New').toLowerCase() === selectedCondition.toLowerCase();
-    if (!search.trim()) return categoryMatch && conditionMatch;
-    const term = search.trim().toLowerCase();
-    const searchMatch = (
-      item.modelName?.toLowerCase().includes(term) ||
-      item.modelNumber?.toLowerCase().includes(term) ||
-      item.companyName?.toLowerCase().includes(term) ||
-      item.customerName?.toLowerCase().includes(term) ||
-      item.customerPhone?.toLowerCase().includes(term) ||
-      item.customerIdCard?.toLowerCase().includes(term) ||
-      item.customerAddress?.toLowerCase().includes(term) ||
-      item.imei1?.toLowerCase().includes(term) ||
-      item.imei2?.toLowerCase().includes(term) ||
-      item.serialNumber?.toLowerCase().includes(term) ||
-      (item.condition || 'New').toLowerCase().includes(term) ||
-      (item.status || 'PTA').toLowerCase().includes(term)
-    );
-    return categoryMatch && conditionMatch && searchMatch;
-  });
+  const matchesDateRange = (dateVal) => {
+    if (!startDate && !endDate) return true;
+    if (!dateVal) return false;
+    const itemTime = new Date(dateVal).getTime();
+    if (Number.isNaN(itemTime)) return false;
+    if (startDate) {
+      const [y, m, d] = startDate.split('-').map(Number);
+      const start = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+      if (itemTime < start) return false;
+    }
+    if (endDate) {
+      const [y, m, d] = endDate.split('-').map(Number);
+      const end = new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
+      if (itemTime > end) return false;
+    }
+    return true;
+  };
+
+  const filteredPurchases = purchases
+    .filter((item) => {
+      const categoryMatch = selectedCategory === 'All' || item.category?.toLowerCase() === selectedCategory.toLowerCase();
+      const conditionMatch = selectedCondition === 'All' || (item.condition || 'New').toLowerCase() === selectedCondition.toLowerCase();
+      const dateMatch = matchesDateRange(item.createdAt);
+      if (!search.trim()) return categoryMatch && conditionMatch && dateMatch;
+      const term = search.trim().toLowerCase();
+      const searchMatch = (
+        item.modelName?.toLowerCase().includes(term) ||
+        item.modelNumber?.toLowerCase().includes(term) ||
+        item.companyName?.toLowerCase().includes(term) ||
+        item.customerName?.toLowerCase().includes(term) ||
+        item.customerPhone?.toLowerCase().includes(term) ||
+        item.customerIdCard?.toLowerCase().includes(term) ||
+        item.customerAddress?.toLowerCase().includes(term) ||
+        item.imei1?.toLowerCase().includes(term) ||
+        item.imei2?.toLowerCase().includes(term) ||
+        item.serialNumber?.toLowerCase().includes(term) ||
+        (item.condition || 'New').toLowerCase().includes(term) ||
+        (item.status || 'PTA').toLowerCase().includes(term)
+      );
+      return categoryMatch && conditionMatch && dateMatch && searchMatch;
+    })
+    .sort((a, b) => {
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return sortOrder === 'oldest' ? timeA - timeB : timeB - timeA;
+    });
 
   return (
     <div>
@@ -545,7 +572,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </select>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="toolbar-search-date-row">
               <div className="panel-search-box">
                 <Search size={14} className="search-icon" />
                 <input
@@ -554,6 +581,49 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+              </div>
+
+              <div className="date-filter-controls">
+                <select
+                  className="date-sort-select"
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  aria-label="Sort purchases"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                </select>
+                <div className="date-range-inputs">
+                  <div className="date-input-wrap">
+                    <span className="date-input-label">From</span>
+                    <input
+                      type="date"
+                      className="date-filter-input"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      aria-label="From date"
+                    />
+                  </div>
+                  <div className="date-input-wrap">
+                    <span className="date-input-label">To</span>
+                    <input
+                      type="date"
+                      className="date-filter-input"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      aria-label="To date"
+                    />
+                  </div>
+                  {(startDate || endDate) && (
+                    <button
+                      type="button"
+                      className="date-clear-btn"
+                      onClick={() => { setStartDate(''); setEndDate(''); }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -20,6 +20,9 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
   const [selectedSaleId, setSelectedSaleId] = useState('');
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const initialFormState = {
     _id: null,
@@ -139,28 +142,54 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
     return items.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
   };
 
-  const filteredInvoices = invoices.filter((item) => {
-    if (!historySearch.trim()) return true;
-    const term = historySearch.trim().toLowerCase();
-    const inItems = (item.items || []).some(
-      (it) =>
-        it.modelName?.toLowerCase().includes(term) ||
-        it.modelNumber?.toLowerCase().includes(term) ||
-        it.imei1?.toLowerCase().includes(term) ||
-        it.imei2?.toLowerCase().includes(term)
-    );
-    return (
-      item.invoiceNumber?.toLowerCase().includes(term) ||
-      item.customerName?.toLowerCase().includes(term) ||
-      item.customerNumber?.toLowerCase().includes(term) ||
-      item.modelName?.toLowerCase().includes(term) ||
-      item.modelNumber?.toLowerCase().includes(term) ||
-      item.condition?.toLowerCase().includes(term) ||
-      item.imei1?.toLowerCase().includes(term) ||
-      item.imei2?.toLowerCase().includes(term) ||
-      inItems
-    );
-  });
+  const matchesDateRange = (dateVal) => {
+    if (!startDate && !endDate) return true;
+    if (!dateVal) return false;
+    const itemTime = new Date(dateVal).getTime();
+    if (Number.isNaN(itemTime)) return false;
+    if (startDate) {
+      const [y, m, d] = startDate.split('-').map(Number);
+      const start = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+      if (itemTime < start) return false;
+    }
+    if (endDate) {
+      const [y, m, d] = endDate.split('-').map(Number);
+      const end = new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
+      if (itemTime > end) return false;
+    }
+    return true;
+  };
+
+  const filteredInvoices = invoices
+    .filter((item) => {
+      const dateMatch = matchesDateRange(item.date || item.createdAt);
+      if (!dateMatch) return false;
+      if (!historySearch.trim()) return true;
+      const term = historySearch.trim().toLowerCase();
+      const inItems = (item.items || []).some(
+        (it) =>
+          it.modelName?.toLowerCase().includes(term) ||
+          it.modelNumber?.toLowerCase().includes(term) ||
+          it.imei1?.toLowerCase().includes(term) ||
+          it.imei2?.toLowerCase().includes(term)
+      );
+      return (
+        item.invoiceNumber?.toLowerCase().includes(term) ||
+        item.customerName?.toLowerCase().includes(term) ||
+        item.customerNumber?.toLowerCase().includes(term) ||
+        item.modelName?.toLowerCase().includes(term) ||
+        item.modelNumber?.toLowerCase().includes(term) ||
+        item.condition?.toLowerCase().includes(term) ||
+        item.imei1?.toLowerCase().includes(term) ||
+        item.imei2?.toLowerCase().includes(term) ||
+        inItems
+      );
+    })
+    .sort((a, b) => {
+      const timeA = new Date(a.date || a.createdAt || 0).getTime();
+      const timeB = new Date(b.date || b.createdAt || 0).getTime();
+      return sortOrder === 'oldest' ? timeA - timeB : timeB - timeA;
+    });
 
   const handleDeleteInvoice = async (id, invoiceNumber) => {
     if (!window.confirm(`Are you sure you want to delete invoice ${invoiceNumber}?`)) return;
@@ -546,14 +575,58 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
             <div style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>
               Showing {filteredInvoices.length} billing history record{filteredInvoices.length === 1 ? '' : 's'}
             </div>
-            <div className="panel-search-box">
-              <Search size={14} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search invoice #, customer, model..."
-                value={historySearch}
-                onChange={(e) => setHistorySearch(e.target.value)}
-              />
+            <div className="toolbar-search-date-row">
+              <div className="panel-search-box">
+                <Search size={14} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search invoice #, customer, model..."
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                />
+              </div>
+              <div className="date-filter-controls">
+                <select
+                  className="date-sort-select"
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  aria-label="Sort invoices"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                </select>
+                <div className="date-range-inputs">
+                  <div className="date-input-wrap">
+                    <span className="date-input-label">From</span>
+                    <input
+                      type="date"
+                      className="date-filter-input"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      aria-label="From date"
+                    />
+                  </div>
+                  <div className="date-input-wrap">
+                    <span className="date-input-label">To</span>
+                    <input
+                      type="date"
+                      className="date-filter-input"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      aria-label="To date"
+                    />
+                  </div>
+                  {(startDate || endDate) && (
+                    <button
+                      type="button"
+                      className="date-clear-btn"
+                      onClick={() => { setStartDate(''); setEndDate(''); }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
