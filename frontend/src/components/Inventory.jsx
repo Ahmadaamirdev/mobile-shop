@@ -279,19 +279,6 @@ const Inventory = ({ isActive, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Status *</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                >
-                  <option value="PTA">PTA</option>
-                  <option value="JV">JV</option>
-                  <option value="Non-PTA">Non-PTA</option>
-                  <option value="CPID">CPID</option>
-                </select>
-              </div>
-
-              <div className="form-field">
                 <label>Company / Brand</label>
                 <input
                   type="text"
@@ -430,22 +417,24 @@ const Inventory = ({ isActive, setAlert }) => {
           <table className="pro-table">
             <thead>
               <tr>
-                <th style={{ width: '13%' }}>Category</th>
-                <th style={{ width: '27%' }}>Device Model</th>
-                <th style={{ width: '13%' }}>Condition</th>
-                <th style={{ width: '18%' }}>Stock Status</th>
-                <th style={{ width: '16%' }}>Unit Price</th>
-                <th style={{ width: '13%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
+                <th style={{ width: '11%' }}>Category</th>
+                <th style={{ width: '18%' }}>Device Model</th>
+                <th style={{ width: '13%' }}>Model No.</th>
+                <th style={{ width: '11%' }}>Condition</th>
+                <th style={{ width: '11%', textAlign: 'center' }}>Status</th>
+                <th style={{ width: '13%' }}>Stock Status</th>
+                <th style={{ width: '12%' }}>Unit Price</th>
+                <th style={{ width: '11%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="empty-state">Loading inventory...</td>
+                  <td colSpan="8" className="empty-state">Loading inventory...</td>
                 </tr>
               ) : filteredInventory.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="empty-state">No items found matching the selected filters.</td>
+                  <td colSpan="8" className="empty-state">No items found matching the selected filters.</td>
                 </tr>
               ) : (
                 filteredInventory.map((item) => (
@@ -458,19 +447,29 @@ const Inventory = ({ isActive, setAlert }) => {
                       {/* Device Model */}
                       <td>
                         <span className="cell-title">{item.modelName}</span>
-                        {(item.companyName || item.modelNumber) && (
-                          <span className="cell-sub">
-                            {item.companyName}
-                            {item.companyName && item.modelNumber ? ' • ' : ''}
-                            {item.modelNumber}
-                          </span>
+                        {item.companyName && (
+                          <span className="cell-sub">{item.companyName}</span>
                         )}
+                      </td>
+
+                      {/* Model No. */}
+                      <td>
+                        <span className="cell-mono" style={{ fontSize: '12.5px', color: '#334155', fontWeight: 600 }}>
+                          {item.modelNumber || '—'}
+                        </span>
                       </td>
 
                       {/* Condition */}
                       <td>
                         <span className={`cell-badge condition-pill ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`}>
                           {item.condition || 'New'}
+                        </span>
+                      </td>
+
+                      {/* Status (PTA / JV / Non-PTA / CPID) */}
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="cell-badge badge-gray" style={{ minWidth: '64px', justifyContent: 'center' }}>
+                          {item.status || 'PTA'}
                         </span>
                       </td>
 
@@ -542,11 +541,14 @@ const Inventory = ({ isActive, setAlert }) => {
 
                 <div className="mobile-card-meta-grid">
                   <div className="mobile-meta-cell">
-                    <div className="mobile-meta-label">Category / Condition</div>
-                    <div className="mobile-meta-val" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div className="mobile-meta-label">Category / Condition / Status</div>
+                    <div className="mobile-meta-val" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <span className="cell-badge badge-gray category-pill">{item.category}</span>
                       <span className={`cell-badge condition-pill ${item.condition === 'Used' ? 'badge-warning' : 'badge-success'}`}>
                         {item.condition || 'New'}
+                      </span>
+                      <span className="cell-badge badge-gray" style={{ minWidth: '54px', justifyContent: 'center' }}>
+                        {item.status || 'PTA'}
                       </span>
                     </div>
                   </div>
@@ -628,10 +630,6 @@ const Inventory = ({ isActive, setAlert }) => {
             <div className="expanded-info-row">
               <span className="expanded-info-label">Category &amp; Condition:</span>
               <span className="expanded-info-val">{detailItem.category} • {detailItem.condition || 'New'}</span>
-            </div>
-            <div className="expanded-info-row">
-              <span className="expanded-info-label">Status:</span>
-              <span className="expanded-info-val">{detailItem.status || 'PTA'}</span>
             </div>
             <div className="expanded-info-row">
               <span className="expanded-info-label">Status:</span>

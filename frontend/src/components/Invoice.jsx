@@ -91,8 +91,10 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
   };
 
   useEffect(() => {
-    fetchHistory();
-    fetchRecordedSales();
+    if (viewMode === 'history') {
+      fetchHistory(true);
+      fetchRecordedSales(true);
+    }
   }, [viewMode]);
 
   useEffect(() => {
@@ -274,7 +276,15 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
           });
         }
       }
-      fetchHistory(true);
+      if (saved && saved._id) {
+        setInvoices((prev) => {
+          const exists = prev.some((inv) => inv._id === saved._id);
+          return exists
+            ? prev.map((inv) => (inv._id === saved._id ? saved : inv))
+            : [saved, ...prev];
+        });
+      }
+      await fetchHistory(true);
       fetchRecordedSales(true);
       setSelectedSaleId('');
       if (switchToHistory) {
@@ -556,23 +566,22 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
             <table className="pro-table">
               <thead>
                 <tr>
-                  <th style={{ width: '11%' }}>Invoice No.</th>
-                  <th style={{ width: '12%' }}>Date</th>
-                  <th style={{ width: '21%' }}>Device Model</th>
-                  <th style={{ width: '11%' }}>Condition</th>
-                  <th style={{ width: '19%' }}>Customer</th>
-                  <th style={{ width: '12%' }}>Total (PKR)</th>
-                  <th style={{ width: '14%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
+                  <th style={{ width: '14%' }}>Invoice No.</th>
+                  <th style={{ width: '14%' }}>Date</th>
+                  <th style={{ width: '22%' }}>Device Model</th>
+                  <th style={{ width: '20%' }}>Customer</th>
+                  <th style={{ width: '15%' }}>Total (PKR)</th>
+                  <th style={{ width: '15%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingHistory ? (
                   <tr>
-                    <td colSpan="7" className="empty-state">Loading invoice history...</td>
+                    <td colSpan="6" className="empty-state">Loading invoice history...</td>
                   </tr>
                 ) : filteredInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="empty-state">No invoice records found.</td>
+                    <td colSpan="6" className="empty-state">No invoice records found.</td>
                   </tr>
                 ) : (
                   filteredInvoices.map((item) => {
@@ -624,26 +633,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                                 <span className="cell-sub">{invDevices[0].modelNumber}</span>
                               )}
                             </div>
-                          )}
-                        </td>
-
-                        {/* Condition */}
-                        <td>
-                          {invDevices.length > 1 ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-                              {invDevices.map((it, idx) => (
-                                <span
-                                  key={idx}
-                                  className={`cell-badge condition-pill ${(it.condition || 'New') === 'Used' ? 'badge-warning' : 'badge-success'}`}
-                                >
-                                  {it.condition || 'New'}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className={`cell-badge condition-pill ${(invDevices[0].condition || 'New') === 'Used' ? 'badge-warning' : 'badge-success'}`}>
-                              {invDevices[0].condition || 'New'}
-                            </span>
                           )}
                         </td>
 
@@ -864,39 +853,22 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                       </div>
                     )}
                     renderOption={(opt) => (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%' }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 700, fontSize: '13px', color: '#090d16' }}>
-                              {opt.sale.customerName}
-                            </span>
-                            <span style={{ fontSize: '11.5px', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                              <Phone size={11} /> {opt.sale.customerNumber}
-                            </span>
-                            {opt.dateStr && (
-                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>• {opt.dateStr}</span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#334155', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <Smartphone size={11} style={{ color: '#64748b', flexShrink: 0 }} />
-                            <span>{opt.deviceLabel}</span>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
-                          <span style={{ fontWeight: 700, fontSize: '13px', color: '#059669' }}>
-                            PKR {Number(opt.sale.price).toLocaleString()}
-                          </span>
-                          {opt.sale.hasInvoice && opt.sale.invoiceNumber ? (
-                            <span className="cell-badge badge-gray" style={{ fontSize: '10px', padding: '2px 7px' }}>
-                              Invoiced: {opt.sale.invoiceNumber}
-                            </span>
-                          ) : (
-                            <span className="cell-badge badge-warning" style={{ fontSize: '10px', padding: '2px 7px' }}>
-                              Not Invoiced
-                            </span>
-                          )}
-                        </div>
+                      <div className="smart-dropdown-grid-invoice">
+                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#090d16', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {opt.sale.customerName}
+                        </span>
+                        <span className="smart-dropdown-col-hide-mobile" style={{ fontSize: '11.5px', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                          <Phone size={10} style={{ flexShrink: 0 }} /> {opt.sale.customerNumber}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {opt.deviceLabel}
+                        </span>
+                        <span className="smart-dropdown-col-hide-mobile" style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                          {opt.dateStr || ''}
+                        </span>
+                        <span style={{ fontWeight: 700, fontSize: '12.5px', color: '#059669', whiteSpace: 'nowrap', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          PKR {Number(opt.sale.price).toLocaleString()}
+                        </span>
                       </div>
                     )}
                   />
@@ -1078,6 +1050,43 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
             </div>
           )}
 
+          {/* Action Buttons Above Invoice Preview (Always visible without scrolling A4 sheet) */}
+          <div className="invoice-bottom-actions hide-on-print">
+            {viewMode === 'generator' && (
+              <button
+                type="button"
+                className="btn-primary action-btn-lg"
+                style={{ background: '#16a34a', borderColor: '#15803d' }}
+                onClick={() => saveInvoiceRecord({ switchToHistory: true })}
+                disabled={isSaving}
+                title={invoiceData._id ? 'Save modifications to database' : 'Save invoice to database'}
+              >
+                <Check size={16} />
+                <span>{isSaving ? 'Saving...' : invoiceData._id ? 'Save Updates' : 'Save Record'}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-secondary action-btn-lg"
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPDF || isSaving}
+              title="Download Invoice as PDF document"
+            >
+              <Download size={16} />
+              <span>{isGeneratingPDF ? 'Generating...' : 'Download PDF'}</span>
+            </button>
+            <button
+              type="button"
+              className="btn-primary action-btn-lg"
+              onClick={handlePrint}
+              disabled={isSaving}
+              title="Print A4 Invoice"
+            >
+              <Printer size={16} />
+              <span>Print A4 Invoice</span>
+            </button>
+          </div>
+
           {/* Centered A4 Printable Sheet */}
           <div className="invoice-preview-container">
             <div className="a4-sheet">
@@ -1175,43 +1184,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Action Buttons Firmly Below Invoice Preview */}
-          <div className="invoice-bottom-actions hide-on-print">
-            {viewMode === 'generator' && (
-              <button
-                type="button"
-                className="btn-primary action-btn-lg"
-                style={{ background: '#16a34a', borderColor: '#15803d' }}
-                onClick={() => saveInvoiceRecord({ switchToHistory: true })}
-                disabled={isSaving}
-                title={invoiceData._id ? 'Save modifications to database' : 'Save invoice to database'}
-              >
-                <Check size={16} />
-                <span>{isSaving ? 'Saving...' : invoiceData._id ? 'Save Updates' : 'Save Record'}</span>
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn-secondary action-btn-lg"
-              onClick={handleDownloadPDF}
-              disabled={isGeneratingPDF || isSaving}
-              title="Download Invoice as PDF document"
-            >
-              <Download size={16} />
-              <span>{isGeneratingPDF ? 'Generating...' : 'Download PDF'}</span>
-            </button>
-            <button
-              type="button"
-              className="btn-primary action-btn-lg"
-              onClick={handlePrint}
-              disabled={isSaving}
-              title="Print A4 Invoice"
-            >
-              <Printer size={16} />
-              <span>Print A4 Invoice</span>
-            </button>
           </div>
         </div>
       )}

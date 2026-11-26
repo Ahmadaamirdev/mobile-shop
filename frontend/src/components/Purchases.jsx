@@ -585,19 +585,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Status *</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                >
-                  <option value="PTA">PTA</option>
-                  <option value="JV">JV</option>
-                  <option value="Non-PTA">Non-PTA</option>
-                  <option value="CPID">CPID</option>
-                </select>
-              </div>
-
-              <div className="form-field">
                 <label>Company / Brand *</label>
                 <input
                   type="text"
@@ -1020,10 +1007,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               <div className="expanded-info-row">
                 <span className="expanded-info-label">Category:</span>
                 <span className="expanded-info-val">{detailItem.category}</span>
-              </div>
-              <div className="expanded-info-row">
-                <span className="expanded-info-label">Status:</span>
-                <span className="expanded-info-val">{detailItem.status || 'PTA'}</span>
               </div>
               <div className="expanded-info-row">
                 <span className="expanded-info-label">Status:</span>

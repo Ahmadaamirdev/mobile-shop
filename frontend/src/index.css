@@ -1051,9 +1051,10 @@ samp {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-top: 24px;
-  margin-bottom: 40px;
+  margin-top: 8px;
+  margin-bottom: 18px;
   width: 100%;
+  flex-wrap: wrap;
 }
 
 .invoice-bottom-actions .action-btn-lg {
@@ -2603,20 +2604,21 @@ samp {
 }
 
 .smart-dropdown-list {
-  max-height: 320px;
+  max-height: 290px;
   overflow-y: auto;
-  padding: 8px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
-  gap: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .smart-dropdown-item {
   width: 100%;
-  border: 1px solid #e2e8f0;
+  border: 1px solid transparent;
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: 7px;
   padding: 8px 10px;
+  min-height: 40px;
   text-align: left;
   cursor: pointer;
   display: flex;
@@ -2629,7 +2631,7 @@ samp {
 
 .smart-dropdown-item:hover {
   background: #f8fafc;
-  border-color: #cbd5e1;
+  border-color: #e2e8f0;
 }
 
 .smart-dropdown-item.selected {
@@ -2638,10 +2640,37 @@ samp {
 }
 
 .smart-dropdown-item.manual {
-  grid-column: 1 / -1;
   background: #f8fafc;
   border: 1px dashed #cbd5e1;
   padding: 7px 10px;
+}
+
+.smart-dropdown-grid-sales {
+  display: grid;
+  grid-template-columns: minmax(100px, 1.3fr) 68px minmax(100px, 1.4fr) 92px 100px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.smart-dropdown-grid-invoice {
+  display: grid;
+  grid-template-columns: minmax(90px, 1.1fr) 124px minmax(110px, 1.5fr) 90px 100px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .smart-dropdown-grid-sales,
+  .smart-dropdown-grid-invoice {
+    grid-template-columns: 1fr auto;
+    gap: 4px 8px;
+  }
+
+  .smart-dropdown-col-hide-mobile {
+    display: none !important;
+  }
 }
 
 .smart-dropdown-item-body {

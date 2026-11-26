@@ -451,34 +451,23 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                         </div>
                       )}
                       renderOption={(opt) => (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%' }}>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                              <span style={{ fontWeight: 700, fontSize: '13px', color: '#090d16' }}>
-                                {opt.inv.modelName}
-                              </span>
-                              <span className={`cell-badge condition-pill ${opt.inv.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
-                                {opt.inv.condition || 'New'}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
-                              <span>{opt.inv.companyName || opt.inv.category}</span>
-                              {opt.inv.status && <span>• {opt.inv.status}</span>}
-                              {opt.inv.modelNumber && <span>• {opt.inv.modelNumber}</span>}
-                              {opt.inv.imeis && opt.inv.imeis.length > 0 && (
-                                <span>• IMEI: {opt.inv.imeis[0]}</span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
-                            <span style={{ fontWeight: 700, fontSize: '13px', color: '#059669' }}>
-                              PKR {Number(opt.inv.price).toLocaleString()}
-                            </span>
-                            <span className="cell-badge badge-success" style={{ fontSize: '10px', padding: '2px 7px' }}>
-                              • {opt.inv.quantity} in stock
-                            </span>
-                          </div>
+                        <div className="smart-dropdown-grid-sales">
+                          <span style={{ fontWeight: 700, fontSize: '13px', color: '#090d16', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {opt.inv.modelName}
+                          </span>
+                          <span className={`cell-badge condition-pill ${opt.inv.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '10px', padding: '2px 6px' }}>
+                            {opt.inv.condition || 'New'}
+                          </span>
+                          <span className="smart-dropdown-col-hide-mobile" style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {opt.inv.companyName || opt.inv.category}
+                            {opt.inv.status ? ` • ${opt.inv.status}` : ''}
+                          </span>
+                          <span className="cell-badge badge-success smart-dropdown-col-hide-mobile" style={{ fontSize: '10px', padding: '2px 7px', justifyContent: 'center' }}>
+                            • {opt.inv.quantity} in stock
+                          </span>
+                          <span style={{ fontWeight: 700, fontSize: '12.5px', color: '#059669', whiteSpace: 'nowrap', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                            PKR {Number(opt.inv.price).toLocaleString()}
+                          </span>
                         </div>
                       )}
                     />
