@@ -1,12 +1,13 @@
 import React from 'react';
-import { LayoutDashboard, ShoppingBag, Tag, Package, FileText } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Tag, Package, History, FileText } from 'lucide-react';
 
 const MobileBottomNav = ({ activeTab, setActiveTab }) => {
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
     { id: 'purchases', label: 'Purchases', icon: ShoppingBag },
     { id: 'sales', label: 'Sales', icon: Tag },
-    { id: 'inventory', label: 'Inventory', icon: Package },
+    { id: 'inventory', label: 'Stock', icon: Package },
+    { id: 'records', label: 'Records', icon: History },
     { id: 'invoices', label: 'Invoices', icon: FileText },
   ];
 

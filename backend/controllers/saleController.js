@@ -1,6 +1,7 @@
 const Sale = require('../models/Sale');
 const Inventory = require('../models/Inventory');
 const Invoice = require('../models/Invoice');
+const { logStockMovement } = require('./recordController');
 
 // @desc    Record a new sale (single or multiple devices), check inventory, and auto-subtract stock
 // @route   POST /api/sales
@@ -210,12 +211,38 @@ exports.createSale = async (req, res, next) => {
       price: totalPrice,
     });
 
-    // Deduct stock from inventory for every item
+    // Deduct stock from inventory for every item and record stock ledger movements
     const invUpdates = new Map();
     for (const entry of resolvedEntries) {
+      if (!entry.inventoryItem) {
+        await logStockMovement({
+          type: 'SALE_OUT',
+          direction: 'OUT',
+          category: entry.saleItem.category,
+          condition: entry.saleItem.condition,
+          status: entry.saleItem.status || 'PTA',
+          modelName: entry.saleItem.modelName,
+          modelNumber: entry.saleItem.modelNumber || '',
+          imei1: entry.cleanImei1 || '',
+          imei2: entry.cleanImei2 || '',
+          quantityDelta: -entry.itQty,
+          previousStock: 0,
+          resultingStock: 0,
+          unitPrice: entry.saleItem.price,
+          totalAmount: entry.saleItem.price * entry.itQty,
+          partyName: customerName ? customerName.trim() : '',
+          partyPhone: cleanedPhone,
+          saleId: sale._id,
+          note: 'Accessory sold (no inventory link)',
+        });
+        continue;
+      }
+
       const invId = String(entry.inventoryItem._id);
       const invDoc = invUpdates.get(invId) || entry.inventoryItem;
-      invDoc.quantity -= entry.itQty;
+      const prevStock = Number(invDoc.quantity) || 0;
+      const nextStock = Math.max(0, prevStock - entry.itQty);
+      invDoc.quantity = nextStock;
       if (entry.cleanImei1) {
         invDoc.imeis = invDoc.imeis.filter((im) => im !== entry.cleanImei1);
       }
@@ -223,6 +250,29 @@ exports.createSale = async (req, res, next) => {
         invDoc.imeis = invDoc.imeis.filter((im) => im !== entry.cleanImei2);
       }
       invUpdates.set(invId, invDoc);
+
+      await logStockMovement({
+        type: 'SALE_OUT',
+        direction: 'OUT',
+        category: entry.saleItem.category,
+        condition: entry.saleItem.condition,
+        status: entry.saleItem.status || 'PTA',
+        companyName: invDoc.companyName || '',
+        modelName: entry.saleItem.modelName,
+        modelNumber: entry.saleItem.modelNumber || '',
+        imei1: entry.cleanImei1 || '',
+        imei2: entry.cleanImei2 || '',
+        quantityDelta: -entry.itQty,
+        previousStock: prevStock,
+        resultingStock: nextStock,
+        unitPrice: entry.saleItem.price,
+        totalAmount: entry.saleItem.price * entry.itQty,
+        partyName: customerName ? customerName.trim() : '',
+        partyPhone: cleanedPhone,
+        saleId: sale._id,
+        inventoryId: invDoc._id,
+        note: 'Sold & subtracted from inventory',
+      });
     }
 
     for (const invDoc of invUpdates.values()) {
@@ -375,6 +425,7 @@ exports.deleteSale = async (req, res, next) => {
       }
 
       let inventoryItem = await Inventory.findOne(inventoryQuery);
+      const prevStock = inventoryItem ? Number(inventoryItem.quantity) || 0 : 0;
 
       if (inventoryItem) {
         inventoryItem.quantity += restoreQty;
@@ -385,10 +436,11 @@ exports.deleteSale = async (req, res, next) => {
           inventoryItem.imeis.push(sItem.imei2);
         }
         await inventoryItem.save();
-      } else {
-        await Inventory.create({
+      } else if (sItem.modelName) {
+        inventoryItem = await Inventory.create({
           category: sItem.category || 'Mobile',
           condition: condition,
+          status: sItem.status || 'PTA',
           modelName: (sItem.modelName || '').trim(),
           modelNumber: sItem.modelNumber ? sItem.modelNumber.trim() : '',
           quantity: restoreQty,
@@ -396,6 +448,28 @@ exports.deleteSale = async (req, res, next) => {
           imeis: [sItem.imei1, sItem.imei2].filter(Boolean),
         });
       }
+
+      await logStockMovement({
+        type: 'SALE_RESTORE',
+        direction: 'IN',
+        category: sItem.category || 'Mobile',
+        condition: condition,
+        status: sItem.status || 'PTA',
+        companyName: inventoryItem?.companyName || '',
+        modelName: sItem.modelName || 'Accessory',
+        modelNumber: sItem.modelNumber || '',
+        imei1: sItem.imei1 || '',
+        imei2: sItem.imei2 || '',
+        quantityDelta: restoreQty,
+        previousStock: prevStock,
+        resultingStock: prevStock + restoreQty,
+        unitPrice: Number(sItem.price) || 0,
+        totalAmount: (Number(sItem.price) || 0) * restoreQty,
+        partyName: sale.customerName || '',
+        partyPhone: sale.customerNumber || '',
+        inventoryId: inventoryItem ? inventoryItem._id : null,
+        note: 'Sale deleted & stock restored to inventory',
+      });
     }
 
     // Safely delete sale document after inventory restoration succeeds

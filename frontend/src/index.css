@@ -3978,10 +3978,312 @@ samp {
   }
 
   .mobile-nav-label {
-    font-size: 10px;
+    font-size: 9.5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Records (Daily Ledger & Inventory Sync)
+   ========================================================================== */
+
+.cell-badge.badge-danger {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.records-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.records-view-toggle {
+  display: inline-flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border-card);
+  gap: 2px;
+}
+
+.records-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #475569;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.records-tab-btn.active {
+  background: #090d16;
+  color: #ffffff;
+}
+
+.records-date-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.records-day-picker-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--border-card);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.records-day-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12.5px;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+.records-day-clear {
+  border: none;
+  background: #fef2f2;
+  color: #dc2626;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.records-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.records-summary-card {
+  background: #ffffff;
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  padding: 14px 16px;
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.records-summary-clickable {
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.records-summary-clickable:hover {
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+.records-sum-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.records-sum-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #090d16;
+  font-variant-numeric: tabular-nums;
+}
+
+.records-sum-sub {
+  font-size: 11.5px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.records-days-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.records-day-card {
+  padding: 0 !important;
+  overflow: hidden;
+  background: #ffffff !important;
+  border: 1px solid var(--border-card) !important;
+}
+
+.records-day-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: none;
+  border-bottom: 1px solid var(--border-card);
+  cursor: pointer;
+  text-align: left;
+}
+
+.records-day-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #090d16;
+  min-width: 0;
+}
+
+.records-day-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #090d16;
+}
+
+.records-day-sub {
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.records-day-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.records-day-body {
+  padding: 0;
+}
+
+@media (max-width: 767px) {
+  .panel-header-row.records-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .records-header-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .records-view-toggle {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .records-tab-btn {
+    justify-content: center;
+    height: 30px;
+    font-size: 11.5px;
+    padding: 0 6px;
+  }
+
+  .records-date-controls {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+
+  .records-day-picker-wrap {
+    width: 100%;
+    min-width: 0;
+    height: 34px;
+    padding: 0 6px;
+    border-radius: 7px;
+  }
+
+  .records-day-input {
+    width: 100%;
+    min-width: 0;
+    font-size: 11.5px !important;
+  }
+
+  .records-summary-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .records-summary-card {
+    padding: 10px 12px;
+    gap: 4px;
+  }
+
+  .records-sum-top {
+    font-size: 10px;
+  }
+
+  .records-sum-val {
+    font-size: 15px;
+  }
+
+  .records-sum-sub {
+    font-size: 10.5px;
+  }
+
+  .records-day-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible;
+  }
+
+  .records-day-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #ffffff;
+    border: 1px solid var(--border-card);
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+
+  .records-day-badges {
+    width: 100%;
+    gap: 5px;
+  }
+
+  .records-day-badges .cell-badge {
+    font-size: 10.5px;
+    padding: 2px 7px;
   }
 }

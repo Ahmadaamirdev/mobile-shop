@@ -1,6 +1,7 @@
 const Purchase = require('../models/Purchase');
 const Inventory = require('../models/Inventory');
 const { uploadCompressedImage } = require('../config/cloudinary');
+const { logStockMovement } = require('./recordController');
 
 // @desc    Upload & compress single ID card image to Cloudinary
 // @route   POST /api/purchases/upload-id
@@ -137,6 +138,8 @@ exports.createPurchase = async (req, res, next) => {
     if (imei1 && imei1.trim()) imeisToAdd.push(imei1.trim());
     if (imei2 && imei2.trim()) imeisToAdd.push(imei2.trim());
 
+    const prevStock = inventoryItem ? Number(inventoryItem.quantity) || 0 : 0;
+
     if (inventoryItem) {
       // Increment stock quantity
       inventoryItem.quantity += purchaseQty;
@@ -165,6 +168,29 @@ exports.createPurchase = async (req, res, next) => {
         imeis: imeisToAdd,
       });
     }
+
+    await logStockMovement({
+      type: 'PURCHASE_IN',
+      direction: 'IN',
+      category,
+      condition: condition === 'Used' ? 'Used' : 'New',
+      status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
+      companyName: companyName ? companyName.trim() : '',
+      modelName: cleanModelName,
+      modelNumber: cleanModelNumber,
+      imei1: imei1 ? imei1.trim() : '',
+      imei2: imei2 ? imei2.trim() : '',
+      quantityDelta: purchaseQty,
+      previousStock: prevStock,
+      resultingStock: prevStock + purchaseQty,
+      unitPrice: purchasePrice,
+      totalAmount: purchasePrice,
+      partyName: customerName ? customerName.trim() : '',
+      partyPhone: cleanedPhone,
+      purchaseId: purchase._id,
+      inventoryId: inventoryItem._id,
+      note: 'Purchased & added to inventory',
+    });
 
     return res.status(201).json({
       success: true,
@@ -268,9 +294,12 @@ exports.deletePurchase = async (req, res, next) => {
     }
 
     const inventoryItem = await Inventory.findOne(inventoryQuery);
+    const purchaseQty = Math.max(1, Number(purchase.quantity) || 1);
+    const prevStock = inventoryItem ? Number(inventoryItem.quantity) || 0 : 0;
+    const nextStock = Math.max(0, prevStock - purchaseQty);
+
     if (inventoryItem) {
-      const purchaseQty = Math.max(1, Number(purchase.quantity) || 1);
-      inventoryItem.quantity = Math.max(0, inventoryItem.quantity - purchaseQty);
+      inventoryItem.quantity = nextStock;
       if (purchase.imei1) {
         inventoryItem.imeis = inventoryItem.imeis.filter((im) => im !== purchase.imei1.trim());
       }
@@ -284,6 +313,28 @@ exports.deletePurchase = async (req, res, next) => {
         await inventoryItem.save();
       }
     }
+
+    await logStockMovement({
+      type: 'PURCHASE_REVERSAL',
+      direction: 'OUT',
+      category: purchase.category || 'Mobile',
+      condition: condition,
+      status: purchase.status || 'PTA',
+      companyName: purchase.companyName || '',
+      modelName: purchase.modelName || 'Accessory',
+      modelNumber: purchase.modelNumber || '',
+      imei1: purchase.imei1 || '',
+      imei2: purchase.imei2 || '',
+      quantityDelta: -purchaseQty,
+      previousStock: prevStock,
+      resultingStock: nextStock,
+      unitPrice: Number(purchase.price) || 0,
+      totalAmount: Number(purchase.price) || 0,
+      partyName: purchase.customerName || '',
+      partyPhone: purchase.customerPhone || '',
+      inventoryId: inventoryItem ? inventoryItem._id : null,
+      note: 'Purchase deleted & deducted from inventory',
+    });
 
     // Safely delete purchase record after inventory sync
     await Purchase.findByIdAndDelete(req.params.id);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, ShoppingBag, Tag, Package, FileText, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Tag, Package, History, FileText, X, LogOut } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen, onLogout }) => {
   const navItems = [
@@ -7,6 +7,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen, onLogout }) => {
     { id: 'purchases', label: 'Purchases', icon: ShoppingBag },
     { id: 'sales', label: 'Sales', icon: Tag },
     { id: 'inventory', label: 'Inventory', icon: Package },
+    { id: 'records', label: 'Records', icon: History },
     { id: 'invoices', label: 'Invoices', icon: FileText },
   ];
 

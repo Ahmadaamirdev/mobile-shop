@@ -1,5 +1,6 @@
 const Inventory = require('../models/Inventory');
 const Purchase = require('../models/Purchase');
+const { logStockMovement } = require('./recordController');
 
 // @desc    Get inventory items with optional search & category filter
 // @route   GET /api/inventory
@@ -123,6 +124,8 @@ exports.createInventoryItem = async (req, res, next) => {
       .map((im) => String(im).trim())
       .filter((im) => /^\d{15}$/.test(im));
 
+    const prevStock = item ? Number(item.quantity) || 0 : 0;
+
     if (item) {
       item.quantity += Number(quantity);
       item.price = Number(price);
@@ -184,6 +187,31 @@ exports.createInventoryItem = async (req, res, next) => {
         price: purchasePrice,
       }));
 
+    if (!existingRecentPurchase) {
+      await logStockMovement({
+        type: 'PURCHASE_IN',
+        direction: 'IN',
+        category,
+        condition: condition === 'Used' ? 'Used' : 'New',
+        status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
+        companyName: companyName ? companyName.trim() : (item.companyName || 'Stock'),
+        modelName: cleanModelName,
+        modelNumber: cleanModelNumber,
+        imei1: (validImeis[0] || imei1 || '').trim(),
+        imei2: (validImeis[1] || imei2 || '').trim(),
+        quantityDelta: purchaseQty,
+        previousStock: prevStock,
+        resultingStock: prevStock + purchaseQty,
+        unitPrice: purchasePrice,
+        totalAmount: purchasePrice,
+        partyName: cleanCustomerName,
+        partyPhone: customerPhone ? customerPhone.trim() : '',
+        purchaseId: purchaseRecord._id,
+        inventoryId: item._id,
+        note: 'Manual inventory inward & purchase entry',
+      });
+    }
+
     return res.status(201).json({
       success: true,
       data: item,
@@ -201,13 +229,15 @@ exports.updateInventoryItem = async (req, res, next) => {
   try {
     const { modelName, modelNumber, companyName, quantity, price, imeis, category, condition, status } = req.body;
 
-    const item = await Inventory.findById(req.params.id).lean();
+    const item = await Inventory.findById(req.params.id);
     if (!item) {
       return res.status(404).json({
         success: false,
         message: 'Inventory item not found.',
       });
     }
+
+    const prevQty = Number(item.quantity) || 0;
 
     if (category) item.category = category;
     if (condition) item.condition = condition;
@@ -222,6 +252,27 @@ exports.updateInventoryItem = async (req, res, next) => {
     }
 
     await item.save();
+
+    const qtyDelta = (Number(item.quantity) || 0) - prevQty;
+    if (qtyDelta !== 0) {
+      await logStockMovement({
+        type: 'INVENTORY_ADJUST',
+        direction: qtyDelta > 0 ? 'IN' : 'OUT',
+        category: item.category || 'Mobile',
+        condition: item.condition || 'New',
+        status: item.status || 'PTA',
+        companyName: item.companyName || '',
+        modelName: item.modelName || 'Accessory',
+        modelNumber: item.modelNumber || '',
+        quantityDelta: qtyDelta,
+        previousStock: prevQty,
+        resultingStock: Number(item.quantity) || 0,
+        unitPrice: Number(item.price) || 0,
+        totalAmount: (Number(item.price) || 0) * Math.abs(qtyDelta),
+        inventoryId: item._id,
+        note: 'Inventory quantity adjusted manually',
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -242,6 +293,27 @@ exports.deleteInventoryItem = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'Inventory item not found.',
+      });
+    }
+
+    const removedQty = Number(item.quantity) || 0;
+    if (removedQty > 0) {
+      await logStockMovement({
+        type: 'INVENTORY_ADJUST',
+        direction: 'OUT',
+        category: item.category || 'Mobile',
+        condition: item.condition || 'New',
+        status: item.status || 'PTA',
+        companyName: item.companyName || '',
+        modelName: item.modelName || 'Accessory',
+        modelNumber: item.modelNumber || '',
+        quantityDelta: -removedQty,
+        previousStock: removedQty,
+        resultingStock: 0,
+        unitPrice: Number(item.price) || 0,
+        totalAmount: (Number(item.price) || 0) * removedQty,
+        inventoryId: item._id,
+        note: 'Inventory item deleted manually',
       });
     }
     return res.status(200).json({

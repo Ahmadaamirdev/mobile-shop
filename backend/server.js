@@ -59,14 +59,15 @@ app.get(['/api', '/'], (req, res, next) => {
 app.use(['/api/auth', '/auth'], require('./routes/authRoutes'));
 
 // Middleware: Ensure database pool is active before running CRUD operations
-app.use(['/api', '/purchases', '/inventory', '/sales', '/invoices', '/dashboard'], ensureDBConnected);
+app.use(['/api', '/purchases', '/inventory', '/sales', '/invoices', '/dashboard', '/records'], ensureDBConnected);
 
-// Middleware: Require valid session token for all inventory/sales/purchases/invoice/dashboard routes
+// Middleware: Require valid session token for all inventory/sales/purchases/invoice/dashboard/records routes
 app.use(['/api/purchases', '/purchases'], requireAuth);
 app.use(['/api/inventory', '/inventory'], requireAuth);
 app.use(['/api/sales', '/sales'], requireAuth);
 app.use(['/api/invoices', '/invoices'], requireAuth);
 app.use(['/api/dashboard', '/dashboard'], requireAuth);
+app.use(['/api/records', '/records'], requireAuth);
 
 // Middleware: Fast in-memory caching for GETs & instant invalidation on mutations
 app.use('/api', autoInvalidateMiddleware);
@@ -78,6 +79,7 @@ app.use(['/api/inventory', '/inventory'], require('./routes/inventoryRoutes'));
 app.use(['/api/sales', '/sales'], require('./routes/saleRoutes'));
 app.use(['/api/invoices', '/invoices'], require('./routes/invoiceRoutes'));
 app.use(['/api/dashboard', '/dashboard'], require('./routes/dashboardRoutes'));
+app.use(['/api/records', '/records'], require('./routes/recordRoutes'));
 
 // Global Error Handler
 app.use(errorHandler);
