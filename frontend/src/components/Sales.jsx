@@ -798,9 +798,6 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                             ) : (
                               <div>
                                 <span className="cell-title">{saleDevices[0].modelName}</span>
-                                {saleDevices[0].modelNumber && (
-                                  <span className="cell-sub">{saleDevices[0].modelNumber}</span>
-                                )}
                               </div>
                             )}
                           </td>
@@ -892,7 +889,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                         <div className="mobile-card-subtitle">
                           {saleDevices.length > 1
                             ? saleDevices.map((d) => d.modelName).join(', ')
-                            : `${saleDevices[0].modelNumber ? `${saleDevices[0].modelNumber} • ` : ''}${saleDevices[0].category || item.category}`}
+                            : (saleDevices[0].category || item.category)}
                         </div>
                       </div>
                       <div className="mobile-card-price">

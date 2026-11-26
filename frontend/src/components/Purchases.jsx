@@ -950,12 +950,8 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
                       {/* Device Model */}
                       <td>
                         <span className="cell-title">{item.modelName}</span>
-                        {(item.companyName || item.modelNumber) && (
-                          <span className="cell-sub">
-                            {item.companyName}
-                            {item.companyName && item.modelNumber ? ' • ' : ''}
-                            {item.modelNumber}
-                          </span>
+                        {item.companyName && (
+                          <span className="cell-sub">{item.companyName}</span>
                         )}
                       </td>
 
@@ -1017,7 +1013,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
                     <div className="mobile-card-top">
                       <div>
                         <div className="mobile-card-title">{item.modelName}</div>
-                        <div className="mobile-card-subtitle">{item.companyName}{item.modelNumber ? ` • ${item.modelNumber}` : ''}</div>
+                        <div className="mobile-card-subtitle">{item.companyName}</div>
                       </div>
                       <div className="mobile-card-price">
                         PKR {Number(item.price).toLocaleString()}
