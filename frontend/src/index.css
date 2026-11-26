@@ -1777,25 +1777,26 @@ samp {
     transform: translateX(0);
   }
 
-  /* Mobile Top Header Card */
+  /* Mobile Top Header Card — compact */
   .panel-header-card {
-    padding: 14px 12px;
+    padding: 10px 12px;
     border-radius: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .panel-header-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
   }
 
   .panel-header-row .btn-primary {
     width: auto;
-    height: 38px;
-    min-height: 38px;
-    font-size: 13px;
-    padding: 0 14px;
+    height: 34px;
+    min-height: 34px;
+    font-size: 12.5px;
+    padding: 0 11px;
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -1814,15 +1815,16 @@ samp {
   }
 
   .panel-header-text h2 {
-    font-size: 15px !important;
+    font-size: 14.5px !important;
+    line-height: 1.25;
   }
 
   .panel-toolbar-row {
-    margin-top: 12px;
-    padding-top: 12px;
+    margin-top: 8px;
+    padding-top: 8px;
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 6px;
   }
 
   /* On mobile: hide desktop pill rows — show select dropdowns instead */
@@ -1841,18 +1843,19 @@ samp {
   /* Mobile compact filter selects */
   .mobile-filter-row {
     display: flex !important;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
   }
 
   .mobile-filter-select {
     flex: 1;
-    height: 42px;
-    padding: 0 10px;
-    font-size: 13px;
+    min-width: 0;
+    height: 34px;
+    padding: 0 8px;
+    font-size: 12.5px !important;
     font-weight: 500;
-    border: 1.5px solid var(--border-card);
-    border-radius: 8px;
+    border: 1px solid var(--border-card);
+    border-radius: 7px;
     background-color: #ffffff;
     color: #0f172a;
     outline: none;
@@ -1862,46 +1865,58 @@ samp {
 
   .panel-search-box {
     width: 100%;
+    min-width: 0;
   }
 
   .panel-search-box input {
-    height: 44px;
+    height: 34px;
+    font-size: 12.5px !important;
+    padding-left: 30px;
+    padding-right: 8px;
+    border-radius: 7px;
   }
 
   .toolbar-desktop-grid {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
     width: 100%;
   }
 
   .toolbar-search-date-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    width: 100%;
   }
 
   .date-filter-controls {
     width: 100%;
+    min-width: 0;
   }
 
   .date-range-single-wrapper {
     width: 100%;
+    min-width: 0;
   }
 
   .date-range-single-box {
     width: 100%;
     min-width: 0 !important;
-    height: 40px;
-    font-size: 13px;
-    padding: 0 10px;
+    height: 34px;
+    font-size: 12px !important;
+    padding: 0 8px;
+    gap: 5px;
+    border-radius: 7px;
   }
 
   .date-range-popover {
-    left: 0;
+    left: auto;
     right: 0;
-    width: 100%;
+    width: calc(100vw - 44px);
+    max-width: 340px;
   }
 
   .date-range-popover-grid {
@@ -1910,8 +1925,8 @@ samp {
   }
 
   .date-filter-input {
-    height: 40px;
-    font-size: 12px;
+    height: 36px;
+    font-size: 12px !important;
   }
 
   /* Form Panels on Mobile */
@@ -3902,7 +3917,7 @@ samp {
   }
 
   .dashboard-refresh-btn {
-    height: 40px;
+    height: 34px;
     padding: 0 10px;
     font-size: 12px;
   }
