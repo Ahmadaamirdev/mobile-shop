@@ -120,7 +120,7 @@ const invoiceSchema = new mongoose.Schema(
 );
 
 // Auto-fill top-level compatibility fields and total price before save
-invoiceSchema.pre('save', function (next) {
+invoiceSchema.pre('save', async function () {
   if (this.items && this.items.length > 0) {
     this.price = this.items.reduce(
       (sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
@@ -135,7 +135,6 @@ invoiceSchema.pre('save', function (next) {
       this.imei2 = first.imei2 || '';
     }
   }
-  next();
 });
 
 module.exports = mongoose.model('Invoice', invoiceSchema);
