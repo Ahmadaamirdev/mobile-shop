@@ -2,6 +2,7 @@ import React, { useState, useEffect, Component } from 'react';
 import Sidebar from './components/Sidebar';
 import MobileTopBar from './components/MobileTopBar';
 import MobileBottomNav from './components/MobileBottomNav';
+import Dashboard from './components/Dashboard';
 import Purchases from './components/Purchases';
 import Sales from './components/Sales';
 import Inventory from './components/Inventory';
@@ -40,7 +41,7 @@ class ErrorBoundary extends Component {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [activeTab, setActiveTab] = useState('purchases');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedSaleForInvoice, setSelectedSaleForInvoice] = useState(null);
   const [alert, setAlertState] = useState(null);
@@ -148,6 +149,14 @@ function App() {
                 </button>
               </div>
             )}
+
+            <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
+              <Dashboard
+                isActive={activeTab === 'dashboard'}
+                onNavigate={setActiveTab}
+                setAlert={setAlert}
+              />
+            </div>
 
             <div style={{ display: activeTab === 'purchases' ? 'block' : 'none' }}>
               <Purchases isActive={activeTab === 'purchases'} setAlert={setAlert} />

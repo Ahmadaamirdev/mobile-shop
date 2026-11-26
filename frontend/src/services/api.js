@@ -66,17 +66,27 @@ const cachedGet = async (url, params = {}, forceRefresh = false) => {
   return res;
 };
 
+const notifyDataUpdated = () => {
+  window.dispatchEvent(new Event('unity-data-updated'));
+};
+
+// Dashboard
+export const getDashboard = (params = {}, force = false) =>
+  cachedGet('/dashboard', force ? { ...params, _refresh: 'true' } : params, force);
+
 // Purchases
 export const getPurchases = (params, force = false) => cachedGet('/purchases', params, force);
 export const uploadIdCard = (data) => api.post('/purchases/upload-id', data);
 export const createPurchase = async (data) => {
   const res = await api.post('/purchases', data);
-  invalidateApiCache(['purchases', 'inventory']);
+  invalidateApiCache(['purchases', 'inventory', 'dashboard']);
+  notifyDataUpdated();
   return res;
 };
 export const deletePurchase = async (id) => {
   const res = await api.delete(`/purchases/${id}`);
-  invalidateApiCache(['purchases', 'inventory']);
+  invalidateApiCache(['purchases', 'inventory', 'dashboard']);
+  notifyDataUpdated();
   return res;
 };
 
@@ -84,12 +94,14 @@ export const deletePurchase = async (id) => {
 export const getSales = (params, force = false) => cachedGet('/sales', params, force);
 export const createSale = async (data) => {
   const res = await api.post('/sales', data);
-  invalidateApiCache(['sales', 'inventory', 'invoices']);
+  invalidateApiCache(['sales', 'inventory', 'invoices', 'dashboard']);
+  notifyDataUpdated();
   return res;
 };
 export const deleteSale = async (id) => {
   const res = await api.delete(`/sales/${id}`);
-  invalidateApiCache(['sales', 'inventory', 'invoices']);
+  invalidateApiCache(['sales', 'inventory', 'invoices', 'dashboard']);
+  notifyDataUpdated();
   return res;
 };
 
@@ -97,17 +109,20 @@ export const deleteSale = async (id) => {
 export const getInventory = (params, force = false) => cachedGet('/inventory', params, force);
 export const createInventoryItem = async (data) => {
   const res = await api.post('/inventory', data);
-  invalidateApiCache(['inventory', 'sales', 'purchases']);
+  invalidateApiCache(['inventory', 'sales', 'purchases', 'dashboard']);
+  notifyDataUpdated();
   return res;
 };
 export const updateInventoryItem = async (id, data) => {
   const res = await api.put(`/inventory/${id}`, data);
-  invalidateApiCache(['inventory', 'sales']);
+  invalidateApiCache(['inventory', 'sales', 'dashboard']);
+  notifyDataUpdated();
   return res;
 };
 export const deleteInventoryItem = async (id) => {
   const res = await api.delete(`/inventory/${id}`);
-  invalidateApiCache(['inventory', 'sales']);
+  invalidateApiCache(['inventory', 'sales', 'dashboard']);
+  notifyDataUpdated();
   return res;
 };
 
@@ -115,18 +130,21 @@ export const deleteInventoryItem = async (id) => {
 export const getInvoices = (params, force = false) => cachedGet('/invoices', params, force);
 export const createInvoice = async (data) => {
   const res = await api.post('/invoices', data);
-  invalidateApiCache(['invoices', 'sales']);
+  invalidateApiCache(['invoices', 'sales', 'dashboard']);
+  notifyDataUpdated();
   return res;
 };
 export const updateInvoice = async (id, data) => {
   const res = await api.put(`/invoices/${id}`, data);
-  invalidateApiCache(['invoices', 'sales']);
+  invalidateApiCache(['invoices', 'sales', 'dashboard']);
+  notifyDataUpdated();
   return res;
 };
 export const getInvoiceById = (id) => api.get(`/invoices/${id}`);
 export const deleteInvoice = async (id) => {
   const res = await api.delete(`/invoices/${id}`);
-  invalidateApiCache(['invoices', 'sales']);
+  invalidateApiCache(['invoices', 'sales', 'dashboard']);
+  notifyDataUpdated();
   return res;
 };
 

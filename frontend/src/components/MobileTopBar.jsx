@@ -3,6 +3,7 @@ import { Menu } from 'lucide-react';
 
 const MobileTopBar = ({ activeTab, onOpenMenu }) => {
   const titles = {
+    dashboard: 'Dashboard',
     purchases: 'Purchases',
     sales: 'Sales',
     inventory: 'Inventory',
