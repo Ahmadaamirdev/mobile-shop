@@ -45,18 +45,27 @@ exports.createPurchase = async (req, res, next) => {
       price,
     } = req.body;
 
-    // Validate 11-digit Phone Number
+    const isAccessory = category === 'Accessory';
+
+    if (!isAccessory && (!modelName || !modelName.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Model name is required.',
+      });
+    }
+
+    // Validate 11-digit Phone Number (optional for Accessory)
     const cleanedPhone = customerPhone ? customerPhone.replace(/\D/g, '') : '';
-    if (cleanedPhone.length !== 11) {
+    if ((!isAccessory && cleanedPhone.length !== 11) || (isAccessory && customerPhone && customerPhone.trim() && cleanedPhone.length !== 11)) {
       return res.status(400).json({
         success: false,
         message: 'Customer phone number must contain exactly 11 digits.',
       });
     }
 
-    // Validate 13-digit ID Card
+    // Validate 13-digit ID Card (optional for Accessory)
     const cleanedIdCard = customerIdCard ? customerIdCard.replace(/\D/g, '') : '';
-    if (cleanedIdCard.length !== 13) {
+    if ((!isAccessory && cleanedIdCard.length !== 13) || (isAccessory && customerIdCard && customerIdCard.trim() && cleanedIdCard.length !== 13)) {
       return res.status(400).json({
         success: false,
         message: 'Customer ID card number must contain exactly 13 digits.',
@@ -88,8 +97,10 @@ exports.createPurchase = async (req, res, next) => {
       backUrl = await uploadCompressedImage(idCardBack, 'unity_mobile/id_cards/back');
     }
 
+    const cleanModelName = modelName && modelName.trim() ? modelName.trim() : (isAccessory ? 'Accessory' : '');
     const cleanModelNumber = modelNumber ? modelNumber.trim() : '';
     const purchaseQty = Math.max(1, Number(quantity) || 1);
+    const purchasePrice = price !== undefined && price !== '' && !isNaN(price) ? Number(price) : 0;
 
     // Create Purchase Record
     const purchase = await Purchase.create({
@@ -97,25 +108,25 @@ exports.createPurchase = async (req, res, next) => {
       condition: condition === 'Used' ? 'Used' : 'New',
       status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
       companyName: companyName ? companyName.trim() : '',
-      modelName: modelName.trim(),
+      modelName: cleanModelName,
       modelNumber: cleanModelNumber,
       quantity: purchaseQty,
       imei1: imei1 ? imei1.trim() : undefined,
       imei2: imei2 ? imei2.trim() : undefined,
       serialNumber: serialNumber ? serialNumber.trim() : '',
       customerName: customerName ? customerName.trim() : '',
-      customerPhone: customerPhone.trim(),
+      customerPhone: cleanedPhone,
       customerIdCard: cleanedIdCard,
       customerAddress: customerAddress ? customerAddress.trim() : '',
       idCardFront: frontUrl,
       idCardBack: backUrl,
-      price: Number(price),
+      price: purchasePrice,
     });
 
     // Automatically sync with Inventory:
     // Match by modelName, modelNumber, and condition (case-insensitive regex)
     let inventoryItem = await Inventory.findOne({
-      modelName: { $regex: new RegExp(`^${modelName.trim()}$`, 'i') },
+      modelName: { $regex: new RegExp(`^${cleanModelName}$`, 'i') },
       modelNumber: cleanModelNumber
         ? { $regex: new RegExp(`^${cleanModelNumber}$`, 'i') }
         : '',
@@ -129,7 +140,7 @@ exports.createPurchase = async (req, res, next) => {
     if (inventoryItem) {
       // Increment stock quantity
       inventoryItem.quantity += purchaseQty;
-      inventoryItem.price = Number(price); // sync price or update latest purchase price
+      inventoryItem.price = purchasePrice; // sync price or update latest purchase price
       if (companyName) inventoryItem.companyName = companyName.trim();
       if (['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status)) inventoryItem.status = status;
       
@@ -147,10 +158,10 @@ exports.createPurchase = async (req, res, next) => {
         condition: condition === 'Used' ? 'Used' : 'New',
         status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
         companyName: companyName ? companyName.trim() : '',
-        modelName: modelName.trim(),
+        modelName: cleanModelName,
         modelNumber: cleanModelNumber,
         quantity: purchaseQty,
-        price: Number(price),
+        price: purchasePrice,
         imeis: imeisToAdd,
       });
     }

@@ -80,7 +80,7 @@ const Inventory = ({ isActive, setAlert }) => {
   const handleManualAdd = async (e) => {
     e.preventDefault();
     if (submitting) return;
-    if (!formData.modelName.trim()) {
+    if (formData.category !== 'Accessory' && !formData.modelName.trim()) {
       setAlert({
         type: 'error',
         message: 'Model name is required.',
@@ -279,7 +279,7 @@ const Inventory = ({ isActive, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Device Condition *</label>
+                <label>Device Condition {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <select
                   value={formData.condition}
                   onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
@@ -290,7 +290,7 @@ const Inventory = ({ isActive, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Status *</label>
+                <label>Status {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -313,13 +313,13 @@ const Inventory = ({ isActive, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Model Name *</label>
+                <label>Model Name {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <input
                   type="text"
                   placeholder="e.g. iPhone 13 Pro"
                   value={formData.modelName}
                   onChange={(e) => setFormData({ ...formData, modelName: e.target.value })}
-                  required
+                  required={formData.category !== 'Accessory'}
                 />
               </div>
 
@@ -334,25 +334,25 @@ const Inventory = ({ isActive, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Quantity *</label>
+                <label>Quantity {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <input
                   type="number"
                   min="1"
                   value={formData.quantity}
                   onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                  required
+                  required={formData.category !== 'Accessory'}
                 />
               </div>
 
               <div className="form-field">
-                <label>Unit Purchase Price (PKR) *</label>
+                <label>Unit Purchase Price (PKR) {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <input
                   type="number"
                   min="0"
                   placeholder="0"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  required
+                  required={formData.category !== 'Accessory'}
                 />
               </div>
 

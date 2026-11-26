@@ -25,8 +25,9 @@ const inventorySchema = new mongoose.Schema(
     },
     modelName: {
       type: String,
-      required: [true, 'Model name is required'],
+      required: [function () { return this.category !== 'Accessory'; }, 'Model name is required'],
       trim: true,
+      default: '',
     },
     modelNumber: {
       type: String,

@@ -348,16 +348,41 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.companyName.trim()) errors.companyName = 'Company name is required';
-    if (!formData.modelName.trim()) errors.modelName = 'Model name is required';
-    if (!formData.customerName.trim()) errors.customerName = 'Customer name is required';
-    if (!/^\d{11}$/.test(formData.customerPhone.trim())) {
-      errors.customerPhone = 'Phone number must contain exactly 11 digits';
-    }
+    const isAccessory = formData.category === 'Accessory';
 
-    const idDigits = formData.customerIdCard.replace(/\D/g, '');
-    if (idDigits.length !== 13) {
-      errors.customerIdCard = 'ID card number must contain exactly 13 digits';
+    if (!isAccessory) {
+      if (!formData.companyName.trim()) errors.companyName = 'Company name is required';
+      if (!formData.modelName.trim()) errors.modelName = 'Model name is required';
+      if (!formData.customerName.trim()) errors.customerName = 'Customer name is required';
+      if (!/^\d{11}$/.test(formData.customerPhone.trim())) {
+        errors.customerPhone = 'Phone number must contain exactly 11 digits';
+      }
+
+      const idDigits = formData.customerIdCard.replace(/\D/g, '');
+      if (idDigits.length !== 13) {
+        errors.customerIdCard = 'ID card number must contain exactly 13 digits';
+      }
+
+      if (formData.price === '' || isNaN(formData.price) || Number(formData.price) < 0) {
+        errors.price = 'Valid price is required';
+      }
+      if (!formData.quantity || isNaN(formData.quantity) || Number(formData.quantity) < 1) {
+        errors.quantity = 'Quantity must be at least 1';
+      }
+    } else {
+      if (formData.customerPhone.trim() && !/^\d{11}$/.test(formData.customerPhone.trim())) {
+        errors.customerPhone = 'Phone number must contain exactly 11 digits';
+      }
+      const idDigits = formData.customerIdCard.replace(/\D/g, '');
+      if (idDigits.length > 0 && idDigits.length !== 13) {
+        errors.customerIdCard = 'ID card number must contain exactly 13 digits';
+      }
+      if (formData.price !== '' && (isNaN(formData.price) || Number(formData.price) < 0)) {
+        errors.price = 'Valid price is required';
+      }
+      if (formData.quantity !== '' && (isNaN(formData.quantity) || Number(formData.quantity) < 1)) {
+        errors.quantity = 'Quantity must be at least 1';
+      }
     }
 
     if (formData.imei1 && !/^\d{15}$/.test(formData.imei1.trim())) {
@@ -365,13 +390,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
     }
     if (formData.imei2 && !/^\d{15}$/.test(formData.imei2.trim())) {
       errors.imei2 = 'IMEI 2 must be exactly 15 digits';
-    }
-
-    if (formData.price === '' || isNaN(formData.price) || Number(formData.price) < 0) {
-      errors.price = 'Valid price is required';
-    }
-    if (!formData.quantity || isNaN(formData.quantity) || Number(formData.quantity) < 1) {
-      errors.quantity = 'Quantity must be at least 1';
     }
 
     setFormErrors(errors);
@@ -386,6 +404,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
     try {
       await createPurchase({
         ...formData,
+        price: formData.price !== '' ? Number(formData.price) : 0,
         quantity: Math.max(1, Number(formData.quantity) || 1),
       });
       setAlert({
@@ -648,7 +667,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Device Condition *</label>
+                <label>Device Condition {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <select
                   value={formData.condition}
                   onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
@@ -659,7 +678,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Status *</label>
+                <label>Status {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -672,7 +691,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Company / Brand *</label>
+                <label>Company / Brand {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <input
                   type="text"
                   placeholder="e.g. Samsung, Apple, Xiaomi"
@@ -683,7 +702,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Model Name *</label>
+                <label>Model Name {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <input
                   type="text"
                   placeholder="e.g. Galaxy S22"
@@ -752,7 +771,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Customer Name *</label>
+                <label>Customer Name {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <input
                   type="text"
                   placeholder="e.g. Muhammad Ahmad"
@@ -764,7 +783,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
 
               <div className="form-field">
                 <label>
-                  Customer Phone Number * (11 digits)
+                  Customer Phone Number {formData.category !== 'Accessory' ? '* (11 digits)' : '(Optional)'}
                   {formData.customerPhone && (
                     <span style={{ marginLeft: '6px', color: formData.customerPhone.length === 11 ? 'var(--success-color)' : 'var(--text-muted)' }}>
                       ({formData.customerPhone.length}/11)
@@ -783,7 +802,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
 
               <div className="form-field">
                 <label>
-                  Customer ID Card Number * (13 digits)
+                  Customer ID Card Number {formData.category !== 'Accessory' ? '* (13 digits)' : '(Optional)'}
                   {formData.customerIdCard && (
                     <span style={{ marginLeft: '6px', color: formData.customerIdCard.length === 13 ? 'var(--success-color)' : 'var(--text-muted)' }}>
                       ({formData.customerIdCard.length}/13)
@@ -817,7 +836,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Purchase Price (PKR) *</label>
+                <label>Purchase Price (PKR) {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <input
                   type="number"
                   placeholder="0"
@@ -828,7 +847,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Quantity *</label>
+                <label>Quantity {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <input
                   type="number"
                   min="1"

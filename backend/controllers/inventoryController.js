@@ -84,7 +84,10 @@ exports.createInventoryItem = async (req, res, next) => {
       customerAddress = '',
     } = req.body;
 
-    if (!modelName || !modelName.trim()) {
+    const isAccessory = category === 'Accessory';
+    const cleanModelName = modelName && modelName.trim() ? modelName.trim() : (isAccessory ? 'Accessory' : '');
+
+    if (!cleanModelName) {
       return res.status(400).json({
         success: false,
         message: 'Model name is required.',
@@ -103,7 +106,7 @@ exports.createInventoryItem = async (req, res, next) => {
 
     // Check if item already exists with matching model and condition
     let item = await Inventory.findOne({
-      modelName: { $regex: new RegExp(`^${modelName.trim()}$`, 'i') },
+      modelName: { $regex: new RegExp(`^${cleanModelName}$`, 'i') },
       modelNumber: cleanModelNumber
         ? { $regex: new RegExp(`^${cleanModelNumber}$`, 'i') }
         : '',
@@ -137,7 +140,7 @@ exports.createInventoryItem = async (req, res, next) => {
         condition: condition === 'Used' ? 'Used' : 'New',
         status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
         companyName: companyName.trim(),
-        modelName: modelName.trim(),
+        modelName: cleanModelName,
         modelNumber: cleanModelNumber,
         quantity: Number(quantity),
         price: Number(price),
@@ -152,7 +155,7 @@ exports.createInventoryItem = async (req, res, next) => {
     const purchasePrice = Number(price) || 0;
 
     const existingRecentPurchase = await Purchase.findOne({
-      modelName: modelName.trim(),
+      modelName: cleanModelName,
       modelNumber: cleanModelNumber,
       condition: condition === 'Used' ? 'Used' : 'New',
       customerName: cleanCustomerName,
@@ -168,7 +171,7 @@ exports.createInventoryItem = async (req, res, next) => {
         condition: condition === 'Used' ? 'Used' : 'New',
         status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
         companyName: companyName ? companyName.trim() : (item.companyName || 'Stock'),
-        modelName: modelName.trim(),
+        modelName: cleanModelName,
         modelNumber: cleanModelNumber,
         quantity: purchaseQty,
         imei1: (validImeis[0] || imei1 || '').trim() || undefined,

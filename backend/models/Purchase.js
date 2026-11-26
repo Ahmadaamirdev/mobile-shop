@@ -39,13 +39,15 @@ const purchaseSchema = new mongoose.Schema(
     },
     companyName: {
       type: String,
-      required: [true, 'Company name is required'],
+      required: [function () { return this.category !== 'Accessory'; }, 'Company name is required'],
       trim: true,
+      default: '',
     },
     modelName: {
       type: String,
-      required: [true, 'Model name is required'],
+      required: [function () { return this.category !== 'Accessory'; }, 'Model name is required'],
       trim: true,
+      default: '',
     },
     modelNumber: {
       type: String,
@@ -116,8 +118,9 @@ const purchaseSchema = new mongoose.Schema(
     },
     price: {
       type: Number,
-      required: [true, 'Price is required'],
+      required: [function () { return this.category !== 'Accessory'; }, 'Price is required'],
       min: [0, 'Price cannot be negative'],
+      default: 0,
     },
   },
   {

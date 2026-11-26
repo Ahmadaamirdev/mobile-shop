@@ -132,20 +132,42 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
   const calculateSaleTotal = () =>
     formData.items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
 
+  const isAccessoryOnlySale = formData.items.every((dev) => dev.category === 'Accessory');
+
   const validateForm = () => {
     const errors = {};
-    if (!formData.customerName.trim()) errors.customerName = 'Customer name is required';
-    if (!/^\d{11}$/.test(formData.customerNumber.trim())) {
+    if (!isAccessoryOnlySale) {
+      if (!formData.customerName.trim()) errors.customerName = 'Customer name is required';
+      if (!/^\d{11}$/.test(formData.customerNumber.trim())) {
+        errors.customerNumber = 'Customer phone number must contain exactly 11 digits';
+      }
+    } else if (formData.customerNumber.trim() && !/^\d{11}$/.test(formData.customerNumber.trim())) {
       errors.customerNumber = 'Customer phone number must contain exactly 11 digits';
     }
 
     formData.items.forEach((dev, idx) => {
-      if (!dev.modelName.trim()) {
-        errors[`modelName_${idx}`] = 'Model name is required';
+      const isAcc = dev.category === 'Accessory';
+      if (!isAcc) {
+        if (!dev.modelName.trim()) {
+          errors[`modelName_${idx}`] = 'Model name is required';
+        } else {
+          const matched = findMatchingInventory(dev);
+          if (!matched || matched.quantity <= 0) {
+            errors[`modelName_${idx}`] = 'Item is not available in inventory or has zero stock';
+          }
+        }
+        if (dev.price === '' || isNaN(dev.price) || Number(dev.price) < 0) {
+          errors[`price_${idx}`] = 'Valid price is required';
+        }
       } else {
-        const matched = findMatchingInventory(dev);
-        if (!matched || matched.quantity <= 0) {
-          errors[`modelName_${idx}`] = 'Item is not available in inventory or has zero stock';
+        if (dev.modelName.trim()) {
+          const matched = findMatchingInventory(dev);
+          if (!matched || matched.quantity <= 0) {
+            errors[`modelName_${idx}`] = 'Item is not available in inventory or has zero stock';
+          }
+        }
+        if (dev.price !== '' && (isNaN(dev.price) || Number(dev.price) < 0)) {
+          errors[`price_${idx}`] = 'Valid price is required';
         }
       }
 
@@ -154,10 +176,6 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
       }
       if (dev.imei2 && !/^\d{15}$/.test(dev.imei2.trim())) {
         errors[`imei2_${idx}`] = 'IMEI 2 must be exactly 15 digits';
-      }
-
-      if (dev.price === '' || isNaN(dev.price) || Number(dev.price) < 0) {
-        errors[`price_${idx}`] = 'Valid price is required';
       }
     });
 
@@ -423,7 +441,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
             {/* Customer Fields */}
             <div className="form-grid-3" style={{ marginBottom: '16px' }}>
               <div className="form-field">
-                <label>Customer Name *</label>
+                <label>Customer Name {!isAccessoryOnlySale ? '*' : '(Optional)'}</label>
                 <input
                   type="text"
                   placeholder="Customer Full Name"
@@ -435,7 +453,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
 
               <div className="form-field">
                 <label>
-                  Customer Phone Number * (11 digits)
+                  Customer Phone Number {!isAccessoryOnlySale ? '* (11 digits)' : '(Optional)'}
                   {formData.customerNumber && (
                     <span style={{ marginLeft: '6px', color: formData.customerNumber.length === 11 ? 'var(--success-color)' : 'var(--text-muted)' }}>
                       ({formData.customerNumber.length}/11)
@@ -577,7 +595,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                     </div>
 
                     <div className="form-field">
-                      <label>Condition *</label>
+                      <label>Condition {dev.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                       <select
                         value={dev.condition}
                         onChange={(e) => handleDeviceChange(index, 'condition', e.target.value)}
@@ -588,7 +606,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                     </div>
 
                     <div className="form-field">
-                      <label>Status *</label>
+                      <label>Status {dev.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                       <select
                         value={dev.status || 'PTA'}
                         onChange={(e) => handleDeviceChange(index, 'status', e.target.value)}
@@ -601,7 +619,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                     </div>
 
                     <div className="form-field">
-                      <label>Model Name *</label>
+                      <label>Model Name {dev.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                       <input
                         type="text"
                         placeholder="e.g. Galaxy S22"
@@ -624,7 +642,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                     </div>
 
                     <div className="form-field">
-                      <label>Sale Price (PKR) *</label>
+                      <label>Sale Price (PKR) {dev.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                       <input
                         type="number"
                         placeholder="0"

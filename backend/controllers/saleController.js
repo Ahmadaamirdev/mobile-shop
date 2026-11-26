@@ -19,35 +19,20 @@ exports.createSale = async (req, res, next) => {
       items,
     } = req.body;
 
-    if (!customerName || !customerName.trim() || !customerNumber || !customerNumber.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Customer name and customer phone number are required.',
-      });
-    }
-
-    const cleanedPhone = customerNumber.replace(/\D/g, '');
-    if (cleanedPhone.length !== 11) {
-      return res.status(400).json({
-        success: false,
-        message: 'Customer phone number must contain exactly 11 digits.',
-      });
-    }
-
     // Normalize input into a list of device items
     let rawItems = [];
     if (Array.isArray(items) && items.length > 0) {
       rawItems = items;
-    } else if (modelName && price !== undefined) {
+    } else if (modelName || price !== undefined || category === 'Accessory') {
       rawItems = [
         {
           category,
           condition,
-          modelName,
+          modelName: modelName || '',
           modelNumber,
           imei1,
           imei2,
-          price,
+          price: price !== undefined ? price : 0,
           quantity: 1,
         },
       ];
@@ -55,6 +40,23 @@ exports.createSale = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'At least one device with model name and price is required.',
+      });
+    }
+
+    const isAccessoryOnlySale = rawItems.every((it) => (it.category || category) === 'Accessory');
+
+    if (!isAccessoryOnlySale && (!customerName || !customerName.trim() || !customerNumber || !customerNumber.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer name and customer phone number are required.',
+      });
+    }
+
+    const cleanedPhone = customerNumber ? customerNumber.replace(/\D/g, '') : '';
+    if ((!isAccessoryOnlySale && cleanedPhone.length !== 11) || (isAccessoryOnlySale && customerNumber && customerNumber.trim() && cleanedPhone.length !== 11)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer phone number must contain exactly 11 digits.',
       });
     }
 
@@ -68,28 +70,36 @@ exports.createSale = async (req, res, next) => {
       const itModelNum = it.modelNumber ? it.modelNumber.trim() : '';
       const itCondition = it.condition ? it.condition.trim() : '';
       const itCategory = it.category || 'Mobile';
-      const itPrice = Number(it.price);
+      const isItemAccessory = itCategory === 'Accessory';
+      const rawPrice = it.price === '' || it.price === undefined || it.price === null ? (isItemAccessory ? 0 : NaN) : Number(it.price);
+      const itPrice = rawPrice;
       const itQty = Number(it.quantity) || 1;
       const cleanImei1 = it.imei1 ? it.imei1.trim() : '';
       const cleanImei2 = it.imei2 ? it.imei2.trim() : '';
 
-      if (!itModel || it.price === undefined || isNaN(itPrice) || itPrice < 0) {
+      if (!isItemAccessory && (!itModel || it.price === undefined || isNaN(itPrice) || itPrice < 0)) {
         return res.status(400).json({
           success: false,
           message: `Device #${i + 1} requires a valid model name and price.`,
+        });
+      }
+      if (isItemAccessory && (isNaN(itPrice) || itPrice < 0)) {
+        return res.status(400).json({
+          success: false,
+          message: `Item #${i + 1} has an invalid price.`,
         });
       }
 
       if (cleanImei1 && !/^\d{15}$/.test(cleanImei1)) {
         return res.status(400).json({
           success: false,
-          message: `Device #${i + 1} (${itModel}): IMEI 1 must be exactly 15 digits.`,
+          message: `Device #${i + 1} (${itModel || 'Accessory'}): IMEI 1 must be exactly 15 digits.`,
         });
       }
       if (cleanImei2 && !/^\d{15}$/.test(cleanImei2)) {
         return res.status(400).json({
           success: false,
-          message: `Device #${i + 1} (${itModel}): IMEI 2 must be exactly 15 digits.`,
+          message: `Device #${i + 1} (${itModel || 'Accessory'}): IMEI 2 must be exactly 15 digits.`,
         });
       }
 
@@ -97,7 +107,7 @@ exports.createSale = async (req, res, next) => {
       if (it.inventoryId) {
         inventoryItem = await Inventory.findById(it.inventoryId);
       }
-      if (!inventoryItem) {
+      if (!inventoryItem && itModel) {
         const inventoryQuery = {
           modelName: { $regex: new RegExp(`^${itModel}$`, 'i') },
           quantity: { $gt: 0 },
@@ -111,10 +121,31 @@ exports.createSale = async (req, res, next) => {
         inventoryItem = await Inventory.findOne(inventoryQuery);
       }
 
+      if (isItemAccessory && !itModel && !it.inventoryId) {
+        resolvedEntries.push({
+          inventoryItem: null,
+          saleItem: {
+            category: 'Accessory',
+            condition: itCondition || 'New',
+            status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(it.status) ? it.status : 'PTA',
+            modelName: 'Accessory',
+            modelNumber: itModelNum,
+            imei1: cleanImei1 || undefined,
+            imei2: cleanImei2 || undefined,
+            price: itPrice,
+            quantity: itQty,
+          },
+          cleanImei1,
+          cleanImei2,
+          itQty,
+        });
+        continue;
+      }
+
       if (!inventoryItem || inventoryItem.quantity <= 0) {
         return res.status(400).json({
           success: false,
-          message: `Item "${itModel}" is not available in inventory or has zero stock. Sale cannot proceed.`,
+          message: `Item "${itModel || 'Accessory'}" is not available in inventory or has zero stock. Sale cannot proceed.`,
         });
       }
 
@@ -171,8 +202,8 @@ exports.createSale = async (req, res, next) => {
       status: firstEntry.status || 'PTA',
       modelName: resolvedEntries.map((e) => e.saleItem.modelName).join(', '),
       modelNumber: firstEntry.modelNumber || '',
-      customerName: customerName.trim(),
-      customerNumber: customerNumber.trim(),
+      customerName: customerName ? customerName.trim() : '',
+      customerNumber: cleanedPhone,
       imei1: firstEntry.imei1,
       imei2: firstEntry.imei2,
       items: resolvedEntries.map((e) => e.saleItem),

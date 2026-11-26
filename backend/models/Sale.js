@@ -25,8 +25,9 @@ const saleItemSchema = new mongoose.Schema(
     },
     modelName: {
       type: String,
-      required: [true, 'Model name is required'],
+      required: [function () { return this.category !== 'Accessory'; }, 'Model name is required'],
       trim: true,
+      default: '',
     },
     modelNumber: {
       type: String,
@@ -51,8 +52,9 @@ const saleItemSchema = new mongoose.Schema(
     },
     price: {
       type: Number,
-      required: [true, 'Device price is required'],
+      required: [function () { return this.category !== 'Accessory'; }, 'Device price is required'],
       min: [0, 'Sale price cannot be negative'],
+      default: 0,
     },
     quantity: {
       type: Number,
@@ -83,8 +85,9 @@ const saleSchema = new mongoose.Schema(
     },
     modelName: {
       type: String,
-      required: [true, 'Model name is required'],
+      required: [function () { return this.category !== 'Accessory'; }, 'Model name is required'],
       trim: true,
+      default: '',
     },
     modelNumber: {
       type: String,
@@ -93,15 +96,17 @@ const saleSchema = new mongoose.Schema(
     },
     customerName: {
       type: String,
-      required: [true, 'Customer name is required'],
+      required: [function () { return this.category !== 'Accessory'; }, 'Customer name is required'],
       trim: true,
+      default: '',
     },
     customerNumber: {
       type: String,
-      required: [true, 'Customer number is required'],
+      required: [function () { return this.category !== 'Accessory'; }, 'Customer number is required'],
       trim: true,
+      default: '',
       validate: {
-        validator: (val) => /^\d{11}$/.test((val || '').trim()),
+        validator: (val) => !val || !val.trim() || /^\d{11}$/.test(val.trim()),
         message: 'Customer phone number must contain exactly 11 digits',
       },
     },
@@ -127,8 +132,9 @@ const saleSchema = new mongoose.Schema(
     },
     price: {
       type: Number,
-      required: [true, 'Sale price is required'],
+      required: [function () { return this.category !== 'Accessory'; }, 'Sale price is required'],
       min: [0, 'Sale price cannot be negative'],
+      default: 0,
     },
   },
   {
