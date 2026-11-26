@@ -345,9 +345,24 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
     if (!element) return;
 
     setIsGeneratingPDF(true);
+    let exportWrapper = null;
     try {
       const html2pdfModule = await import('html2pdf.js');
       const html2pdf = html2pdfModule.default || html2pdfModule;
+
+      // Clone into an off-screen desktop-width A4 container so mobile & desktop produce identical A4 PDFs
+      exportWrapper = document.createElement('div');
+      exportWrapper.style.position = 'fixed';
+      exportWrapper.style.left = '-99999px';
+      exportWrapper.style.top = '0';
+      exportWrapper.style.width = '794px';
+      exportWrapper.style.background = '#ffffff';
+      exportWrapper.style.zIndex = '-1';
+
+      const clonedSheet = element.cloneNode(true);
+      clonedSheet.classList.add('pdf-export-a4');
+      exportWrapper.appendChild(clonedSheet);
+      document.body.appendChild(exportWrapper);
 
       const currentInvoiceNum = saved.invoiceNumber || invoiceData.invoiceNumber || 'Draft';
       const safeCustomer = invoiceData.customerName
@@ -356,14 +371,20 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
       const filename = `Invoice_${currentInvoiceNum}_${safeCustomer}.pdf`;
 
       const opt = {
-        margin: [6, 6, 6, 6],
+        margin: [0, 0, 0, 0],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          width: 794,
+          windowWidth: 1200,
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       };
 
-      await html2pdf().set(opt).from(element).save();
+      await html2pdf().set(opt).from(clonedSheet).save();
       setInvoiceData(initialFormState);
       if (clearInitialSale) clearInitialSale();
       setViewMode('history');
@@ -374,6 +395,9 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
         message: 'Could not generate PDF directly. You can also use Print A4 Invoice -> Save as PDF.',
       });
     } finally {
+      if (exportWrapper && exportWrapper.parentNode) {
+        exportWrapper.parentNode.removeChild(exportWrapper);
+      }
       setIsGeneratingPDF(false);
     }
   };
@@ -1163,21 +1187,24 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                 </div>
               </div>
 
-              {/* Terms and Return Policy */}
-              <div className="invoice-terms-box">
-                <p><strong>Notice &amp; Warranty Terms:</strong></p>
-                <p>1. Please inspect all devices carefully before leaving the store.</p>
-                <p>2. Goods once sold cannot be returned or refunded without the original invoice.</p>
-                <p>3. Software and physical damage are not covered under warranty.</p>
-              </div>
-
-              {/* Signatures */}
-              <div className="invoice-signatures">
-                <div className="invoice-sig-line">
-                  Customer Signature
+              {/* Sticky Footer: Terms and Signatures */}
+              <div className="invoice-footer-sticky">
+                {/* Terms and Return Policy */}
+                <div className="invoice-terms-box">
+                  <p><strong>Notice &amp; Warranty Terms:</strong></p>
+                  <p>1. Please inspect all devices carefully before leaving the store.</p>
+                  <p>2. Goods once sold cannot be returned or refunded without the original invoice.</p>
+                  <p>3. Software and physical damage are not covered under warranty.</p>
                 </div>
-                <div className="invoice-sig-line">
-                  Authorized Unity Mobile Signature
+
+                {/* Signatures */}
+                <div className="invoice-signatures">
+                  <div className="invoice-sig-line">
+                    Customer Signature
+                  </div>
+                  <div className="invoice-sig-line">
+                    Authorized Unity Mobile Signature
+                  </div>
                 </div>
               </div>
             </div>
