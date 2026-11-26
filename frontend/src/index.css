@@ -422,6 +422,14 @@ samp {
 }
 
 /* Search + Date/Sort Filter Controls */
+.toolbar-desktop-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 16px;
+  align-items: center;
+  width: 100%;
+}
+
 .toolbar-search-date-row {
   display: flex;
   align-items: center;
@@ -1653,6 +1661,14 @@ samp {
 
   .panel-search-box input {
     height: 44px;
+  }
+
+  .toolbar-desktop-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
   }
 
   .toolbar-search-date-row {

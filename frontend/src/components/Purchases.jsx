@@ -513,42 +513,9 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
           </div>
         </div>
 
-        {/* Toolbar: Category Filters on Left, Subfilter for Condition, Search on Right (Hidden when form is open) */}
+        {/* Toolbar: Category Filters, Condition Subfilter, Search & Date Controls (Hidden when form is open) */}
         {!showAddForm && (
-          <div className="panel-toolbar-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
-            {/* Desktop: pill buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <div className="panel-filter-pills">
-                {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
-                    onClick={() => setSelectedCategory(cat)}
-                  >
-                    {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
-                  </button>
-                ))}
-              </div>
-              <div className="filter-divider hide-on-mobile" />
-              <div className="subfilter-group panel-filter-pills">
-                {[
-                  { id: 'All', label: 'All Condition' },
-                  { id: 'New', label: 'New', pillClass: 'pill-new' },
-                  { id: 'Used', label: 'Used', pillClass: 'pill-used' },
-                ].map((cond) => (
-                  <button
-                    key={cond.id}
-                    type="button"
-                    className={`filter-pill ${cond.pillClass || ''} ${selectedCondition === cond.id ? 'active' : 'inactive'}`}
-                    onClick={() => setSelectedCondition(cond.id)}
-                  >
-                    {cond.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          <div className="panel-toolbar-row">
             {/* Mobile: compact select dropdowns */}
             <div className="mobile-filter-row">
               <select
@@ -572,7 +539,37 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </select>
             </div>
 
-            <div className="toolbar-search-date-row">
+            <div className="toolbar-desktop-grid">
+              <div className="panel-filter-pills">
+                {['All', 'Mobile', 'Tablet', 'Accessory'].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={`filter-pill ${selectedCategory === cat ? 'active' : 'inactive'}`}
+                    onClick={() => setSelectedCategory(cat)}
+                  >
+                    {cat === 'All' ? 'All Categories' : cat === 'Accessory' ? 'Accessories' : `${cat}s`}
+                  </button>
+                ))}
+              </div>
+
+              <div className="subfilter-group panel-filter-pills">
+                {[
+                  { id: 'All', label: 'All Condition' },
+                  { id: 'New', label: 'New', pillClass: 'pill-new' },
+                  { id: 'Used', label: 'Used', pillClass: 'pill-used' },
+                ].map((cond) => (
+                  <button
+                    key={cond.id}
+                    type="button"
+                    className={`filter-pill ${cond.pillClass || ''} ${selectedCondition === cond.id ? 'active' : 'inactive'}`}
+                    onClick={() => setSelectedCondition(cond.id)}
+                  >
+                    {cond.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="panel-search-box">
                 <Search size={14} className="search-icon" />
                 <input
@@ -953,12 +950,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
                       {/* Customer */}
                       <td>
                         <span className="cell-title">{item.customerName || '—'}</span>
-                        {item.customerPhone && (
-                          <span className="cell-sub" style={{ color: '#090d16', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Phone size={11} style={{ color: '#64748b', flexShrink: 0 }} />
-                            {item.customerPhone}
-                          </span>
-                        )}
                       </td>
 
                       {/* Price */}
@@ -1034,13 +1025,8 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
 
                       <div className="mobile-meta-cell full-width">
                         <div className="mobile-meta-label">Customer</div>
-                        <div className="mobile-meta-val" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <div className="mobile-meta-val">
                           <strong>{item.customerName || '—'}</strong>
-                          {item.customerPhone && (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              • <Phone size={11} style={{ color: '#64748b' }} /> {item.customerPhone}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>

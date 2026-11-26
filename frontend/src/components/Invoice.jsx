@@ -709,13 +709,9 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                           )}
                         </td>
 
-                        {/* Customer (Name & Phone combined like Sales & Purchases) */}
+                        {/* Customer */}
                         <td>
                           <span className="cell-title">{item.customerName}</span>
-                          <span className="cell-sub" style={{ color: '#090d16', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Phone size={11} style={{ color: '#64748b', flexShrink: 0 }} />
-                            {item.customerNumber}
-                          </span>
                         </td>
 
                         {/* Amount */}
@@ -774,11 +770,8 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                       <div className="mobile-card-title" style={{ color: 'var(--brand-gold-hover)' }}>
                         {item.invoiceNumber}
                       </div>
-                      <div className="mobile-card-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                      <div className="mobile-card-subtitle">
                         <span>{item.customerName}</span>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          • <Phone size={11} style={{ color: '#64748b' }} /> {item.customerNumber}
-                        </span>
                       </div>
                     </div>
                     <div className="mobile-card-price">
