@@ -88,7 +88,7 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
     <div>
       {/* Header Card */}
       <div className="panel-header-card">
-        <div className="panel-header-row">
+        <div className="panel-header-row dashboard-header-row">
           <div className="panel-header-left">
             <div className="panel-icon-box">
               <LayoutDashboard size={18} />

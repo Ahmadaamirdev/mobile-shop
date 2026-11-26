@@ -1791,6 +1791,12 @@ samp {
     gap: 8px;
   }
 
+  .panel-header-row.dashboard-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
   .panel-header-row .btn-primary {
     width: auto;
     height: 34px;
