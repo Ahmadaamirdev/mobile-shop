@@ -59,7 +59,7 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
 
   useEffect(() => {
     if (isActive) {
-      fetchRecords(true, false);
+      fetchRecords(false, false);
     }
   }, [isActive, fetchRecords]);
 

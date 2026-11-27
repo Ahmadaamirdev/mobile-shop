@@ -61,10 +61,10 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
     [startDate, endDate, setAlert]
   );
 
-  // Sync in real time whenever Dashboard becomes active or date filter changes
+  // Load from cache on tab switch; mutations & 30s poll keep data fresh
   useEffect(() => {
     if (isActive) {
-      fetchDashboard(true, false);
+      fetchDashboard(false, false);
     }
   }, [isActive, fetchDashboard]);
 
