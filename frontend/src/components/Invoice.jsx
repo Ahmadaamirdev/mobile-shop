@@ -858,13 +858,13 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                 <div style={{ marginBottom: '16px', background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-card)' }}>
                   <SmartDropdown
                     label="Create Invoice from Recorded Sale (Optional — or enter manually below)"
-                    placeholder="Manual Entry (Type Details Manually) — or click to pick a recorded sale"
-                    searchPlaceholder="Search recorded sales by customer, phone, model..."
+                    placeholder="Manual Entry — or click to pick a recorded sale"
+                    searchPlaceholder="Search customer, phone, or device..."
                     value={selectedSaleId}
                     onChange={handleSelectRecordedSale}
                     manualOption={{
                       label: 'Manual Entry',
-                      description: 'Clear selection and type customer & device details manually',
+                      description: 'Enter customer & device details manually',
                     }}
                     emptyText="No un-invoiced sales found."
                     options={recordedSales
@@ -911,22 +911,33 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                       </div>
                     )}
                     renderOption={(opt) => (
-                      <div className="smart-dropdown-grid-invoice">
-                        <span style={{ fontWeight: 700, fontSize: '13px', color: '#090d16', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {opt.sale.customerName}
-                        </span>
-                        <span className="smart-dropdown-col-hide-mobile" style={{ fontSize: '11.5px', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
-                          <Phone size={10} style={{ flexShrink: 0 }} /> {opt.sale.customerNumber}
-                        </span>
-                        <span style={{ fontSize: '12px', color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {opt.deviceLabel}
-                        </span>
-                        <span className="smart-dropdown-col-hide-mobile" style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap', textAlign: 'right' }}>
-                          {opt.dateStr || ''}
-                        </span>
-                        <span style={{ fontWeight: 700, fontSize: '12.5px', color: '#059669', whiteSpace: 'nowrap', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                          PKR {Number(opt.sale.price).toLocaleString()}
-                        </span>
+                      <div className="smart-dropdown-invoice-row">
+                        <div className="smart-dropdown-invoice-left">
+                          <div className="smart-dropdown-invoice-top">
+                            <span className="smart-dropdown-invoice-name">
+                              {opt.sale.customerName}
+                            </span>
+                            {opt.sale.customerNumber && (
+                              <span className="smart-dropdown-invoice-phone">
+                                <Phone size={10} />
+                                {opt.sale.customerNumber}
+                              </span>
+                            )}
+                          </div>
+                          <div className="smart-dropdown-invoice-device">
+                            {opt.deviceLabel}
+                          </div>
+                        </div>
+                        <div className="smart-dropdown-invoice-right">
+                          <span className="smart-dropdown-invoice-price">
+                            PKR {Number(opt.sale.price).toLocaleString()}
+                          </span>
+                          {opt.dateStr && (
+                            <span className="smart-dropdown-invoice-date">
+                              {opt.dateStr}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
                   />
