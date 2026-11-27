@@ -8,6 +8,7 @@ const MobileTopBar = ({ activeTab, onOpenMenu }) => {
     sales: 'Sales',
     inventory: 'Inventory',
     records: 'Records',
+    ledger: 'Ledger',
     invoices: 'Invoices',
   };
 

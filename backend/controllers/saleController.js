@@ -12,7 +12,6 @@ exports.createSale = async (req, res, next) => {
       category = 'Mobile',
       condition,
       modelName,
-      modelNumber = '',
       customerName,
       customerNumber,
       imei1,
@@ -31,7 +30,6 @@ exports.createSale = async (req, res, next) => {
           category,
           condition,
           modelName: modelName || '',
-          modelNumber,
           imei1,
           imei2,
           price: price !== undefined ? price : 0,
@@ -69,7 +67,6 @@ exports.createSale = async (req, res, next) => {
     for (let i = 0; i < rawItems.length; i++) {
       const it = rawItems[i];
       const itModel = it.modelName ? it.modelName.trim() : '';
-      const itModelNum = it.modelNumber ? it.modelNumber.trim() : '';
       const itCondition = it.condition ? it.condition.trim() : '';
       const itCategory = it.category || 'Mobile';
       const isItemAccessory = itCategory === 'Accessory';
@@ -119,9 +116,6 @@ exports.createSale = async (req, res, next) => {
           modelName: { $regex: new RegExp(`^${escapeRegex(itModel)}$`, 'i') },
           quantity: { $gt: 0 },
         };
-        if (itModelNum) {
-          inventoryQuery.modelNumber = { $regex: new RegExp(`^${escapeRegex(itModelNum)}$`, 'i') };
-        }
         if (itCondition) {
           inventoryQuery.condition = itCondition;
         }
@@ -136,7 +130,6 @@ exports.createSale = async (req, res, next) => {
             condition: itCondition || 'New',
             status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(it.status) ? it.status : 'PTA',
             modelName: 'Accessory',
-            modelNumber: itModelNum,
             imei1: cleanImei1 || undefined,
             imei2: cleanImei2 || undefined,
             price: itPrice,
@@ -184,7 +177,6 @@ exports.createSale = async (req, res, next) => {
             ? it.status
             : (inventoryItem.status || 'PTA'),
           modelName: inventoryItem.modelName,
-          modelNumber: inventoryItem.modelNumber || itModelNum,
           imei1: cleanImei1 || undefined,
           imei2: cleanImei2 || undefined,
           price: itPrice,
@@ -245,7 +237,6 @@ exports.createSale = async (req, res, next) => {
       condition: firstEntry.condition,
       status: firstEntry.status || 'PTA',
       modelName: resolvedEntries.map((e) => e.saleItem.modelName).join(', '),
-      modelNumber: firstEntry.modelNumber || '',
       customerName: customerName ? customerName.trim() : '',
       customerNumber: cleanedPhone,
       imei1: firstEntry.imei1,
@@ -264,7 +255,6 @@ exports.createSale = async (req, res, next) => {
           condition: entry.saleItem.condition,
           status: entry.saleItem.status || 'PTA',
           modelName: entry.saleItem.modelName,
-          modelNumber: entry.saleItem.modelNumber || '',
           imei1: entry.cleanImei1 || '',
           imei2: entry.cleanImei2 || '',
           quantityDelta: -entry.itQty,
@@ -293,7 +283,6 @@ exports.createSale = async (req, res, next) => {
         status: entry.saleItem.status || 'PTA',
         companyName: entry.inventoryItem.companyName || '',
         modelName: entry.saleItem.modelName,
-        modelNumber: entry.saleItem.modelNumber || '',
         imei1: entry.cleanImei1 || '',
         imei2: entry.cleanImei2 || '',
         quantityDelta: -entry.itQty,
@@ -340,9 +329,7 @@ exports.getSales = async (req, res, next) => {
       const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
         { modelName: { $regex: escaped, $options: 'i' } },
-        { modelNumber: { $regex: escaped, $options: 'i' } },
         { 'items.modelName': { $regex: escaped, $options: 'i' } },
-        { 'items.modelNumber': { $regex: escaped, $options: 'i' } },
         { customerName: { $regex: escaped, $options: 'i' } },
         { customerNumber: { $regex: escaped, $options: 'i' } },
         { condition: { $regex: escaped, $options: 'i' } },
@@ -431,7 +418,6 @@ exports.deleteSale = async (req, res, next) => {
               category: sale.category || 'Mobile',
               condition: sale.condition || 'New',
               modelName: sale.modelName,
-              modelNumber: sale.modelNumber || '',
               imei1: sale.imei1,
               imei2: sale.imei2,
               price: sale.price,
@@ -446,9 +432,6 @@ exports.deleteSale = async (req, res, next) => {
         modelName: { $regex: new RegExp(`^${escapeRegex((sItem.modelName || '').trim())}$`, 'i') },
         condition: condition,
       };
-      if (sItem.modelNumber && sItem.modelNumber.trim()) {
-        inventoryQuery.modelNumber = { $regex: new RegExp(`^${escapeRegex(sItem.modelNumber.trim())}$`, 'i') };
-      }
 
       let inventoryItem = await Inventory.findOne(inventoryQuery);
       const prevStock = inventoryItem ? Number(inventoryItem.quantity) || 0 : 0;
@@ -468,7 +451,6 @@ exports.deleteSale = async (req, res, next) => {
           condition: condition,
           status: sItem.status || 'PTA',
           modelName: (sItem.modelName || '').trim(),
-          modelNumber: sItem.modelNumber ? sItem.modelNumber.trim() : '',
           quantity: restoreQty,
           price: sItem.price,
           imeis: [sItem.imei1, sItem.imei2].filter(Boolean),
@@ -483,7 +465,6 @@ exports.deleteSale = async (req, res, next) => {
         status: sItem.status || 'PTA',
         companyName: inventoryItem?.companyName || '',
         modelName: sItem.modelName || 'Accessory',
-        modelNumber: sItem.modelNumber || '',
         imei1: sItem.imei1 || '',
         imei2: sItem.imei2 || '',
         quantityDelta: restoreQty,

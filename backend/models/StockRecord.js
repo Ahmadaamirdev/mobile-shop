@@ -37,11 +37,6 @@ const stockRecordSchema = new mongoose.Schema(
       trim: true,
       default: 'Accessory',
     },
-    modelNumber: {
-      type: String,
-      trim: true,
-      default: '',
-    },
     imei1: {
       type: String,
       trim: true,

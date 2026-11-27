@@ -10,7 +10,6 @@ const emptySaleDevice = {
   condition: 'New',
   status: 'PTA',
   modelName: '',
-  modelNumber: '',
   imei1: '',
   imei2: '',
   price: '',
@@ -108,7 +107,6 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
         condition: item.condition || 'New',
         status: item.status || 'PTA',
         modelName: item.modelName,
-        modelNumber: item.modelNumber || '',
         price: item.price || '',
         imei1: item.imeis && item.imeis.length > 0 ? item.imeis[0] : '',
         imei2: item.imeis && item.imeis.length > 1 ? item.imeis[1] : '',
@@ -123,9 +121,6 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
       if (!nameMatch) return false;
       if (device.condition && item.condition && item.condition !== device.condition) {
         return false;
-      }
-      if (device.modelNumber && device.modelNumber.trim() && item.modelNumber) {
-        return item.modelNumber.trim().toLowerCase() === device.modelNumber.trim().toLowerCase();
       }
       return true;
     });
@@ -270,7 +265,6 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
       const term = search.trim().toLowerCase();
       const searchMatch =
         item.modelName?.toLowerCase().includes(term) ||
-        item.modelNumber?.toLowerCase().includes(term) ||
         item.category?.toLowerCase().includes(term) ||
         item.customerName?.toLowerCase().includes(term) ||
         item.customerNumber?.toLowerCase().includes(term) ||
@@ -280,7 +274,6 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
         itemList.some(
           (d) =>
             d.modelName?.toLowerCase().includes(term) ||
-            d.modelNumber?.toLowerCase().includes(term) ||
             d.imei1?.toLowerCase().includes(term) ||
             d.imei2?.toLowerCase().includes(term)
         );
@@ -498,7 +491,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                         .map((inv) => ({
                           value: inv._id,
                           label: inv.modelName,
-                          searchText: `${inv.modelName} ${inv.modelNumber || ''} ${inv.companyName || ''} ${inv.category || ''} ${inv.condition || 'New'} ${inv.status || ''} ${inv.price || ''} ${(inv.imeis || []).join(' ')}`,
+                          searchText: `${inv.modelName} ${inv.companyName || ''} ${inv.category || ''} ${inv.condition || 'New'} ${inv.status || ''} ${inv.price || ''} ${(inv.imeis || []).join(' ')}`,
                           inv,
                         }))}
                       renderSelected={(opt) => (
@@ -507,11 +500,6 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                             <span style={{ fontWeight: 700, color: '#090d16', fontSize: '13px', whiteSpace: 'nowrap' }}>
                               {opt.inv.modelName}
                             </span>
-                            {opt.inv.modelNumber && (
-                              <span style={{ color: '#64748b', fontSize: '12px', whiteSpace: 'nowrap' }}>
-                                ({opt.inv.modelNumber})
-                              </span>
-                            )}
                             <span className={`cell-badge condition-pill ${opt.inv.condition === 'Used' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '10px', padding: '1px 6px' }}>
                               {opt.inv.condition || 'New'}
                             </span>
@@ -592,16 +580,6 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                       {formErrors[`modelName_${index}`] && (
                         <span className="form-field-error">{formErrors[`modelName_${index}`]}</span>
                       )}
-                    </div>
-
-                    <div className="form-field">
-                      <label>Model Number (Optional)</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. SM-S901B"
-                        value={dev.modelNumber}
-                        onChange={(e) => handleDeviceChange(index, 'modelNumber', e.target.value)}
-                      />
                     </div>
 
                     <div className="form-field">
@@ -931,10 +909,6 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                         {modalDevices.length > 1 ? `Device #${dIdx + 1}:` : 'Model Name:'}
                       </span>
                       <span className="expanded-info-val">{d.modelName}</span>
-                    </div>
-                    <div className="expanded-info-row">
-                      <span className="expanded-info-label">Model Number:</span>
-                      <span className="expanded-info-val">{d.modelNumber || '—'}</span>
                     </div>
                     <div className="expanded-info-row">
                       <span className="expanded-info-label">Category / Cond:</span>

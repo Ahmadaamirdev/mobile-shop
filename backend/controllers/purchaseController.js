@@ -1,7 +1,10 @@
 const Purchase = require('../models/Purchase');
 const Inventory = require('../models/Inventory');
+const LedgerParty = require('../models/LedgerParty');
+const LedgerEntry = require('../models/LedgerEntry');
 const { uploadCompressedImage } = require('../config/cloudinary');
 const { logStockMovement } = require('./recordController');
+const { recomputePartyLedger } = require('./ledgerController');
 const { escapeRegex, parsePositiveIntQty, parseNonNegativePrice } = require('../utils/validators');
 
 // @desc    Upload & compress single ID card image to Cloudinary
@@ -33,7 +36,6 @@ exports.createPurchase = async (req, res, next) => {
       status = 'PTA',
       companyName,
       modelName,
-      modelNumber = '',
       quantity = 1,
       imei1,
       imei2,
@@ -45,6 +47,10 @@ exports.createPurchase = async (req, res, next) => {
       idCardFront = '',
       idCardBack = '',
       price,
+      paymentType = 'cash',
+      ledgerPartyId = '',
+      paidAmount = 0,
+      paymentMethod = 'Cash',
     } = req.body;
 
     const isAccessory = category === 'Accessory';
@@ -100,7 +106,6 @@ exports.createPurchase = async (req, res, next) => {
     }
 
     const cleanModelName = modelName && modelName.trim() ? modelName.trim() : (isAccessory ? 'Accessory' : '');
-    const cleanModelNumber = modelNumber ? modelNumber.trim() : '';
     const purchaseQty = parsePositiveIntQty(quantity, { allowEmpty: true, defaultVal: 1 });
     if (purchaseQty === null) {
       return res.status(400).json({
@@ -123,7 +128,6 @@ exports.createPurchase = async (req, res, next) => {
       status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
       companyName: companyName ? companyName.trim() : '',
       modelName: cleanModelName,
-      modelNumber: cleanModelNumber,
       quantity: purchaseQty,
       imei1: imei1 ? imei1.trim() : undefined,
       imei2: imei2 ? imei2.trim() : undefined,
@@ -138,12 +142,9 @@ exports.createPurchase = async (req, res, next) => {
     });
 
     // Automatically sync with Inventory:
-    // Match by modelName, modelNumber, and condition (case-insensitive regex, safely escaped)
+    // Match by modelName and condition (case-insensitive regex, safely escaped)
     let inventoryItem = await Inventory.findOne({
       modelName: { $regex: new RegExp(`^${escapeRegex(cleanModelName)}$`, 'i') },
-      modelNumber: cleanModelNumber
-        ? { $regex: new RegExp(`^${escapeRegex(cleanModelNumber)}$`, 'i') }
-        : '',
       condition: condition === 'Used' ? 'Used' : 'New',
     });
 
@@ -152,11 +153,12 @@ exports.createPurchase = async (req, res, next) => {
     if (imei2 && imei2.trim()) imeisToAdd.push(imei2.trim());
 
     const prevStock = inventoryItem ? Number(inventoryItem.quantity) || 0 : 0;
+    const unitPurchasePrice = purchaseQty > 0 ? Math.round((purchasePrice / purchaseQty) * 100) / 100 : purchasePrice;
 
     if (inventoryItem) {
       // Increment stock quantity
       inventoryItem.quantity += purchaseQty;
-      inventoryItem.price = purchasePrice; // sync price or update latest purchase price
+      inventoryItem.price = unitPurchasePrice; // sync unit price
       if (companyName) inventoryItem.companyName = companyName.trim();
       if (['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status)) inventoryItem.status = status;
       
@@ -175,9 +177,8 @@ exports.createPurchase = async (req, res, next) => {
         status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
         companyName: companyName ? companyName.trim() : '',
         modelName: cleanModelName,
-        modelNumber: cleanModelNumber,
         quantity: purchaseQty,
-        price: purchasePrice,
+        price: unitPurchasePrice,
         imeis: imeisToAdd,
       });
     }
@@ -190,13 +191,12 @@ exports.createPurchase = async (req, res, next) => {
       status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
       companyName: companyName ? companyName.trim() : '',
       modelName: cleanModelName,
-      modelNumber: cleanModelNumber,
       imei1: imei1 ? imei1.trim() : '',
       imei2: imei2 ? imei2.trim() : '',
       quantityDelta: purchaseQty,
       previousStock: prevStock,
       resultingStock: prevStock + purchaseQty,
-      unitPrice: purchasePrice,
+      unitPrice: unitPurchasePrice,
       totalAmount: purchasePrice,
       partyName: customerName ? customerName.trim() : '',
       partyPhone: cleanedPhone,
@@ -204,6 +204,53 @@ exports.createPurchase = async (req, res, next) => {
       inventoryId: inventoryItem._id,
       note: 'Purchased & added to inventory',
     });
+
+    // Two-way Ledger sync when recorded on Credit / Partial Payment
+    if (paymentType === 'ledger') {
+      const parsedPaid = parseNonNegativePrice(paidAmount, { allowEmpty: true, defaultVal: 0 }) || 0;
+      const safePaid = Math.min(parsedPaid, purchasePrice);
+      let party = null;
+      if (ledgerPartyId) {
+        party = await LedgerParty.findById(ledgerPartyId);
+      }
+      const partyName = (customerName && customerName.trim()) || (companyName && companyName.trim()) || '';
+      if (!party && partyName) {
+        party = await LedgerParty.findOne({
+          name: { $regex: new RegExp(`^${escapeRegex(partyName)}$`, 'i') },
+          partyType: 'Supplier',
+        });
+        if (!party) {
+          party = await LedgerParty.create({
+            name: partyName,
+            phone: cleanedPhone,
+            partyType: 'Supplier',
+            address: customerAddress ? customerAddress.trim() : '',
+          });
+        }
+      }
+      if (party) {
+        await LedgerEntry.create({
+          partyId: party._id,
+          entryType: 'PURCHASE',
+          category,
+          condition: condition === 'Used' ? 'Used' : 'New',
+          status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
+          companyName: companyName ? companyName.trim() : '',
+          modelName: cleanModelName,
+          quantity: purchaseQty,
+          unitPrice: purchaseQty > 0 ? Math.round((purchasePrice / purchaseQty) * 100) / 100 : purchasePrice,
+          totalAmount: purchasePrice,
+          paidAmount: safePaid,
+          balanceDelta: purchasePrice - safePaid,
+          paymentMethod: paymentMethod || 'Cash',
+          purchaseId: purchase._id,
+          inventoryId: inventoryItem._id,
+          note: 'Recorded from Purchases',
+          occurredAt: purchase.createdAt || new Date(),
+        });
+        await recomputePartyLedger(party._id);
+      }
+    }
 
     return res.status(201).json({
       success: true,
@@ -237,7 +284,6 @@ exports.getPurchases = async (req, res, next) => {
       const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
         { modelName: { $regex: escaped, $options: 'i' } },
-        { modelNumber: { $regex: escaped, $options: 'i' } },
         { companyName: { $regex: escaped, $options: 'i' } },
         { customerName: { $regex: escaped, $options: 'i' } },
         { customerPhone: { $regex: escaped, $options: 'i' } },
@@ -302,9 +348,6 @@ exports.deletePurchase = async (req, res, next) => {
       modelName: { $regex: new RegExp(`^${escapeRegex((purchase.modelName || '').trim())}$`, 'i') },
       condition: condition,
     };
-    if (purchase.modelNumber && purchase.modelNumber.trim()) {
-      inventoryQuery.modelNumber = { $regex: new RegExp(`^${escapeRegex(purchase.modelNumber.trim())}$`, 'i') };
-    }
 
     const inventoryItem = await Inventory.findOne(inventoryQuery);
     const purchaseQty = Math.max(1, Number(purchase.quantity) || 1);
@@ -335,7 +378,6 @@ exports.deletePurchase = async (req, res, next) => {
       status: purchase.status || 'PTA',
       companyName: purchase.companyName || '',
       modelName: purchase.modelName || 'Accessory',
-      modelNumber: purchase.modelNumber || '',
       imei1: purchase.imei1 || '',
       imei2: purchase.imei2 || '',
       quantityDelta: -purchaseQty,
@@ -351,6 +393,14 @@ exports.deletePurchase = async (req, res, next) => {
 
     // Safely delete purchase record after inventory sync
     await Purchase.findByIdAndDelete(req.params.id);
+
+    // Also remove any linked Supplier Ledger entry and recompute balance
+    const linkedEntries = await LedgerEntry.find({ purchaseId: req.params.id }).lean();
+    if (linkedEntries.length > 0) {
+      const affectedPartyIds = [...new Set(linkedEntries.map((e) => String(e.partyId)))];
+      await LedgerEntry.deleteMany({ purchaseId: req.params.id });
+      await Promise.all(affectedPartyIds.map((pid) => recomputePartyLedger(pid)));
+    }
 
     return res.status(200).json({
       success: true,

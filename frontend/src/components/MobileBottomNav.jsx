@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, ShoppingBag, Tag, Package, History, FileText } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Tag, Package, History, FileText, BookOpen } from 'lucide-react';
 
 const MobileBottomNav = ({ activeTab, setActiveTab }) => {
   const tabs = [
@@ -8,6 +8,7 @@ const MobileBottomNav = ({ activeTab, setActiveTab }) => {
     { id: 'sales', label: 'Sales', icon: Tag },
     { id: 'inventory', label: 'Stock', icon: Package },
     { id: 'records', label: 'Records', icon: History },
+    { id: 'ledger', label: 'Ledger', icon: BookOpen },
     { id: 'invoices', label: 'Invoices', icon: FileText },
   ];
 

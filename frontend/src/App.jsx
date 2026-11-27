@@ -7,6 +7,7 @@ import Purchases from './components/Purchases';
 import Sales from './components/Sales';
 import Inventory from './components/Inventory';
 import Records from './components/Records';
+import Ledger from './components/Ledger';
 import Invoice from './components/Invoice';
 import Login from './components/Login';
 import { verifyAuth, logoutUser } from './services/api';
@@ -188,6 +189,10 @@ function App() {
                 onNavigate={setActiveTab}
                 setAlert={setAlert}
               />
+            </div>
+
+            <div style={{ display: activeTab === 'ledger' ? 'block' : 'none' }}>
+              <Ledger isActive={activeTab === 'ledger'} setAlert={setAlert} />
             </div>
 
             <div style={{ display: activeTab === 'invoices' ? 'block' : 'none' }}>

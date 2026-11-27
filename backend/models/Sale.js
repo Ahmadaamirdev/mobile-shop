@@ -29,11 +29,6 @@ const saleItemSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
-    modelNumber: {
-      type: String,
-      trim: true,
-      default: '',
-    },
     imei1: {
       type: String,
       trim: true,
@@ -86,11 +81,6 @@ const saleSchema = new mongoose.Schema(
     modelName: {
       type: String,
       required: [function () { return this.category !== 'Accessory'; }, 'Model name is required'],
-      trim: true,
-      default: '',
-    },
-    modelNumber: {
-      type: String,
       trim: true,
       default: '',
     },

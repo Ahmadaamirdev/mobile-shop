@@ -32,7 +32,6 @@ const normalizeInvoiceItems = (invoice) => {
   // Construct items from top-level fields for backward compatibility
   const fallbackItem = {
     modelName: invoice.modelName || 'Device Sale',
-    modelNumber: invoice.modelNumber || '',
     condition: invoice.condition || 'New',
     imei1: invoice.imei1 || '',
     imei2: invoice.imei2 || '',
@@ -55,7 +54,6 @@ exports.createInvoice = async (req, res, next) => {
       customerNumber,
       items,
       modelName,
-      modelNumber = '',
       condition = 'New',
       imei1 = '',
       imei2 = '',
@@ -69,7 +67,6 @@ exports.createInvoice = async (req, res, next) => {
     if (Array.isArray(items) && items.length > 0) {
       deviceItems = items.map((it) => ({
         modelName: it.modelName ? it.modelName.trim() : '',
-        modelNumber: it.modelNumber ? it.modelNumber.trim() : '',
         condition: it.condition === 'Used' ? 'Used' : 'New',
         imei1: it.imei1 ? it.imei1.trim() : '',
         imei2: it.imei2 ? it.imei2.trim() : '',
@@ -81,7 +78,6 @@ exports.createInvoice = async (req, res, next) => {
       deviceItems = [
         {
           modelName: modelName.trim(),
-          modelNumber: modelNumber ? modelNumber.trim() : '',
           condition: condition === 'Used' ? 'Used' : 'New',
           imei1: imei1 ? imei1.trim() : '',
           imei2: imei2 ? imei2.trim() : '',
@@ -95,7 +91,6 @@ exports.createInvoice = async (req, res, next) => {
         deviceItems = [
           {
             modelName: sale.modelName,
-            modelNumber: sale.modelNumber || '',
             condition: sale.condition || 'New',
             imei1: sale.imei1 || '',
             imei2: sale.imei2 || '',
@@ -180,7 +175,6 @@ exports.createInvoice = async (req, res, next) => {
         const match = itemsB.find(
           (b) =>
             b.modelName?.trim().toLowerCase() === a.modelName?.trim().toLowerCase() &&
-            (b.modelNumber || '').trim().toLowerCase() === (a.modelNumber || '').trim().toLowerCase() &&
             Number(b.price) === Number(a.price) &&
             (a.imei1 ? (b.imei1 || '').trim() === a.imei1.trim() : true)
         );
@@ -196,7 +190,6 @@ exports.createInvoice = async (req, res, next) => {
         : [
             {
               modelName: existing.modelName,
-              modelNumber: existing.modelNumber,
               condition: existing.condition,
               imei1: existing.imei1,
               imei2: existing.imei2,
@@ -236,7 +229,6 @@ exports.createInvoice = async (req, res, next) => {
       items: deviceItems,
       // Compatibility fields
       modelName: deviceItems.map((d) => d.modelName).join(', '),
-      modelNumber: firstItem.modelNumber || '',
       condition: firstItem.condition || 'New',
       imei1: firstItem.imei1 || '',
       imei2: firstItem.imei2 || '',
@@ -277,12 +269,10 @@ exports.getInvoices = async (req, res, next) => {
         { customerName: { $regex: escaped, $options: 'i' } },
         { customerNumber: { $regex: escaped, $options: 'i' } },
         { modelName: { $regex: escaped, $options: 'i' } },
-        { modelNumber: { $regex: escaped, $options: 'i' } },
         { condition: { $regex: escaped, $options: 'i' } },
         { imei1: { $regex: escaped, $options: 'i' } },
         { imei2: { $regex: escaped, $options: 'i' } },
         { 'items.modelName': { $regex: escaped, $options: 'i' } },
-        { 'items.modelNumber': { $regex: escaped, $options: 'i' } },
         { 'items.imei1': { $regex: escaped, $options: 'i' } },
         { 'items.imei2': { $regex: escaped, $options: 'i' } },
       ];
@@ -337,7 +327,6 @@ exports.updateInvoice = async (req, res, next) => {
       customerNumber,
       items,
       modelName,
-      modelNumber,
       condition,
       imei1,
       imei2,
@@ -396,7 +385,6 @@ exports.updateInvoice = async (req, res, next) => {
 
       invoice.items = items.map((it) => ({
         modelName: it.modelName.trim(),
-        modelNumber: it.modelNumber ? it.modelNumber.trim() : '',
         condition: it.condition === 'Used' ? 'Used' : 'New',
         imei1: it.imei1 ? it.imei1.trim() : '',
         imei2: it.imei2 ? it.imei2.trim() : '',
@@ -410,7 +398,6 @@ exports.updateInvoice = async (req, res, next) => {
       );
       invoice.modelName = invoice.items.map((it) => it.modelName).join(', ');
       if (invoice.items[0]) {
-        invoice.modelNumber = invoice.items[0].modelNumber || '';
         invoice.condition = invoice.items[0].condition || 'New';
         invoice.imei1 = invoice.items[0].imei1 || '';
         invoice.imei2 = invoice.items[0].imei2 || '';
@@ -418,7 +405,6 @@ exports.updateInvoice = async (req, res, next) => {
     } else if (modelName !== undefined) {
       // Legacy single device update
       invoice.modelName = modelName.trim();
-      if (modelNumber !== undefined) invoice.modelNumber = modelNumber.trim();
       if (condition !== undefined) invoice.condition = condition;
       if (imei1 !== undefined) invoice.imei1 = imei1.trim();
       if (imei2 !== undefined) invoice.imei2 = imei2.trim();
@@ -427,7 +413,6 @@ exports.updateInvoice = async (req, res, next) => {
       invoice.items = [
         {
           modelName: invoice.modelName,
-          modelNumber: invoice.modelNumber,
           condition: invoice.condition,
           imei1: invoice.imei1,
           imei2: invoice.imei2,

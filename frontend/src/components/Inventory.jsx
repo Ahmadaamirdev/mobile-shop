@@ -20,7 +20,6 @@ const Inventory = ({ isActive, setAlert }) => {
     status: 'PTA',
     companyName: '',
     modelName: '',
-    modelNumber: '',
     quantity: 1,
     price: '',
     imeisText: '',
@@ -33,7 +32,6 @@ const Inventory = ({ isActive, setAlert }) => {
     status: 'PTA',
     companyName: '',
     modelName: '',
-    modelNumber: '',
     quantity: 1,
     price: '',
     imei1: '',
@@ -80,7 +78,6 @@ const Inventory = ({ isActive, setAlert }) => {
     const term = search.trim().toLowerCase();
     const searchMatch = (
       item.modelName?.toLowerCase().includes(term) ||
-      item.modelNumber?.toLowerCase().includes(term) ||
       item.companyName?.toLowerCase().includes(term) ||
       item.category?.toLowerCase().includes(term) ||
       (item.condition || 'New').toLowerCase().includes(term) ||
@@ -125,7 +122,6 @@ const Inventory = ({ isActive, setAlert }) => {
         status: 'PTA',
         companyName: '',
         modelName: '',
-        modelNumber: '',
         quantity: 1,
         price: '',
         imei1: '',
@@ -156,7 +152,6 @@ const Inventory = ({ isActive, setAlert }) => {
       status: item.status || 'PTA',
       companyName: item.companyName || '',
       modelName: item.modelName || '',
-      modelNumber: item.modelNumber || '',
       quantity: item.quantity !== undefined ? item.quantity : 0,
       price: item.price !== undefined ? item.price : '',
       imeisText: Array.isArray(item.imeis) ? item.imeis.join('\n') : '',
@@ -203,7 +198,6 @@ const Inventory = ({ isActive, setAlert }) => {
         status: editForm.status,
         companyName: editForm.companyName.trim(),
         modelName: editForm.modelName.trim() || 'Accessory',
-        modelNumber: editForm.modelNumber.trim(),
         quantity: parsedQty,
         price: parsedPrice,
         imeis: parsedImeis,
@@ -413,16 +407,6 @@ const Inventory = ({ isActive, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Model Number (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. A2638"
-                  value={formData.modelNumber}
-                  onChange={(e) => setFormData({ ...formData, modelNumber: e.target.value })}
-                />
-              </div>
-
-              <div className="form-field">
                 <label>Quantity {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
                 <input
                   type="number"
@@ -524,23 +508,22 @@ const Inventory = ({ isActive, setAlert }) => {
             <thead>
               <tr>
                 <th style={{ width: '11%' }}>Category</th>
-                <th style={{ width: '18%' }}>Device Model</th>
-                <th style={{ width: '13%' }}>Model No.</th>
-                <th style={{ width: '11%' }}>Condition</th>
+                <th style={{ width: '25%' }}>Device Model</th>
+                <th style={{ width: '12%' }}>Condition</th>
                 <th style={{ width: '11%', textAlign: 'center' }}>Status</th>
-                <th style={{ width: '13%' }}>Stock Status</th>
-                <th style={{ width: '12%' }}>Unit Price</th>
-                <th style={{ width: '11%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
+                <th style={{ width: '15%' }}>Stock Status</th>
+                <th style={{ width: '14%' }}>Unit Price</th>
+                <th style={{ width: '12%', textAlign: 'center', paddingRight: '14px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="empty-state">Loading inventory...</td>
+                  <td colSpan="7" className="empty-state">Loading inventory...</td>
                 </tr>
               ) : filteredInventory.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="empty-state">No items found matching the selected filters.</td>
+                  <td colSpan="7" className="empty-state">No items found matching the selected filters.</td>
                 </tr>
               ) : (
                 filteredInventory.map((item) => (
@@ -556,13 +539,6 @@ const Inventory = ({ isActive, setAlert }) => {
                         {item.companyName && (
                           <span className="cell-sub">{item.companyName}</span>
                         )}
-                      </td>
-
-                      {/* Model No. */}
-                      <td>
-                        <span className="cell-mono" style={{ fontSize: '12.5px', color: '#334155', fontWeight: 600 }}>
-                          {item.modelNumber || '—'}
-                        </span>
                       </td>
 
                       {/* Condition */}
@@ -606,7 +582,7 @@ const Inventory = ({ isActive, setAlert }) => {
                             type="button"
                             className="btn-details-toggle"
                             onClick={() => setDetailItem(item)}
-                            title="View brand, model number & IMEIs"
+                            title="View brand & IMEIs"
                           >
                             <Eye size={13} />
                           </button>
@@ -646,7 +622,7 @@ const Inventory = ({ isActive, setAlert }) => {
                 <div className="mobile-card-top">
                   <div>
                     <div className="mobile-card-title">{item.modelName}</div>
-                    <div className="mobile-card-subtitle">{item.companyName}{item.modelNumber ? ` • ${item.modelNumber}` : ''}</div>
+                    <div className="mobile-card-subtitle">{item.companyName}</div>
                   </div>
                   <div className="mobile-card-price">
                     PKR {Number(item.price).toLocaleString()}
@@ -745,10 +721,6 @@ const Inventory = ({ isActive, setAlert }) => {
             <div className="expanded-info-row">
               <span className="expanded-info-label">Model Name:</span>
               <span className="expanded-info-val">{detailItem.modelName}</span>
-            </div>
-            <div className="expanded-info-row">
-              <span className="expanded-info-label">Model Number:</span>
-              <span className="expanded-info-val">{detailItem.modelNumber || '—'}</span>
             </div>
             <div className="expanded-info-row">
               <span className="expanded-info-label">Category &amp; Condition:</span>
@@ -863,16 +835,6 @@ const Inventory = ({ isActive, setAlert }) => {
                     value={editForm.modelName}
                     onChange={(e) => setEditForm({ ...editForm, modelName: e.target.value })}
                     required={editForm.category !== 'Accessory'}
-                  />
-                </div>
-
-                <div className="form-field">
-                  <label>Model Number</label>
-                  <input
-                    type="text"
-                    value={editForm.modelNumber}
-                    onChange={(e) => setEditForm({ ...editForm, modelNumber: e.target.value })}
-                    placeholder="Optional"
                   />
                 </div>
 

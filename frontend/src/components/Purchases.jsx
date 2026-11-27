@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getPurchases, createPurchase, deletePurchase } from '../services/api';
+import { getPurchases, createPurchase, deletePurchase, getLedgerParties } from '../services/api';
 import {
   Trash2,
   Search,
@@ -282,6 +282,7 @@ const IdCardCaptureSlot = ({ title, side, image, onSave, onReject, setAlert, onV
 
 const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
   const [purchases, setPurchases] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState('newest');
@@ -303,7 +304,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
     status: 'PTA',
     companyName: '',
     modelName: '',
-    modelNumber: '',
     quantity: 1,
     imei1: '',
     imei2: '',
@@ -315,6 +315,10 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
     idCardFront: '',
     idCardBack: '',
     price: '',
+    paymentType: 'cash',
+    ledgerPartyId: '',
+    paidAmount: '',
+    paymentMethod: 'Cash',
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -322,9 +326,15 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
   const fetchPurchases = async (force = false) => {
     setLoading(true);
     try {
-      const res = await getPurchases({ sort: sortOrder }, force);
+      const [res, supRes] = await Promise.all([
+        getPurchases({ sort: sortOrder }, force),
+        getLedgerParties({}, force).catch(() => null),
+      ]);
       if (res.data && res.data.data) {
         setPurchases(res.data.data);
+      }
+      if (supRes?.data?.data) {
+        setSuppliers(supRes.data.data);
       }
     } catch (err) {
       setAlert({
@@ -407,6 +417,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
         ...formData,
         price: formData.price !== '' ? Number(formData.price) : 0,
         quantity: Math.max(1, Number(formData.quantity) || 1),
+        paidAmount: formData.paymentType === 'ledger' ? (Number(formData.paidAmount) || 0) : undefined,
       });
       setAlert({
         type: 'success',
@@ -418,7 +429,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
         status: 'PTA',
         companyName: '',
         modelName: '',
-        modelNumber: '',
         quantity: 1,
         imei1: '',
         imei2: '',
@@ -430,6 +440,10 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
         idCardFront: '',
         idCardBack: '',
         price: '',
+        paymentType: 'cash',
+        ledgerPartyId: '',
+        paidAmount: '',
+        paymentMethod: 'Cash',
       });
       setShowAddForm(false);
       fetchPurchases(true);
@@ -488,7 +502,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
       const term = search.trim().toLowerCase();
       const searchMatch = (
         item.modelName?.toLowerCase().includes(term) ||
-        item.modelNumber?.toLowerCase().includes(term) ||
         item.companyName?.toLowerCase().includes(term) ||
         item.customerName?.toLowerCase().includes(term) ||
         item.customerPhone?.toLowerCase().includes(term) ||
@@ -681,16 +694,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               </div>
 
               <div className="form-field">
-                <label>Model Number (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. SM-S901B"
-                  value={formData.modelNumber}
-                  onChange={(e) => setFormData({ ...formData, modelNumber: e.target.value })}
-                />
-              </div>
-
-              <div className="form-field">
                 <label>IMEI 1 (Optional - 15 digits)</label>
                 <input
                   type="text"
@@ -801,6 +804,73 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
                 />
                 {formErrors.quantity && <span className="form-field-error">{formErrors.quantity}</span>}
               </div>
+
+              <div className="form-field">
+                <label>Payment Mode</label>
+                <select
+                  value={formData.paymentType}
+                  onChange={(e) => setFormData({ ...formData, paymentType: e.target.value })}
+                >
+                  <option value="cash">Paid (Cash / Instant)</option>
+                  <option value="ledger">Ledger / Credit (Partial or Pending)</option>
+                </select>
+              </div>
+
+              {formData.paymentType === 'ledger' && (
+                <>
+                  <div className="form-field">
+                    <label>Link Supplier Ledger</label>
+                    <select
+                      value={formData.ledgerPartyId}
+                      onChange={(e) => {
+                        const supId = e.target.value;
+                        const sup = suppliers.find((s) => s._id === supId);
+                        setFormData((prev) => ({
+                          ...prev,
+                          ledgerPartyId: supId,
+                          customerName: sup ? sup.name : prev.customerName,
+                          customerPhone: sup && sup.phone ? sup.phone : prev.customerPhone,
+                          customerAddress: sup && sup.address ? sup.address : prev.customerAddress,
+                        }));
+                      }}
+                    >
+                      <option value="">Auto-match or create from Seller Name below</option>
+                      {suppliers.map((s) => (
+                        <option key={s._id} value={s._id}>
+                          {s.name} {s.balance > 0 ? `(Pending: PKR ${Number(s.balance).toLocaleString()})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label>
+                      Paid Now (PKR) — Pending:{' '}
+                      <strong>
+                        PKR {Math.max(0, (Number(formData.price) || 0) - (Number(formData.paidAmount) || 0)).toLocaleString()}
+                      </strong>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0 (if full credit)"
+                      value={formData.paidAmount}
+                      onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label>Payment Method</label>
+                    <select
+                      value={formData.paymentMethod}
+                      onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                      <option value="Easypaisa / JazzCash">Easypaisa / JazzCash</option>
+                      <option value="Cheque">Cheque</option>
+                    </select>
+                  </div>
+                </>
+              )}
 
               {/* ID Card Pictures (Front & Back) with Camera & Upload Options */}
               <div className="id-card-section">
@@ -1046,10 +1116,6 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
               <div className="expanded-info-row">
                 <span className="expanded-info-label">Status:</span>
                 <span className="expanded-info-val">{detailItem.status || 'PTA'}</span>
-              </div>
-              <div className="expanded-info-row">
-                <span className="expanded-info-label">Model Number:</span>
-                <span className="expanded-info-val">{detailItem.modelNumber || '—'}</span>
               </div>
               <div className="expanded-info-row">
                 <span className="expanded-info-label">Quantity:</span>

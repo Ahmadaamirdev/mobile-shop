@@ -34,11 +34,10 @@ const cleanLegacyIndexes = async () => {
   try {
     const col = mongoose.connection.db.collection('inventories');
     const indexes = await col.indexes();
-    const hasLegacyUnique = indexes.some((idx) => idx.name === 'modelName_1_modelNumber_1');
-    if (hasLegacyUnique) {
-      console.log('🔄 Cleaning legacy unique index modelName_1_modelNumber_1 from inventories...');
-      await col.dropIndex('modelName_1_modelNumber_1');
-      console.log('✅ Legacy index successfully removed.');
+    for (const legacyName of ['modelName_1_modelNumber_1', 'modelName_1_modelNumber_1_condition_1']) {
+      if (indexes.some((idx) => idx.name === legacyName)) {
+        await col.dropIndex(legacyName);
+      }
     }
   } catch (err) {
     // Non-fatal if index is already absent

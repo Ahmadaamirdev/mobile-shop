@@ -2,6 +2,7 @@ const Purchase = require('../models/Purchase');
 const Sale = require('../models/Sale');
 const Inventory = require('../models/Inventory');
 const Invoice = require('../models/Invoice');
+const LedgerParty = require('../models/LedgerParty');
 
 const buildDateMatch = (startDate, endDate, field = 'createdAt', tzOffsetMin = -300) => {
   if (!startDate && !endDate) return {};
@@ -39,6 +40,7 @@ exports.getDashboardStats = async (req, res, next) => {
       inventoryByCat,
       outOfStockCount,
       totalInvoicesCount,
+      ledgerAgg,
     ] = await Promise.all([
       Purchase.aggregate([
         { $match: dateMatch },
@@ -142,6 +144,16 @@ exports.getDashboardStats = async (req, res, next) => {
       ]),
       Inventory.countDocuments({ quantity: { $lte: 0 } }),
       Invoice.countDocuments(buildDateMatch(startDate, endDate, 'date', tzOffsetMin)),
+      LedgerParty.aggregate([
+        { $match: { partyType: 'Supplier', balance: { $gt: 0 } } },
+        {
+          $group: {
+            _id: null,
+            totalBalance: { $sum: '$balance' },
+            count: { $sum: 1 },
+          },
+        },
+      ]),
     ]);
 
     const pSummary = purchaseAgg[0] || { count: 0, units: 0, totalAmount: 0 };
@@ -166,6 +178,8 @@ exports.getDashboardStats = async (req, res, next) => {
       });
       return map;
     };
+
+    const ledgerPayable = (ledgerAgg && ledgerAgg[0]) || { totalBalance: 0, count: 0 };
 
     return res.status(200).json({
       success: true,
@@ -194,6 +208,10 @@ exports.getDashboardStats = async (req, res, next) => {
         },
         invoices: {
           count: totalInvoicesCount,
+        },
+        ledger: {
+          payableTotal: ledgerPayable.totalBalance || 0,
+          payableCount: ledgerPayable.count || 0,
         },
         lastUpdated: new Date().toISOString(),
       },

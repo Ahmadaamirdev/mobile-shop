@@ -110,6 +110,15 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
         amount: row.soldAmount,
       });
     }
+    if (selectedType !== 'in' && row.returnedUnits > 0) {
+      ledgerRows.push({
+        rowKey: `${row.key}-ret`,
+        ...row,
+        recordType: 'Returned',
+        units: row.returnedUnits,
+        amount: row.returnedAmount,
+      });
+    }
   });
 
   return (
@@ -337,43 +346,49 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
                   </tr>
                 ) : (
                   ledgerRows.map((row) => (
-                      <tr key={row.rowKey}>
-                        <td>
-                          <span className="cell-title">{row.modelName}</span>
-                          {row.companyName && <span className="cell-sub">{row.companyName}</span>}
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <span className="cell-badge badge-gray category-pill records-table-pill">{row.category}</span>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <span className={`cell-badge condition-pill records-table-pill ${row.condition === 'Used' ? 'badge-warning' : 'badge-success'}`}>
-                            {row.condition}
+                    <tr key={row.rowKey}>
+                      <td>
+                        <span className="cell-title">{row.modelName}</span>
+                        {row.companyName && <span className="cell-sub">{row.companyName}</span>}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="cell-badge badge-gray category-pill records-table-pill">{row.category}</span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`cell-badge condition-pill records-table-pill ${row.condition === 'Used' ? 'badge-warning' : 'badge-success'}`}>
+                          {row.condition}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontSize: '13px',
+                            color: row.recordType === 'Returned' ? '#b45309' : '#090d16',
+                          }}
+                        >
+                          {row.recordType}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div className="records-col-pill-wrap">
+                          <span style={{ fontWeight: 700, color: '#090d16' }}>
+                            {row.units} {row.units === 1 ? 'unit' : 'units'}
                           </span>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <span style={{ fontWeight: 700, fontSize: '13px', color: '#090d16' }}>
-                            {row.recordType}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <div className="records-col-pill-wrap">
-                            <span style={{ fontWeight: 700, color: '#090d16' }}>
-                              {row.units} {row.units === 1 ? 'unit' : 'units'}
-                            </span>
-                            <span className="cell-sub">PKR {Number(row.amount || 0).toLocaleString()}</span>
-                          </div>
-                        </td>
-                        <td style={{ textAlign: 'center', paddingRight: '14px' }}>
-                          <span
-                            className="cell-badge badge-gray records-table-pill"
-                            style={{ cursor: 'pointer', color: '#090d16' }}
-                            onClick={() => onNavigate && onNavigate('inventory')}
-                            title="Open Live Inventory"
-                          >
-                            {row.liveStock} in stock
-                          </span>
-                        </td>
-                      </tr>
+                          <span className="cell-sub">PKR {Number(row.amount || 0).toLocaleString()}</span>
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'center', paddingRight: '14px' }}>
+                        <span
+                          className="cell-badge badge-gray records-table-pill"
+                          style={{ cursor: 'pointer', color: '#090d16' }}
+                          onClick={() => onNavigate && onNavigate('inventory')}
+                          title="Open Live Inventory"
+                        >
+                          {row.liveStock} in stock
+                        </span>
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>
@@ -385,14 +400,18 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
               <div className="empty-state">No model stock ledger entries match filters.</div>
             ) : (
               ledgerRows.map((row) => {
-                const isPurchase = row.recordType === 'Purchased';
-                const typeColor = isPurchase ? '#059669' : '#dc2626';
+                const typeColor =
+                  row.recordType === 'Purchased'
+                    ? '#059669'
+                    : row.recordType === 'Returned'
+                      ? '#b45309'
+                      : '#dc2626';
                 const formattedDate = row.lastActivityAt
                   ? new Date(row.lastActivityAt).toLocaleDateString('en-GB', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })
                   : '—';
                 return (
                   <div key={row.rowKey} className="mobile-card">

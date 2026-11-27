@@ -83,13 +83,13 @@ export const getPurchases = (params, force = false) => cachedGet('/purchases', p
 export const uploadIdCard = (data) => api.post('/purchases/upload-id', data);
 export const createPurchase = async (data) => {
   const res = await api.post('/purchases', data);
-  invalidateApiCache(['purchases', 'inventory', 'dashboard', 'records']);
+  invalidateApiCache(['purchases', 'inventory', 'dashboard', 'records', 'ledger']);
   notifyDataUpdated();
   return res;
 };
 export const deletePurchase = async (id) => {
   const res = await api.delete(`/purchases/${id}`);
-  invalidateApiCache(['purchases', 'inventory', 'dashboard', 'records']);
+  invalidateApiCache(['purchases', 'inventory', 'dashboard', 'records', 'ledger']);
   notifyDataUpdated();
   return res;
 };
@@ -148,6 +148,34 @@ export const getInvoiceById = (id) => api.get(`/invoices/${id}`);
 export const deleteInvoice = async (id) => {
   const res = await api.delete(`/invoices/${id}`);
   invalidateApiCache(['invoices', 'sales', 'dashboard', 'records']);
+  notifyDataUpdated();
+  return res;
+};
+
+// Ledger (Khata / Payables & Receivables)
+export const getLedgerParties = (params, force = false) => cachedGet('/ledger/parties', params, force);
+export const getLedgerPartyStatement = (id, force = false) => cachedGet(`/ledger/parties/${id}`, {}, force);
+export const createLedgerParty = async (data) => {
+  const res = await api.post('/ledger/parties', data);
+  invalidateApiCache(['ledger', 'dashboard']);
+  notifyDataUpdated();
+  return res;
+};
+export const deleteLedgerParty = async (id) => {
+  const res = await api.delete(`/ledger/parties/${id}`);
+  invalidateApiCache(['ledger', 'dashboard']);
+  notifyDataUpdated();
+  return res;
+};
+export const addLedgerEntry = async (partyId, data) => {
+  const res = await api.post(`/ledger/parties/${partyId}/entries`, data);
+  invalidateApiCache(['ledger', 'purchases', 'sales', 'inventory', 'dashboard', 'records']);
+  notifyDataUpdated();
+  return res;
+};
+export const deleteLedgerEntry = async (entryId) => {
+  const res = await api.delete(`/ledger/entries/${entryId}`);
+  invalidateApiCache(['ledger', 'purchases', 'inventory', 'dashboard', 'records']);
   notifyDataUpdated();
   return res;
 };

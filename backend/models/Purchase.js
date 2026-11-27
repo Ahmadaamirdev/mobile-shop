@@ -49,11 +49,6 @@ const purchaseSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
-    modelNumber: {
-      type: String,
-      trim: true,
-      default: '',
-    },
     quantity: {
       type: Number,
       default: 1,
@@ -132,6 +127,6 @@ const purchaseSchema = new mongoose.Schema(
 purchaseSchema.index({ createdAt: -1 });
 purchaseSchema.index({ category: 1, condition: 1, createdAt: -1 });
 purchaseSchema.index({ imei1: 1, imei2: 1 });
-purchaseSchema.index({ modelName: 'text', modelNumber: 'text', companyName: 'text', customerName: 'text', customerPhone: 'text' });
+purchaseSchema.index({ modelName: 'text', companyName: 'text', customerName: 'text', customerPhone: 'text' });
 
 module.exports = mongoose.model('Purchase', purchaseSchema);

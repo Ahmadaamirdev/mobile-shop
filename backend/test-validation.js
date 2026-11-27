@@ -22,7 +22,6 @@ const validPurchase = new Purchase({
   category: 'Mobile',
   companyName: 'Samsung',
   modelName: 'Galaxy S23',
-  modelNumber: 'SM-S911B',
   imei1: '123456789012345',
   imei2: '987654321098765',
   customerPhone: '03001234567',
@@ -36,7 +35,6 @@ const invalidImeiPurchase = new Purchase({
   category: 'Mobile',
   companyName: 'Apple',
   modelName: 'iPhone 15',
-  modelNumber: 'A2846',
   imei1: '12345', // Only 5 digits - should fail
   customerPhone: '03001234567',
   customerIdCard: '3630212345671',
@@ -49,7 +47,6 @@ const invalidCnicPurchase = new Purchase({
   category: 'Mobile',
   companyName: 'Apple',
   modelName: 'iPhone 15',
-  modelNumber: 'A2846',
   imei1: '123456789012345',
   customerPhone: '03001234567',
   customerIdCard: '12345', // Only 5 digits - should fail
@@ -63,7 +60,6 @@ const optionalImeiPurchase = new Purchase({
   category: 'Accessory',
   companyName: 'Anker',
   modelName: '20W Fast Charger',
-  modelNumber: 'A2149',
   customerPhone: '03001234567',
   customerIdCard: '3630212345671',
   price: 3500,
@@ -75,7 +71,6 @@ assert(!err4, 'Purchase without IMEI passes (optional IMEIs allowed)');
 const validSale = new Sale({
   category: 'Mobile',
   modelName: 'Galaxy S23',
-  modelNumber: 'SM-S911B',
   customerName: 'Muhammad Ali',
   customerNumber: '03007654321',
   imei1: '123456789012345',
@@ -100,7 +95,6 @@ const validInventory = new Inventory({
   category: 'Tablet',
   companyName: 'Apple',
   modelName: 'iPad Air 5',
-  modelNumber: 'A2588',
   quantity: 5,
   price: 180000,
   imeis: ['123456789012345'],
@@ -114,7 +108,6 @@ const validInvoice = new Invoice({
   customerName: 'Usman Tariq',
   customerNumber: '03019876543',
   modelName: 'Samsung Galaxy A54',
-  modelNumber: 'SM-A546E',
   imei1: '123456789012345',
   price: 98000,
 });

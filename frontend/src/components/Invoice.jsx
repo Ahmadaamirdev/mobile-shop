@@ -6,7 +6,6 @@ import DateRangeFilter from './DateRangeFilter';
 
 const emptyDevice = {
   modelName: '',
-  modelNumber: '',
   condition: 'New',
   imei1: '',
   imei2: '',
@@ -53,7 +52,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
         items: [
           {
             modelName: initialSale.modelName || '',
-            modelNumber: initialSale.modelNumber || '',
             condition: initialSale.condition || 'New',
             imei1: initialSale.imei1 || '',
             imei2: initialSale.imei2 || '',
@@ -170,7 +168,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
       const inItems = (item.items || []).some(
         (it) =>
           it.modelName?.toLowerCase().includes(term) ||
-          it.modelNumber?.toLowerCase().includes(term) ||
           it.imei1?.toLowerCase().includes(term) ||
           it.imei2?.toLowerCase().includes(term)
       );
@@ -179,7 +176,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
         item.customerName?.toLowerCase().includes(term) ||
         item.customerNumber?.toLowerCase().includes(term) ||
         item.modelName?.toLowerCase().includes(term) ||
-        item.modelNumber?.toLowerCase().includes(term) ||
         item.condition?.toLowerCase().includes(term) ||
         item.imei1?.toLowerCase().includes(term) ||
         item.imei2?.toLowerCase().includes(term) ||
@@ -442,7 +438,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
       Array.isArray(sale.items) && sale.items.length > 0
         ? sale.items.map((it) => ({
           modelName: it.modelName || '',
-          modelNumber: it.modelNumber || '',
           condition: it.condition || 'New',
           imei1: it.imei1 || '',
           imei2: it.imei2 || '',
@@ -452,7 +447,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
         : [
           {
             modelName: sale.modelName || '',
-            modelNumber: sale.modelNumber || '',
             condition: sale.condition || 'New',
             imei1: sale.imei1 || '',
             imei2: sale.imei2 || '',
@@ -478,7 +472,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
     const loadedItems = item.items && item.items.length > 0
       ? item.items.map((it) => ({
         modelName: it.modelName || '',
-        modelNumber: it.modelNumber || '',
         condition: it.condition || 'New',
         imei1: it.imei1 || '',
         imei2: it.imei2 || '',
@@ -488,7 +481,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
       : [
         {
           modelName: item.modelName || '',
-          modelNumber: item.modelNumber || '',
           condition: item.condition || 'New',
           imei1: item.imei1 || '',
           imei2: item.imei2 || '',
@@ -520,7 +512,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
     const loadedItems = item.items && item.items.length > 0
       ? item.items.map((it) => ({
         modelName: it.modelName || '',
-        modelNumber: it.modelNumber || '',
         condition: it.condition || 'New',
         imei1: it.imei1 || '',
         imei2: it.imei2 || '',
@@ -530,7 +521,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
       : [
         {
           modelName: item.modelName || '',
-          modelNumber: item.modelNumber || '',
           condition: item.condition || 'New',
           imei1: item.imei1 || '',
           imei2: item.imei2 || '',
@@ -656,7 +646,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                         : [
                           {
                             modelName: item.modelName || 'Device Sale',
-                            modelNumber: item.modelNumber || '',
                             condition: item.condition || 'New',
                           },
                         ];
@@ -694,9 +683,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                           ) : (
                             <div>
                               <span className="cell-title">{invDevices[0].modelName}</span>
-                              {invDevices[0].modelNumber && (
-                                <span className="cell-sub">{invDevices[0].modelNumber}</span>
-                              )}
                             </div>
                           )}
                         </td>
@@ -859,7 +845,7 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                   <SmartDropdown
                     label="Create Invoice from Recorded Sale (Optional — or enter manually below)"
                     placeholder="Manual Entry — or click to pick a recorded sale"
-                    searchPlaceholder="Search customer, phone, or device..."
+                    searchPlaceholder="Search name, phone..."
                     value={selectedSaleId}
                     onChange={handleSelectRecordedSale}
                     manualOption={{
@@ -886,7 +872,7 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                         return {
                           value: sale._id,
                           label: `${sale.customerName} — ${deviceLabel}`,
-                          searchText: `${sale.customerName} ${sale.customerNumber} ${deviceLabel} ${dateStr} ${sale.price} ${sale.status || ''} ${deviceList.map((d) => `${d.modelNumber || ''} ${d.imei1 || ''} ${d.status || ''}`).join(' ')}`,
+                          searchText: `${sale.customerName} ${sale.customerNumber} ${deviceLabel} ${dateStr} ${sale.price} ${sale.status || ''} ${deviceList.map((d) => `${d.imei1 || ''} ${d.status || ''}`).join(' ')}`,
                           sale,
                           deviceLabel,
                           dateStr,
@@ -1037,16 +1023,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                         </div>
 
                         <div className="form-field">
-                          <label>Model Number (Optional)</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. A2638"
-                            value={item.modelNumber}
-                            onChange={(e) => handleItemChange(index, 'modelNumber', e.target.value)}
-                          />
-                        </div>
-
-                        <div className="form-field">
                           <label>Device Condition *</label>
                           <select
                             value={item.condition || 'New'}
@@ -1170,7 +1146,6 @@ const Invoice = ({ isActive, initialSale, clearInitialSale, setAlert }) => {
                       <td>{index + 1}</td>
                       <td>
                         <strong>{item.modelName || 'Device Sale'} {item.condition ? `(${item.condition})` : ''}</strong>
-                        {item.modelNumber && <div style={{ fontSize: '12px', color: '#555' }}>Model: {item.modelNumber}</div>}
                         {item.imei1 && <div style={{ fontSize: '11px', color: '#666' }}>IMEI: {item.imei1}</div>}
                         {item.imei2 && <div style={{ fontSize: '11px', color: '#666' }}>IMEI 2: {item.imei2}</div>}
                       </td>

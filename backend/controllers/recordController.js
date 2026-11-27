@@ -77,7 +77,6 @@ const syncMissingHistoricalRecords = async () => {
           status: p.status || 'PTA',
           companyName: p.companyName || '',
           modelName: p.modelName || 'Accessory',
-          modelNumber: p.modelNumber || '',
           imei1: p.imei1 || '',
           imei2: p.imei2 || '',
           quantityDelta: qty,
@@ -104,7 +103,6 @@ const syncMissingHistoricalRecords = async () => {
               condition: s.condition || 'New',
               status: s.status || 'PTA',
               modelName: s.modelName || 'Accessory',
-              modelNumber: s.modelNumber || '',
               imei1: s.imei1 || '',
               imei2: s.imei2 || '',
               price: Number(s.price) || 0,
@@ -125,7 +123,6 @@ const syncMissingHistoricalRecords = async () => {
             status: it.status || s.status || 'PTA',
             companyName: '',
             modelName: it.modelName || s.modelName || 'Accessory',
-            modelNumber: it.modelNumber || '',
             imei1: it.imei1 || '',
             imei2: it.imei2 || '',
             quantityDelta: -qty,
@@ -149,7 +146,7 @@ const syncMissingHistoricalRecords = async () => {
   missingEvents.sort((a, b) => a.sortTime - b.sortTime);
   const runningBalance = new Map();
   const docsToInsert = missingEvents.map(({ doc }) => {
-    const key = `${(doc.modelName || '').trim().toLowerCase()}|${(doc.modelNumber || '').trim().toLowerCase()}|${doc.condition || 'New'}`;
+    const key = `${(doc.modelName || '').trim().toLowerCase()}|${doc.condition || 'New'}`;
     const prev = runningBalance.get(key) || 0;
     const next = Math.max(0, prev + doc.quantityDelta);
     runningBalance.set(key, next);
@@ -200,7 +197,6 @@ exports.getRecords = async (req, res, next) => {
       const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
         { modelName: { $regex: escaped, $options: 'i' } },
-        { modelNumber: { $regex: escaped, $options: 'i' } },
         { companyName: { $regex: escaped, $options: 'i' } },
         { partyName: { $regex: escaped, $options: 'i' } },
         { partyPhone: { $regex: escaped, $options: 'i' } },
@@ -222,12 +218,12 @@ exports.getRecords = async (req, res, next) => {
       Inventory.find(category && category !== 'All' ? { category } : {}).lean(),
     ]);
 
-    // Map live inventory by model+modelNumber+condition AND by id
+    // Map live inventory by model+condition AND by id
     const invById = new Map();
     const invByKey = new Map();
     liveInventory.forEach((inv) => {
       invById.set(String(inv._id), inv);
-      const key = `${(inv.modelName || '').trim().toLowerCase()}|${(inv.modelNumber || '').trim().toLowerCase()}|${inv.condition || 'New'}`;
+      const key = `${(inv.modelName || '').trim().toLowerCase()}|${inv.condition || 'New'}`;
       invByKey.set(key, inv);
     });
 
@@ -237,9 +233,12 @@ exports.getRecords = async (req, res, next) => {
     let totalAddedValue = 0;
     let totalSubtractedUnits = 0;
     let totalSubtractedValue = 0;
+    let totalReturnedUnits = 0;
+    let totalReturnedValue = 0;
+    let totalOutAllUnits = 0;
 
     movements.forEach((m) => {
-      const key = `${(m.modelName || '').trim().toLowerCase()}|${(m.modelNumber || '').trim().toLowerCase()}|${m.condition || 'New'}`;
+      const key = `${(m.modelName || '').trim().toLowerCase()}|${m.condition || 'New'}`;
       const matchedInv = (m.inventoryId && invById.get(String(m.inventoryId))) || invByKey.get(key) || null;
       const liveQty = matchedInv ? Number(matchedInv.quantity) || 0 : 0;
 
@@ -258,6 +257,9 @@ exports.getRecords = async (req, res, next) => {
           soldCount: 0,
           soldUnits: 0,
           soldAmount: 0,
+          returnedCount: 0,
+          returnedUnits: 0,
+          returnedAmount: 0,
           netUnits: 0,
           transactions: [],
         });
@@ -274,13 +276,23 @@ exports.getRecords = async (req, res, next) => {
         dayBucket.netUnits += absQty;
         totalAddedUnits += absQty;
         totalAddedValue += amt;
-      } else {
+      } else if (m.type === 'SALE_OUT') {
         dayBucket.soldCount += 1;
         dayBucket.soldUnits += absQty;
         dayBucket.soldAmount += amt;
         dayBucket.netUnits -= absQty;
         totalSubtractedUnits += absQty;
         totalSubtractedValue += amt;
+        totalOutAllUnits += absQty;
+      } else {
+        // PURCHASE_REVERSAL (supplier returns / deleted purchases) & manual OUT adjustments
+        dayBucket.returnedCount += 1;
+        dayBucket.returnedUnits += absQty;
+        dayBucket.returnedAmount += amt;
+        dayBucket.netUnits -= absQty;
+        totalReturnedUnits += absQty;
+        totalReturnedValue += amt;
+        totalOutAllUnits += absQty;
       }
 
       dayBucket.transactions.push(enriched);
@@ -288,16 +300,15 @@ exports.getRecords = async (req, res, next) => {
 
     const days = Array.from(dayMap.values()).sort((a, b) => b.date.localeCompare(a.date));
 
-    // Build Model-by-Model Inventory Reconciliation linking Purchased vs Sold vs Live Stock
+    // Build Model-by-Model Inventory Reconciliation linking Purchased vs Sold vs Returned vs Live Stock
     const modelLedgerMap = new Map();
     allMovementsForReconciliation.forEach((m) => {
-      const key = `${(m.modelName || '').trim().toLowerCase()}|${(m.modelNumber || '').trim().toLowerCase()}|${m.condition || 'New'}`;
+      const key = `${(m.modelName || '').trim().toLowerCase()}|${m.condition || 'New'}`;
       if (!modelLedgerMap.has(key)) {
         const matchedInv = invByKey.get(key);
         modelLedgerMap.set(key, {
           key,
           modelName: m.modelName || 'Accessory',
-          modelNumber: m.modelNumber || '',
           companyName: m.companyName || matchedInv?.companyName || '',
           category: m.category || matchedInv?.category || 'Mobile',
           condition: m.condition || 'New',
@@ -305,6 +316,8 @@ exports.getRecords = async (req, res, next) => {
           purchasedAmount: 0,
           soldUnits: 0,
           soldAmount: 0,
+          returnedUnits: 0,
+          returnedAmount: 0,
           liveStock: matchedInv ? Number(matchedInv.quantity) || 0 : 0,
           lastActivityAt: m.occurredAt,
         });
@@ -316,9 +329,12 @@ exports.getRecords = async (req, res, next) => {
       if (m.direction === 'IN') {
         row.purchasedUnits += absQty;
         row.purchasedAmount += amt;
-      } else {
+      } else if (m.type === 'SALE_OUT') {
         row.soldUnits += absQty;
         row.soldAmount += amt;
+      } else {
+        row.returnedUnits += absQty;
+        row.returnedAmount += amt;
       }
       if (!row.companyName && m.companyName) row.companyName = m.companyName;
       if (new Date(m.occurredAt) > new Date(row.lastActivityAt)) {
@@ -329,12 +345,11 @@ exports.getRecords = async (req, res, next) => {
     // Also include live inventory items that had no activity in the filtered period (if no date filter is set)
     if (!startDate && !endDate && !date) {
       liveInventory.forEach((inv) => {
-        const key = `${(inv.modelName || '').trim().toLowerCase()}|${(inv.modelNumber || '').trim().toLowerCase()}|${inv.condition || 'New'}`;
+        const key = `${(inv.modelName || '').trim().toLowerCase()}|${inv.condition || 'New'}`;
         if (!modelLedgerMap.has(key)) {
           modelLedgerMap.set(key, {
             key,
             modelName: inv.modelName,
-            modelNumber: inv.modelNumber || '',
             companyName: inv.companyName || '',
             category: inv.category || 'Mobile',
             condition: inv.condition || 'New',
@@ -342,6 +357,8 @@ exports.getRecords = async (req, res, next) => {
             purchasedAmount: (Number(inv.price) || 0) * (Number(inv.quantity) || 0),
             soldUnits: 0,
             soldAmount: 0,
+            returnedUnits: 0,
+            returnedAmount: 0,
             liveStock: Number(inv.quantity) || 0,
             lastActivityAt: inv.updatedAt || inv.createdAt,
           });
@@ -351,14 +368,14 @@ exports.getRecords = async (req, res, next) => {
 
     let inventoryLedger = Array.from(modelLedgerMap.values()).map((row) => ({
       ...row,
-      netStock: row.purchasedUnits - row.soldUnits,
+      netStock: row.purchasedUnits - row.soldUnits - row.returnedUnits,
       synced: row.liveStock >= 0,
     }));
 
     if (type === 'in') {
       inventoryLedger = inventoryLedger.filter((r) => r.purchasedUnits > 0);
     } else if (type === 'out') {
-      inventoryLedger = inventoryLedger.filter((r) => r.soldUnits > 0);
+      inventoryLedger = inventoryLedger.filter((r) => r.soldUnits > 0 || r.returnedUnits > 0);
     }
 
     if (search.trim()) {
@@ -366,7 +383,6 @@ exports.getRecords = async (req, res, next) => {
       inventoryLedger = inventoryLedger.filter(
         (r) =>
           r.modelName?.toLowerCase().includes(term) ||
-          r.modelNumber?.toLowerCase().includes(term) ||
           r.companyName?.toLowerCase().includes(term) ||
           r.category?.toLowerCase().includes(term)
       );
@@ -390,7 +406,9 @@ exports.getRecords = async (req, res, next) => {
           totalAddedValue,
           totalSubtractedUnits,
           totalSubtractedValue,
-          netUnits: totalAddedUnits - totalSubtractedUnits,
+          totalReturnedUnits,
+          totalReturnedValue,
+          netUnits: totalAddedUnits - totalOutAllUnits,
           liveInventoryUnits,
           liveInventoryValue,
         },

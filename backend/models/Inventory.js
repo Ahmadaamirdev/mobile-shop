@@ -29,11 +29,6 @@ const inventorySchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
-    modelNumber: {
-      type: String,
-      trim: true,
-      default: '',
-    },
     quantity: {
       type: Number,
       required: [true, 'Quantity is required'],
@@ -60,7 +55,7 @@ const inventorySchema = new mongoose.Schema(
 );
 
 // Compound indexes for high-speed queries and sorting
-inventorySchema.index({ modelName: 1, modelNumber: 1, condition: 1 }, { unique: true });
+inventorySchema.index({ modelName: 1, condition: 1 }, { unique: true });
 inventorySchema.index({ quantity: 1, updatedAt: -1 });
 inventorySchema.index({ category: 1, condition: 1 });
 inventorySchema.index({ 'imeis': 1 });

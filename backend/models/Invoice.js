@@ -7,11 +7,6 @@ const invoiceItemSchema = new mongoose.Schema(
       required: [true, 'Model name is required'],
       trim: true,
     },
-    modelNumber: {
-      type: String,
-      trim: true,
-      default: '',
-    },
     condition: {
       type: String,
       enum: ['New', 'Used'],
@@ -83,11 +78,6 @@ const invoiceSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
-    modelNumber: {
-      type: String,
-      trim: true,
-      default: '',
-    },
     condition: {
       type: String,
       enum: ['New', 'Used'],
@@ -129,7 +119,6 @@ invoiceSchema.pre('save', async function () {
     this.modelName = this.items.map((it) => it.modelName).join(', ');
     const first = this.items[0];
     if (first) {
-      this.modelNumber = first.modelNumber || '';
       this.condition = first.condition || 'New';
       this.imei1 = first.imei1 || '';
       this.imei2 = first.imei2 || '';

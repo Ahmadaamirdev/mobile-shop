@@ -8,6 +8,7 @@ import {
   RefreshCw,
   ArrowRight,
   FileText,
+  BookOpen,
 } from 'lucide-react';
 import DateRangeFilter from './DateRangeFilter';
 
@@ -215,6 +216,32 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
           </div>
           <div className="kpi-value">
             {loading && !stats ? '—' : `PKR ${Number(inventory.totalValue || 0).toLocaleString()}`}
+          </div>
+        </button>
+      </div>
+
+      {/* Supplier Ledger Pending Payables Strip */}
+      <div className="dashboard-ledger-strip single-card">
+        <button
+          type="button"
+          className="dashboard-ledger-card payable"
+          onClick={() => onNavigate && onNavigate('ledger')}
+        >
+          <div className="dashboard-ledger-left">
+            <span className="dashboard-ledger-badge">
+              <BookOpen size={15} /> Supplier Ledger — Pending Payables ({stats?.ledger?.payableCount || 0} Suppliers)
+            </span>
+            <span className="dashboard-ledger-sub">
+              Unpaid credit balances owed to suppliers • Click to manage payments &amp; returns
+            </span>
+          </div>
+          <div className="dashboard-ledger-right">
+            <div className="dashboard-ledger-amount">
+              {loading && !stats ? '—' : `PKR ${Number(stats?.ledger?.payableTotal || 0).toLocaleString()}`}
+            </div>
+            <span className="dashboard-ledger-link">
+              Open Ledger <ArrowRight size={13} />
+            </span>
           </div>
         </button>
       </div>

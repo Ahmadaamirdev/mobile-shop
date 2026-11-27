@@ -23,7 +23,6 @@ exports.getInventory = async (req, res, next) => {
       const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
         { modelName: { $regex: escaped, $options: 'i' } },
-        { modelNumber: { $regex: escaped, $options: 'i' } },
         { companyName: { $regex: escaped, $options: 'i' } },
         { condition: { $regex: escaped, $options: 'i' } },
         { status: { $regex: escaped, $options: 'i' } },
@@ -73,7 +72,6 @@ exports.createInventoryItem = async (req, res, next) => {
       status = 'PTA',
       companyName = '',
       modelName,
-      modelNumber = '',
       quantity = 1,
       price = 0,
       imeis = [],
@@ -104,7 +102,6 @@ exports.createInventoryItem = async (req, res, next) => {
       });
     }
 
-    const cleanModelNumber = modelNumber ? modelNumber.trim() : '';
     const parsedQty = parsePositiveIntQty(quantity, { allowEmpty: true, defaultVal: 1 });
     if (parsedQty === null) {
       return res.status(400).json({
@@ -123,9 +120,6 @@ exports.createInventoryItem = async (req, res, next) => {
     // Check if item already exists with matching model and condition
     let item = await Inventory.findOne({
       modelName: { $regex: new RegExp(`^${escapeRegex(cleanModelName)}$`, 'i') },
-      modelNumber: cleanModelNumber
-        ? { $regex: new RegExp(`^${escapeRegex(cleanModelNumber)}$`, 'i') }
-        : '',
       condition: condition === 'Used' ? 'Used' : 'New',
     });
 
@@ -159,7 +153,6 @@ exports.createInventoryItem = async (req, res, next) => {
         status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
         companyName: companyName.trim(),
         modelName: cleanModelName,
-        modelNumber: cleanModelNumber,
         quantity: Number(quantity),
         price: Number(price),
         imeis: validImeis,
@@ -174,7 +167,6 @@ exports.createInventoryItem = async (req, res, next) => {
 
     const existingRecentPurchase = await Purchase.findOne({
       modelName: cleanModelName,
-      modelNumber: cleanModelNumber,
       condition: condition === 'Used' ? 'Used' : 'New',
       customerName: cleanCustomerName,
       price: purchasePrice,
@@ -190,7 +182,6 @@ exports.createInventoryItem = async (req, res, next) => {
         status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
         companyName: companyName ? companyName.trim() : (item.companyName || 'Stock'),
         modelName: cleanModelName,
-        modelNumber: cleanModelNumber,
         quantity: purchaseQty,
         imei1: (validImeis[0] || imei1 || '').trim() || undefined,
         imei2: (validImeis[1] || imei2 || '').trim() || undefined,
@@ -211,7 +202,6 @@ exports.createInventoryItem = async (req, res, next) => {
         status: ['PTA', 'JV', 'Non-PTA', 'CPID'].includes(status) ? status : 'PTA',
         companyName: companyName ? companyName.trim() : (item.companyName || 'Stock'),
         modelName: cleanModelName,
-        modelNumber: cleanModelNumber,
         imei1: (validImeis[0] || imei1 || '').trim(),
         imei2: (validImeis[1] || imei2 || '').trim(),
         quantityDelta: purchaseQty,
@@ -242,7 +232,7 @@ exports.createInventoryItem = async (req, res, next) => {
 // @route   PUT /api/inventory/:id
 exports.updateInventoryItem = async (req, res, next) => {
   try {
-    const { modelName, modelNumber, companyName, quantity, price, imeis, category, condition, status } = req.body;
+    const { modelName, companyName, quantity, price, imeis, category, condition, status } = req.body;
 
     const item = await Inventory.findById(req.params.id);
     if (!item) {
@@ -267,7 +257,6 @@ exports.updateInventoryItem = async (req, res, next) => {
       }
       item.modelName = cleanedModel || 'Accessory';
     }
-    if (modelNumber !== undefined) item.modelNumber = modelNumber.trim();
     if (companyName !== undefined) item.companyName = companyName.trim();
     if (quantity !== undefined) {
       const parsedQty = Number(quantity);
@@ -313,7 +302,6 @@ exports.updateInventoryItem = async (req, res, next) => {
         status: item.status || 'PTA',
         companyName: item.companyName || '',
         modelName: item.modelName || 'Accessory',
-        modelNumber: item.modelNumber || '',
         quantityDelta: qtyDelta,
         previousStock: prevQty,
         resultingStock: Number(item.quantity) || 0,
@@ -356,7 +344,6 @@ exports.deleteInventoryItem = async (req, res, next) => {
         status: item.status || 'PTA',
         companyName: item.companyName || '',
         modelName: item.modelName || 'Accessory',
-        modelNumber: item.modelNumber || '',
         quantityDelta: -removedQty,
         previousStock: removedQty,
         resultingStock: 0,

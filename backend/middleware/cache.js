@@ -61,7 +61,9 @@ const autoInvalidateMiddleware = (req, res, next) => {
       if (res.statusCode >= 200 && res.statusCode < 300) {
         const url = req.originalUrl || req.url;
         if (url.includes('/purchases')) {
-          invalidateCache(['/purchases', '/inventory', '/dashboard', '/records']);
+          invalidateCache(['/purchases', '/inventory', '/dashboard', '/records', '/ledger']);
+        } else if (url.includes('/ledger')) {
+          invalidateCache(['/ledger', '/purchases', '/inventory', '/dashboard', '/records']);
         } else if (url.includes('/sales')) {
           invalidateCache(['/sales', '/inventory', '/invoices', '/dashboard', '/records']);
         } else if (url.includes('/inventory')) {
