@@ -176,7 +176,7 @@ samp {
 }
 
 .sidebar-header {
-  padding: 0;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--sidebar-border);
   display: flex;
   align-items: center;
@@ -194,10 +194,11 @@ samp {
 
 .sidebar-logo {
   width: 100%;
-  max-width: 100%;
+  max-width: 155px;
   height: auto;
+  max-height: 62px;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 0;
 }
 
