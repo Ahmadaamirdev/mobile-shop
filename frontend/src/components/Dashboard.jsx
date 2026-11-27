@@ -32,8 +32,8 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [startDate, setStartDate] = useState(todayStr);
-  const [endDate, setEndDate] = useState(todayStr);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const fetchDashboard = useCallback(
     async (force = false) => {
