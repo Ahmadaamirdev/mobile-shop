@@ -265,9 +265,9 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
         <div className="records-summary-card">
           <div className="records-sum-top">
             <span>Purchased</span>
-            <ArrowDownLeft size={15} style={{ color: '#64748b' }} />
+            <ArrowDownLeft size={15} className="records-mobile-purchase-icon" style={{ color: '#64748b' }} />
           </div>
-          <div className="records-sum-val">
+          <div className="records-sum-val records-mobile-purchase-val">
             {summary.totalAddedUnits} {summary.totalAddedUnits === 1 ? 'unit' : 'units'}
           </div>
           <div className="records-sum-sub">PKR {Number(summary.totalAddedValue || 0).toLocaleString()}</div>
@@ -276,9 +276,9 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
         <div className="records-summary-card">
           <div className="records-sum-top">
             <span>Sold</span>
-            <ArrowUpRight size={15} style={{ color: '#64748b' }} />
+            <ArrowUpRight size={15} className="records-mobile-sale-icon" style={{ color: '#64748b' }} />
           </div>
-          <div className="records-sum-val">
+          <div className="records-sum-val records-mobile-sale-val">
             {summary.totalSubtractedUnits} {summary.totalSubtractedUnits === 1 ? 'unit' : 'units'}
           </div>
           <div className="records-sum-sub">PKR {Number(summary.totalSubtractedValue || 0).toLocaleString()}</div>
@@ -388,7 +388,17 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
             {ledgerRows.length === 0 ? (
               <div className="empty-state">No model stock ledger entries match filters.</div>
             ) : (
-              ledgerRows.map((row) => (
+              ledgerRows.map((row) => {
+                const isPurchase = row.recordType === 'Purchased';
+                const typeColor = isPurchase ? '#059669' : '#dc2626';
+                const formattedDate = row.lastActivityAt
+                  ? new Date(row.lastActivityAt).toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : '—';
+                return (
                   <div key={row.rowKey} className="mobile-card">
                     <div className="mobile-card-top">
                       <div>
@@ -397,7 +407,7 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
                           {row.category} • {row.condition}{row.companyName ? ` • ${row.companyName}` : ''}
                         </div>
                       </div>
-                      <div className="mobile-card-price">
+                      <div className="mobile-card-price" style={{ color: typeColor }}>
                         PKR {Number(row.amount || 0).toLocaleString()}
                       </div>
                     </div>
@@ -405,11 +415,11 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
                       <div className="mobile-meta-cell">
                         <div className="mobile-meta-label">Type &amp; Units</div>
                         <div className="mobile-meta-val" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontWeight: 700, color: '#090d16' }}>
+                          <span style={{ fontWeight: 700, color: typeColor }}>
                             {row.recordType}
                           </span>
                           <span>•</span>
-                          <span style={{ fontWeight: 700, color: '#090d16' }}>
+                          <span style={{ fontWeight: 700, color: typeColor }}>
                             {row.units} {row.units === 1 ? 'unit' : 'units'}
                           </span>
                         </div>
@@ -422,9 +432,14 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
                           </span>
                         </div>
                       </div>
+                      <div className="mobile-meta-cell full-width">
+                        <div className="mobile-meta-label">Date</div>
+                        <div className="mobile-meta-val">{formattedDate}</div>
+                      </div>
                     </div>
                   </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

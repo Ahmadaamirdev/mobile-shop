@@ -4394,6 +4394,16 @@ samp {
     font-size: 10.5px;
     padding: 2px 7px;
   }
+
+  .records-mobile-purchase-val,
+  .records-mobile-purchase-icon {
+    color: #059669 !important;
+  }
+
+  .records-mobile-sale-val,
+  .records-mobile-sale-icon {
+    color: #dc2626 !important;
+  }
 }
 
 .edit-inventory-modal-card {
