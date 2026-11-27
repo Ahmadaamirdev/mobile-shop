@@ -4020,9 +4020,16 @@ samp {
     padding: 14px !important;
   }
 
+  .dashboard-kpi-card,
+  .dashboard-cat-card,
+  .dashboard-section-card {
+    min-width: 0;
+  }
+
   .dashboard-recent-item {
     padding: 10px;
     gap: 8px;
+    overflow: hidden;
   }
 
   .mobile-nav-label {
@@ -4262,18 +4269,27 @@ samp {
     gap: 8px;
   }
 
-  .records-header-actions-single {
-    width: auto;
-    display: flex;
-    align-items: center;
-  }
-
   .records-header-actions {
     width: 100%;
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 6px;
     align-items: center;
+  }
+
+  .records-header-actions.records-header-actions-single {
+    width: auto;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .records-toolbar-grid {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
   }
 
   .records-view-toggle {

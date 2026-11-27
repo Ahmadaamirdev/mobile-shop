@@ -170,7 +170,7 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
             </select>
           </div>
 
-          <div className="toolbar-desktop-grid">
+          <div className="toolbar-desktop-grid records-toolbar-grid">
             <div className="panel-filter-pills records-type-pills">
               {[
                 { id: 'all', label: 'All Records' },
