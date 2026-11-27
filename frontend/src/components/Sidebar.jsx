@@ -43,44 +43,40 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen, onLogout }) => {
           </button>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="sidebar-nav">
-          <div className="nav-section-label">MAIN NAVIGATION</div>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => handleSelectTab(item.id)}
-              >
-                <Icon size={19} className="nav-icon" />
-                <span className="nav-label">{item.label}</span>
-                {isActive && <span className="nav-active-pill" />}
-              </button>
-            );
-          })}
-        </nav>
+        {/* Sidebar Body (below logo) */}
+        <div className="sidebar-body">
+          {/* Navigation Items */}
+          <nav className="sidebar-nav">
+            <div className="nav-section-label">MAIN NAVIGATION</div>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+                  onClick={() => handleSelectTab(item.id)}
+                >
+                  <Icon size={19} className="nav-icon" />
+                  <span className="nav-label">{item.label}</span>
+                  {isActive && <span className="nav-active-pill" />}
+                </button>
+              );
+            })}
+          </nav>
 
-        {/* Sidebar Footer info */}
-        <div className="sidebar-footer">
-          <div className="sidebar-shop-pill">
-            <div className="shop-status-dot" />
-            <div className="shop-footer-text">
-              <strong>Shop #14</strong>
-              <span>Rehma Center, Kachery Rd</span>
-            </div>
-          </div>
+          {/* Sidebar Footer */}
           {onLogout && (
-            <button
-              type="button"
-              className="sidebar-logout-btn"
-              onClick={onLogout}
-            >
-              <LogOut size={15} />
-              <span>Sign Out</span>
-            </button>
+            <div className="sidebar-footer">
+              <button
+                type="button"
+                className="sidebar-logout-btn"
+                onClick={onLogout}
+              >
+                <LogOut size={15} />
+                <span>Sign Out</span>
+              </button>
+            </div>
           )}
         </div>
       </aside>
