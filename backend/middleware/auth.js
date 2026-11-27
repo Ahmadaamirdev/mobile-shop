@@ -4,7 +4,7 @@ const crypto = require('crypto');
 let devFallbackSecret = null;
 
 const getAuthSecret = () => {
-  if (process.env.AUTH_SECRET && process.env.AUTH_SECRET.trim().length >= 16) {
+  if (process.env.AUTH_SECRET && process.env.AUTH_SECRET.trim().length >= 8) {
     return process.env.AUTH_SECRET.trim();
   }
   const isProd = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
