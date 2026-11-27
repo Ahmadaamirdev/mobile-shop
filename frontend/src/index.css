@@ -145,6 +145,10 @@ samp {
 .app-sidebar {
   width: 200px;
   background-color: var(--sidebar-bg);
+  background-image: linear-gradient(rgba(9, 13, 22, 0.55), rgba(9, 13, 22, 0.65)), url('/sidebar-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   color: #ffffff;
   display: flex;
   flex-direction: column;
