@@ -36,7 +36,9 @@ const DateRangeFilter = ({ startDate, endDate, onChangeStart, onChangeEnd, onCle
 
   let label = 'Select Date Range';
   if (startDate && endDate) {
-    label = `${formatShortDate(startDate)} – ${formatShortDate(endDate)}`;
+    label = startDate === endDate
+      ? formatShortDate(startDate)
+      : `${formatShortDate(startDate)} – ${formatShortDate(endDate)}`;
   } else if (startDate) {
     label = `From ${formatShortDate(startDate)}`;
   } else if (endDate) {
@@ -87,8 +89,13 @@ const DateRangeFilter = ({ startDate, endDate, onChangeStart, onChangeEnd, onCle
                 type="date"
                 className="date-filter-input"
                 value={startDate}
-                max={endDate || undefined}
-                onChange={(e) => onChangeStart(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onChangeStart(val);
+                  if (val && endDate && val > endDate) {
+                    onChangeEnd(val);
+                  }
+                }}
               />
             </div>
             <div className="date-popover-field">
@@ -97,8 +104,13 @@ const DateRangeFilter = ({ startDate, endDate, onChangeStart, onChangeEnd, onCle
                 type="date"
                 className="date-filter-input"
                 value={endDate}
-                min={startDate || undefined}
-                onChange={(e) => onChangeEnd(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onChangeEnd(val);
+                  if (val && startDate && val < startDate) {
+                    onChangeStart(val);
+                  }
+                }}
               />
             </div>
           </div>

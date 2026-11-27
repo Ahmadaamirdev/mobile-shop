@@ -1,5 +1,6 @@
 const Invoice = require('../models/Invoice');
 const Sale = require('../models/Sale');
+const { parsePositiveIntQty, parseNonNegativePrice } = require('../utils/validators');
 
 // Helper to generate next unique invoice number (e.g. UM-1001)
 const generateInvoiceNumber = async () => {
@@ -136,12 +137,22 @@ exports.createInvoice = async (req, res, next) => {
           message: `Device #${i + 1} model name is required.`,
         });
       }
-      if (isNaN(it.price) || it.price < 0) {
+      const validPrice = parseNonNegativePrice(it.price);
+      if (validPrice === null) {
         return res.status(400).json({
           success: false,
-          message: `Device #${i + 1} (${it.modelName}) must have a valid price.`,
+          message: `Device #${i + 1} (${it.modelName}) must have a valid non-negative price.`,
         });
       }
+      const validQty = parsePositiveIntQty(it.quantity, { allowEmpty: true, defaultVal: 1 });
+      if (validQty === null) {
+        return res.status(400).json({
+          success: false,
+          message: `Device #${i + 1} (${it.modelName}) quantity must be a whole number between 1 and 10,000.`,
+        });
+      }
+      it.price = validPrice;
+      it.quantity = validQty;
     }
 
     // Calculate total price across all devices

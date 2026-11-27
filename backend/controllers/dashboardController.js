@@ -3,16 +3,17 @@ const Sale = require('../models/Sale');
 const Inventory = require('../models/Inventory');
 const Invoice = require('../models/Invoice');
 
-const buildDateMatch = (startDate, endDate, field = 'createdAt') => {
+const buildDateMatch = (startDate, endDate, field = 'createdAt', tzOffsetMin = -300) => {
   if (!startDate && !endDate) return {};
+  const offsetMs = Number.isFinite(tzOffsetMin) ? tzOffsetMin * 60000 : -300 * 60000;
   const range = {};
   if (startDate) {
     const [y, m, d] = startDate.split('-').map(Number);
-    if (y && m && d) range.$gte = new Date(y, m - 1, d, 0, 0, 0, 0);
+    if (y && m && d) range.$gte = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0) + offsetMs);
   }
   if (endDate) {
     const [y, m, d] = endDate.split('-').map(Number);
-    if (y && m && d) range.$lte = new Date(y, m - 1, d, 23, 59, 59, 999);
+    if (y && m && d) range.$lte = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999) + offsetMs);
   }
   return Object.keys(range).length ? { [field]: range } : {};
 };
@@ -22,7 +23,10 @@ const buildDateMatch = (startDate, endDate, field = 'createdAt') => {
 exports.getDashboardStats = async (req, res, next) => {
   try {
     const { startDate = '', endDate = '' } = req.query;
-    const dateMatch = buildDateMatch(startDate, endDate, 'createdAt');
+    const tzOffsetMin = req.query.tzOffset !== undefined ? Number(req.query.tzOffset) : -300;
+    const dateMatch = buildDateMatch(startDate, endDate, 'createdAt', tzOffsetMin);
+    const hasDateFilter = Boolean(startDate || endDate);
+    const recentLimit = hasDateFilter ? 25 : 5;
 
     const [
       purchaseAgg,
@@ -60,7 +64,7 @@ exports.getDashboardStats = async (req, res, next) => {
       ]),
       Purchase.find(dateMatch)
         .sort({ createdAt: -1 })
-        .limit(5)
+        .limit(recentLimit)
         .select('category condition modelName companyName price quantity customerName createdAt')
         .lean(),
 
@@ -95,7 +99,7 @@ exports.getDashboardStats = async (req, res, next) => {
       ]),
       Sale.find(dateMatch)
         .sort({ createdAt: -1 })
-        .limit(5)
+        .limit(recentLimit)
         .select('category condition modelName price customerName items createdAt')
         .lean(),
 
@@ -137,7 +141,7 @@ exports.getDashboardStats = async (req, res, next) => {
         },
       ]),
       Inventory.countDocuments({ quantity: { $lte: 0 } }),
-      Invoice.countDocuments(buildDateMatch(startDate, endDate, 'date')),
+      Invoice.countDocuments(buildDateMatch(startDate, endDate, 'date', tzOffsetMin)),
     ]);
 
     const pSummary = purchaseAgg[0] || { count: 0, units: 0, totalAmount: 0 };

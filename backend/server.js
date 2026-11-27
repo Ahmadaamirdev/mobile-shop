@@ -11,34 +11,51 @@ const { requireAuth } = require('./middleware/auth');
 dotenv.config();
 
 const app = express();
+app.disable('x-powered-by');
 
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '25mb' }));
-app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+// Security Headers Middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https://res.cloudinary.com; frame-ancestors 'none'");
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
 
-// Health & Connection Monitoring API (open even during reconnect to inspect status)
+// Restricted CORS Configuration
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow same-origin / server-to-server / curl without Origin header
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
+      if (process.env.VERCEL && /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Health & Connection Monitoring API (minimal public metadata)
 app.get('/api/health', (req, res) => {
-  const states = {
-    0: 'disconnected',
-    1: 'connected',
-    2: 'connecting',
-    3: 'disconnecting',
-  };
-
   const dbState = mongoose.connection.readyState;
 
   res.status(dbState === 1 ? 200 : 503).json({
     status: dbState === 1 ? 'healthy' : 'degraded',
-    app: 'Unity Mobile Management API',
-    database: {
-      status: states[dbState] || 'unknown',
-      readyState: dbState,
-      poolConfig: {
-        maxPoolSize: poolOptions.maxPoolSize,
-        minPoolSize: poolOptions.minPoolSize,
-      },
-    },
     timestamp: new Date(),
   });
 });

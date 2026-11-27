@@ -11,18 +11,35 @@ import {
 } from 'lucide-react';
 import DateRangeFilter from './DateRangeFilter';
 
+const getLocalTodayStr = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+};
+
+const formatDisplayDate = (dateStr) => {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (!y || !m || !d) return dateStr;
+  return new Date(y, m - 1, d).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
 const Dashboard = ({ isActive, onNavigate, setAlert }) => {
+  const todayStr = getLocalTodayStr();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(todayStr);
 
   const fetchDashboard = useCallback(
     async (force = false) => {
       if (force) setRefreshing(true);
       try {
-        const params = {};
+        const params = { tzOffset: new Date().getTimezoneOffset() };
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
         const res = await getDashboard(params, force);
@@ -84,6 +101,19 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
     byCategory: {},
   };
 
+  const isShowingToday = startDate === todayStr && endDate === todayStr;
+  const dateStatusText = isShowingToday
+    ? `Today's Data (${formatDisplayDate(todayStr)})`
+    : startDate && endDate && startDate === endDate
+      ? `Date: ${formatDisplayDate(startDate)}`
+      : startDate && endDate
+        ? `${formatDisplayDate(startDate)} – ${formatDisplayDate(endDate)}`
+        : startDate
+          ? `From ${formatDisplayDate(startDate)}`
+          : endDate
+            ? `Until ${formatDisplayDate(endDate)}`
+            : 'All Time Data';
+
   return (
     <div>
       {/* Header Card */}
@@ -100,6 +130,22 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
           </div>
 
           <div className="dashboard-header-actions">
+            <span className={`dashboard-date-status-pill ${isShowingToday ? 'is-today' : ''}`}>
+              {isShowingToday && <span className="dashboard-live-dot" />}
+              <span>{dateStatusText}</span>
+              {!isShowingToday && (
+                <button
+                  type="button"
+                  className="dashboard-today-reset"
+                  onClick={() => {
+                    setStartDate(todayStr);
+                    setEndDate(todayStr);
+                  }}
+                >
+                  Today
+                </button>
+              )}
+            </span>
             <DateRangeFilter
               startDate={startDate}
               endDate={endDate}
@@ -141,14 +187,6 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
           <div className="kpi-value">
             {loading && !stats ? '—' : `PKR ${Number(purchases.totalAmount || 0).toLocaleString()}`}
           </div>
-          <div className="kpi-meta-row">
-            <span>
-              <strong>{purchases.count}</strong> records • <strong>{purchases.units}</strong> units
-            </span>
-            <span className="kpi-link">
-              View <ArrowRight size={13} />
-            </span>
-          </div>
         </button>
 
         {/* Total Sales */}
@@ -166,14 +204,6 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
           <div className="kpi-value">
             {loading && !stats ? '—' : `PKR ${Number(sales.totalAmount || 0).toLocaleString()}`}
           </div>
-          <div className="kpi-meta-row">
-            <span>
-              <strong>{sales.count}</strong> sales • <strong>{sales.units}</strong> units
-            </span>
-            <span className="kpi-link">
-              View <ArrowRight size={13} />
-            </span>
-          </div>
         </button>
 
         {/* Total Inventory */}
@@ -190,15 +220,6 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
           </div>
           <div className="kpi-value">
             {loading && !stats ? '—' : `PKR ${Number(inventory.totalValue || 0).toLocaleString()}`}
-          </div>
-          <div className="kpi-meta-row">
-            <span>
-              <strong>{inventory.totalUnits}</strong> in stock • <strong>{inventory.inStockModels}</strong> models
-              {inventory.outOfStockModels > 0 ? ` (${inventory.outOfStockModels} empty)` : ''}
-            </span>
-            <span className="kpi-link">
-              View <ArrowRight size={13} />
-            </span>
           </div>
         </button>
       </div>
@@ -259,7 +280,7 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
           <div className="dashboard-section-header">
             <div>
               <h3>Recent Purchases</h3>
-              <p>Latest 5 inward stock entries</p>
+              <p>{isShowingToday ? "Today's inward stock entries" : startDate || endDate ? 'Purchases for selected date filter' : 'Latest 5 inward stock entries'}</p>
             </div>
             <button
               type="button"
@@ -295,7 +316,7 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
           <div className="dashboard-section-header">
             <div>
               <h3>Recent Sales</h3>
-              <p>Latest 5 customer dispatches</p>
+              <p>{isShowingToday ? "Today's customer dispatches" : startDate || endDate ? 'Sales for selected date filter' : 'Latest 5 customer dispatches'}</p>
             </div>
             <button
               type="button"

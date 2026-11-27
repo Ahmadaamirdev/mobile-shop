@@ -3,14 +3,36 @@ const Purchase = require('../models/Purchase');
 const Sale = require('../models/Sale');
 const Inventory = require('../models/Inventory');
 
-const toDateKey = (dateInput) => {
+const toDateKey = (dateInput, tzOffsetMin = -300) => {
   const d = dateInput ? new Date(dateInput) : new Date();
-  if (Number.isNaN(d.getTime())) {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const baseMs = Number.isNaN(d.getTime()) ? Date.now() : d.getTime();
+  const offsetMs = Number.isFinite(tzOffsetMin) ? tzOffsetMin * 60000 : -300 * 60000;
+  // Shift UTC time by -tzOffsetMin so UTC getters represent local calendar date
+  const shifted = new Date(baseMs - offsetMs);
+  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}-${String(shifted.getUTCDate()).padStart(2, '0')}`;
+};
+
+const buildOccurredAtMatch = (startDate, endDate, date, tzOffsetMin = -300) => {
+  const offsetMs = Number.isFinite(tzOffsetMin) ? tzOffsetMin * 60000 : -300 * 60000;
+  if (date) {
+    const [y, m, d] = date.split('-').map(Number);
+    if (y && m && d) {
+      return {
+        $gte: new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0) + offsetMs),
+        $lte: new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999) + offsetMs),
+      };
+    }
   }
-  // Use local PKT / server calendar day consistently
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const range = {};
+  if (startDate) {
+    const [y, m, d] = startDate.split('-').map(Number);
+    if (y && m && d) range.$gte = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0) + offsetMs);
+  }
+  if (endDate) {
+    const [y, m, d] = endDate.split('-').map(Number);
+    if (y && m && d) range.$lte = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999) + offsetMs);
+  }
+  return Object.keys(range).length ? range : null;
 };
 
 // Helper used by controllers to record a stock movement synchronously/safely
@@ -155,15 +177,13 @@ exports.getRecords = async (req, res, next) => {
       category = 'All',
       search = '',
     } = req.query;
+    const tzOffsetMin = req.query.tzOffset !== undefined ? Number(req.query.tzOffset) : -300;
+    const occurredAtRange = buildOccurredAtMatch(startDate, endDate, date, tzOffsetMin);
 
     const query = {};
 
-    if (date) {
-      query.dateKey = date;
-    } else if (startDate || endDate) {
-      query.dateKey = {};
-      if (startDate) query.dateKey.$gte = startDate;
-      if (endDate) query.dateKey.$lte = endDate;
+    if (occurredAtRange) {
+      query.occurredAt = occurredAtRange;
     }
 
     if (type === 'in') {
@@ -190,11 +210,13 @@ exports.getRecords = async (req, res, next) => {
       ];
     }
 
+    const reconQuery = {};
+    if (category && category !== 'All') reconQuery.category = category;
+    if (occurredAtRange) reconQuery.occurredAt = occurredAtRange;
+
     const [movements, allMovementsForReconciliation, liveInventory] = await Promise.all([
-      StockRecord.find(query).sort({ dateKey: -1, occurredAt: -1 }).lean(),
-      StockRecord.find(
-        category && category !== 'All' ? { category } : {}
-      )
+      StockRecord.find(query).sort({ occurredAt: -1 }).lean(),
+      StockRecord.find(reconQuery)
         .sort({ occurredAt: 1 })
         .lean(),
       Inventory.find(category && category !== 'All' ? { category } : {}).lean(),
@@ -266,13 +288,9 @@ exports.getRecords = async (req, res, next) => {
 
     const days = Array.from(dayMap.values()).sort((a, b) => b.date.localeCompare(a.date));
 
-    // Build Model-by-Model Inventory Reconciliation linking Purchased (+) vs Sold (-) vs Live Stock
+    // Build Model-by-Model Inventory Reconciliation linking Purchased vs Sold vs Live Stock
     const modelLedgerMap = new Map();
     allMovementsForReconciliation.forEach((m) => {
-      if (startDate && m.dateKey < startDate) return;
-      if (endDate && m.dateKey > endDate) return;
-      if (date && m.dateKey !== date) return;
-
       const key = `${(m.modelName || '').trim().toLowerCase()}|${(m.modelNumber || '').trim().toLowerCase()}|${m.condition || 'New'}`;
       if (!modelLedgerMap.has(key)) {
         const matchedInv = invByKey.get(key);
@@ -336,6 +354,12 @@ exports.getRecords = async (req, res, next) => {
       netStock: row.purchasedUnits - row.soldUnits,
       synced: row.liveStock >= 0,
     }));
+
+    if (type === 'in') {
+      inventoryLedger = inventoryLedger.filter((r) => r.purchasedUnits > 0);
+    } else if (type === 'out') {
+      inventoryLedger = inventoryLedger.filter((r) => r.soldUnits > 0);
+    }
 
     if (search.trim()) {
       const term = search.trim().toLowerCase();

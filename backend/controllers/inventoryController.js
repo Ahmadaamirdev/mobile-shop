@@ -1,6 +1,7 @@
 const Inventory = require('../models/Inventory');
 const Purchase = require('../models/Purchase');
 const { logStockMovement } = require('./recordController');
+const { escapeRegex, parsePositiveIntQty, parseNonNegativePrice } = require('../utils/validators');
 
 // @desc    Get inventory items with optional search & category filter
 // @route   GET /api/inventory
@@ -104,12 +105,26 @@ exports.createInventoryItem = async (req, res, next) => {
     }
 
     const cleanModelNumber = modelNumber ? modelNumber.trim() : '';
+    const parsedQty = parsePositiveIntQty(quantity, { allowEmpty: true, defaultVal: 1 });
+    if (parsedQty === null) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quantity must be a whole number between 1 and 10,000.',
+      });
+    }
+    const parsedPrice = parseNonNegativePrice(price, { allowEmpty: true, defaultVal: 0 });
+    if (parsedPrice === null) {
+      return res.status(400).json({
+        success: false,
+        message: 'Price must be a valid non-negative number.',
+      });
+    }
 
     // Check if item already exists with matching model and condition
     let item = await Inventory.findOne({
-      modelName: { $regex: new RegExp(`^${cleanModelName}$`, 'i') },
+      modelName: { $regex: new RegExp(`^${escapeRegex(cleanModelName)}$`, 'i') },
       modelNumber: cleanModelNumber
-        ? { $regex: new RegExp(`^${cleanModelNumber}$`, 'i') }
+        ? { $regex: new RegExp(`^${escapeRegex(cleanModelNumber)}$`, 'i') }
         : '',
       condition: condition === 'Used' ? 'Used' : 'New',
     });

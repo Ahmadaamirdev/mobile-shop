@@ -1,8 +1,9 @@
 // Global Error Handler Middleware
 const errorHandler = (err, req, res, next) => {
-  console.error('API Error:', err);
+  console.error('API Error:', err.message || err);
 
-  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  const isProd = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+  let statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
   let message = err.message || 'Internal Server Error';
 
   // Handle Mongoose Validation Errors
@@ -19,10 +20,10 @@ const errorHandler = (err, req, res, next) => {
     message = `Duplicate record: A device with this ${field} already exists.`;
   }
 
-  // Handle Mongoose Cast Error (Invalid ObjectId)
+  // Handle Mongoose Cast Error (Invalid ObjectId) without reflecting raw input
   if (err.name === 'CastError') {
     statusCode = 404;
-    message = `Resource not found with ID ${err.value}`;
+    message = 'Resource not found.';
   }
 
   // Handle Transient MongoDB Connection / Timeout / Network Errors
@@ -42,8 +43,8 @@ const errorHandler = (err, req, res, next) => {
 
   res.status(statusCode).json({
     success: false,
-    message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
+    message: isProd && statusCode === 500 ? 'Internal Server Error' : message,
+    ...(isProd ? {} : { stack: err.stack }),
   });
 };
 

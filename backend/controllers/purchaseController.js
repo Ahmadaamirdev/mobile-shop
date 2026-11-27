@@ -2,6 +2,7 @@ const Purchase = require('../models/Purchase');
 const Inventory = require('../models/Inventory');
 const { uploadCompressedImage } = require('../config/cloudinary');
 const { logStockMovement } = require('./recordController');
+const { escapeRegex, parsePositiveIntQty, parseNonNegativePrice } = require('../utils/validators');
 
 // @desc    Upload & compress single ID card image to Cloudinary
 // @route   POST /api/purchases/upload-id
@@ -100,8 +101,20 @@ exports.createPurchase = async (req, res, next) => {
 
     const cleanModelName = modelName && modelName.trim() ? modelName.trim() : (isAccessory ? 'Accessory' : '');
     const cleanModelNumber = modelNumber ? modelNumber.trim() : '';
-    const purchaseQty = Math.max(1, Number(quantity) || 1);
-    const purchasePrice = price !== undefined && price !== '' && !isNaN(price) ? Number(price) : 0;
+    const purchaseQty = parsePositiveIntQty(quantity, { allowEmpty: true, defaultVal: 1 });
+    if (purchaseQty === null) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quantity must be a whole number between 1 and 10,000.',
+      });
+    }
+    const purchasePrice = parseNonNegativePrice(price, { allowEmpty: isAccessory, defaultVal: 0 });
+    if (purchasePrice === null) {
+      return res.status(400).json({
+        success: false,
+        message: 'Price must be a valid non-negative number.',
+      });
+    }
 
     // Create Purchase Record
     const purchase = await Purchase.create({
@@ -125,11 +138,11 @@ exports.createPurchase = async (req, res, next) => {
     });
 
     // Automatically sync with Inventory:
-    // Match by modelName, modelNumber, and condition (case-insensitive regex)
+    // Match by modelName, modelNumber, and condition (case-insensitive regex, safely escaped)
     let inventoryItem = await Inventory.findOne({
-      modelName: { $regex: new RegExp(`^${cleanModelName}$`, 'i') },
+      modelName: { $regex: new RegExp(`^${escapeRegex(cleanModelName)}$`, 'i') },
       modelNumber: cleanModelNumber
-        ? { $regex: new RegExp(`^${cleanModelNumber}$`, 'i') }
+        ? { $regex: new RegExp(`^${escapeRegex(cleanModelNumber)}$`, 'i') }
         : '',
       condition: condition === 'Used' ? 'Used' : 'New',
     });
@@ -286,11 +299,11 @@ exports.deletePurchase = async (req, res, next) => {
     // Automatically sync inventory: reduce stock by 1 and remove IMEIs
     const condition = purchase.condition || 'New';
     const inventoryQuery = {
-      modelName: { $regex: new RegExp(`^${purchase.modelName.trim()}$`, 'i') },
+      modelName: { $regex: new RegExp(`^${escapeRegex((purchase.modelName || '').trim())}$`, 'i') },
       condition: condition,
     };
     if (purchase.modelNumber && purchase.modelNumber.trim()) {
-      inventoryQuery.modelNumber = { $regex: new RegExp(`^${purchase.modelNumber.trim()}$`, 'i') };
+      inventoryQuery.modelNumber = { $regex: new RegExp(`^${escapeRegex(purchase.modelNumber.trim())}$`, 'i') };
     }
 
     const inventoryItem = await Inventory.findOne(inventoryQuery);

@@ -2,6 +2,7 @@ const Sale = require('../models/Sale');
 const Inventory = require('../models/Inventory');
 const Invoice = require('../models/Invoice');
 const { logStockMovement } = require('./recordController');
+const { escapeRegex, parsePositiveIntQty, parseNonNegativePrice } = require('../utils/validators');
 
 // @desc    Record a new sale (single or multiple devices), check inventory, and auto-subtract stock
 // @route   POST /api/sales
@@ -72,22 +73,27 @@ exports.createSale = async (req, res, next) => {
       const itCondition = it.condition ? it.condition.trim() : '';
       const itCategory = it.category || 'Mobile';
       const isItemAccessory = itCategory === 'Accessory';
-      const rawPrice = it.price === '' || it.price === undefined || it.price === null ? (isItemAccessory ? 0 : NaN) : Number(it.price);
-      const itPrice = rawPrice;
-      const itQty = Number(it.quantity) || 1;
+      const itPrice = parseNonNegativePrice(it.price, { allowEmpty: isItemAccessory, defaultVal: 0 });
+      const itQty = parsePositiveIntQty(it.quantity, { allowEmpty: true, defaultVal: 1 });
       const cleanImei1 = it.imei1 ? it.imei1.trim() : '';
       const cleanImei2 = it.imei2 ? it.imei2.trim() : '';
 
-      if (!isItemAccessory && (!itModel || it.price === undefined || isNaN(itPrice) || itPrice < 0)) {
+      if (!isItemAccessory && (!itModel || itPrice === null)) {
         return res.status(400).json({
           success: false,
           message: `Device #${i + 1} requires a valid model name and price.`,
         });
       }
-      if (isItemAccessory && (isNaN(itPrice) || itPrice < 0)) {
+      if (isItemAccessory && itPrice === null) {
         return res.status(400).json({
           success: false,
           message: `Item #${i + 1} has an invalid price.`,
+        });
+      }
+      if (itQty === null) {
+        return res.status(400).json({
+          success: false,
+          message: `Item #${i + 1} quantity must be a whole number between 1 and 10,000.`,
         });
       }
 
@@ -110,11 +116,11 @@ exports.createSale = async (req, res, next) => {
       }
       if (!inventoryItem && itModel) {
         const inventoryQuery = {
-          modelName: { $regex: new RegExp(`^${itModel}$`, 'i') },
+          modelName: { $regex: new RegExp(`^${escapeRegex(itModel)}$`, 'i') },
           quantity: { $gt: 0 },
         };
         if (itModelNum) {
-          inventoryQuery.modelNumber = { $regex: new RegExp(`^${itModelNum}$`, 'i') };
+          inventoryQuery.modelNumber = { $regex: new RegExp(`^${escapeRegex(itModelNum)}$`, 'i') };
         }
         if (itCondition) {
           inventoryQuery.condition = itCondition;
@@ -196,6 +202,43 @@ exports.createSale = async (req, res, next) => {
     );
     const firstEntry = resolvedEntries[0].saleItem;
 
+    // Atomic stock deduction before creating Sale to prevent race-condition overselling
+    const totalDeductByInvId = new Map();
+    const imeisToRemoveByInvId = new Map();
+    for (const entry of resolvedEntries) {
+      if (!entry.inventoryItem) continue;
+      const invId = String(entry.inventoryItem._id);
+      totalDeductByInvId.set(invId, (totalDeductByInvId.get(invId) || 0) + entry.itQty);
+      const rmSet = imeisToRemoveByInvId.get(invId) || [];
+      if (entry.cleanImei1) rmSet.push(entry.cleanImei1);
+      if (entry.cleanImei2) rmSet.push(entry.cleanImei2);
+      imeisToRemoveByInvId.set(invId, rmSet);
+    }
+
+    const updatedInvDocs = new Map();
+    for (const [invId, totalDeduct] of totalDeductByInvId.entries()) {
+      const rmImeis = imeisToRemoveByInvId.get(invId) || [];
+      const updateOps = { $inc: { quantity: -totalDeduct } };
+      if (rmImeis.length > 0) {
+        updateOps.$pull = { imeis: { $in: rmImeis } };
+      }
+      const updatedInv = await Inventory.findOneAndUpdate(
+        { _id: invId, quantity: { $gte: totalDeduct } },
+        updateOps,
+        { new: true }
+      );
+      if (!updatedInv) {
+        return res.status(409).json({
+          success: false,
+          message: 'Insufficient stock (updated concurrently). Please refresh and retry.',
+        });
+      }
+      if (updatedInv.quantity <= 0) {
+        await Inventory.findByIdAndDelete(updatedInv._id);
+      }
+      updatedInvDocs.set(invId, updatedInv);
+    }
+
     // Create Sale with items array and top-level summary fields
     const sale = await Sale.create({
       category: firstEntry.category,
@@ -211,8 +254,7 @@ exports.createSale = async (req, res, next) => {
       price: totalPrice,
     });
 
-    // Deduct stock from inventory for every item and record stock ledger movements
-    const invUpdates = new Map();
+    // Record stock ledger movements
     for (const entry of resolvedEntries) {
       if (!entry.inventoryItem) {
         await logStockMovement({
@@ -239,17 +281,9 @@ exports.createSale = async (req, res, next) => {
       }
 
       const invId = String(entry.inventoryItem._id);
-      const invDoc = invUpdates.get(invId) || entry.inventoryItem;
-      const prevStock = Number(invDoc.quantity) || 0;
-      const nextStock = Math.max(0, prevStock - entry.itQty);
-      invDoc.quantity = nextStock;
-      if (entry.cleanImei1) {
-        invDoc.imeis = invDoc.imeis.filter((im) => im !== entry.cleanImei1);
-      }
-      if (entry.cleanImei2) {
-        invDoc.imeis = invDoc.imeis.filter((im) => im !== entry.cleanImei2);
-      }
-      invUpdates.set(invId, invDoc);
+      const updatedInv = updatedInvDocs.get(invId);
+      const prevStock = Number(entry.inventoryItem.quantity) || 0;
+      const nextStock = updatedInv ? Math.max(0, Number(updatedInv.quantity) || 0) : 0;
 
       await logStockMovement({
         type: 'SALE_OUT',
@@ -257,7 +291,7 @@ exports.createSale = async (req, res, next) => {
         category: entry.saleItem.category,
         condition: entry.saleItem.condition,
         status: entry.saleItem.status || 'PTA',
-        companyName: invDoc.companyName || '',
+        companyName: entry.inventoryItem.companyName || '',
         modelName: entry.saleItem.modelName,
         modelNumber: entry.saleItem.modelNumber || '',
         imei1: entry.cleanImei1 || '',
@@ -270,17 +304,9 @@ exports.createSale = async (req, res, next) => {
         partyName: customerName ? customerName.trim() : '',
         partyPhone: cleanedPhone,
         saleId: sale._id,
-        inventoryId: invDoc._id,
-        note: 'Sold & subtracted from inventory',
+        inventoryId: entry.inventoryItem._id,
+        note: 'Sold',
       });
-    }
-
-    for (const invDoc of invUpdates.values()) {
-      if (invDoc.quantity <= 0) {
-        await Inventory.findByIdAndDelete(invDoc._id);
-      } else {
-        await invDoc.save();
-      }
     }
 
     return res.status(201).json({
@@ -417,11 +443,11 @@ exports.deleteSale = async (req, res, next) => {
       const condition = sItem.condition || 'New';
       const restoreQty = Number(sItem.quantity) || 1;
       const inventoryQuery = {
-        modelName: { $regex: new RegExp(`^${(sItem.modelName || '').trim()}$`, 'i') },
+        modelName: { $regex: new RegExp(`^${escapeRegex((sItem.modelName || '').trim())}$`, 'i') },
         condition: condition,
       };
       if (sItem.modelNumber && sItem.modelNumber.trim()) {
-        inventoryQuery.modelNumber = { $regex: new RegExp(`^${sItem.modelNumber.trim()}$`, 'i') };
+        inventoryQuery.modelNumber = { $regex: new RegExp(`^${escapeRegex(sItem.modelNumber.trim())}$`, 'i') };
       }
 
       let inventoryItem = await Inventory.findOne(inventoryQuery);

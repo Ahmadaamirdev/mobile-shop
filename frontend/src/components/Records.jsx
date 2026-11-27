@@ -8,50 +8,26 @@ import {
   ArrowUpRight,
   Package,
   Calendar,
-  ChevronDown,
-  ChevronRight,
-  Layers,
 } from 'lucide-react';
 import DateRangeFilter from './DateRangeFilter';
-
-const formatDayHeading = (dateStr) => {
-  if (!dateStr) return '—';
-  const [y, m, d] = dateStr.split('-').map(Number);
-  if (!y || !m || !d) return dateStr;
-  return new Date(y, m - 1, d).toLocaleDateString('en-GB', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-};
-
-const formatTime = (isoStr) => {
-  if (!isoStr) return '—';
-  const d = new Date(isoStr);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-};
 
 const Records = ({ isActive, onNavigate, setAlert }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [viewMode, setViewMode] = useState('daily'); // 'daily' | 'ledger'
   const [selectedType, setSelectedType] = useState('all'); // 'all' | 'in' | 'out'
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [specificDate, setSpecificDate] = useState('');
-  const [collapsedDays, setCollapsedDays] = useState({});
 
   const fetchRecords = useCallback(
     async (force = false) => {
       if (force) setRefreshing(true);
       try {
-        const params = {};
+        const params = { tzOffset: new Date().getTimezoneOffset() };
         if (specificDate) {
           params.date = specificDate;
         } else {
@@ -103,10 +79,6 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
     return () => clearInterval(timer);
   }, [isActive, fetchRecords]);
 
-  const toggleDay = (dateKey) => {
-    setCollapsedDays((prev) => ({ ...prev, [dateKey]: !prev[dateKey] }));
-  };
-
   const summary = data?.summary || {
     daysCount: 0,
     movementsCount: 0,
@@ -119,18 +91,30 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
     liveInventoryValue: 0,
   };
 
-  const days = data?.days || [];
   const inventoryLedger = data?.inventoryLedger || [];
 
-  const getMovementBadge = (m) => {
-    if (m.type === 'PURCHASE_IN') return { label: 'Purchased (+Added)', cls: 'badge-success', isIn: true };
-    if (m.type === 'SALE_OUT') return { label: 'Sold (-Subtracted)', cls: 'badge-danger', isIn: false };
-    if (m.type === 'SALE_RESTORE') return { label: 'Sale Restored (+)', cls: 'badge-success', isIn: true };
-    if (m.type === 'PURCHASE_REVERSAL') return { label: 'Purchase Removed (-)', cls: 'badge-warning', isIn: false };
-    return m.direction === 'IN'
-      ? { label: 'Stock Added (+)', cls: 'badge-success', isIn: true }
-      : { label: 'Stock Deducted (-)', cls: 'badge-warning', isIn: false };
-  };
+  // Build flat non-zero rows so "0 units / PKR 0" never repeats
+  const ledgerRows = [];
+  inventoryLedger.forEach((row) => {
+    if (selectedType !== 'out' && row.purchasedUnits > 0) {
+      ledgerRows.push({
+        rowKey: `${row.key}-in`,
+        ...row,
+        recordType: 'Purchased',
+        units: row.purchasedUnits,
+        amount: row.purchasedAmount,
+      });
+    }
+    if (selectedType !== 'in' && row.soldUnits > 0) {
+      ledgerRows.push({
+        rowKey: `${row.key}-out`,
+        ...row,
+        recordType: 'Sold',
+        units: row.soldUnits,
+        amount: row.soldAmount,
+      });
+    }
+  });
 
   return (
     <div>
@@ -143,27 +127,11 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
             </div>
             <div className="panel-header-text">
               <h2>Stock &amp; Daily Records</h2>
-              <p>Day-by-day ledger linking Purchases (+added) and Sales (-subtracted) directly with Live Inventory.</p>
+              <p>Inventory synchronization ledger linking Purchases and Sales directly with Live Inventory.</p>
             </div>
           </div>
 
-          <div className="records-header-actions">
-            <div className="records-view-toggle">
-              <button
-                type="button"
-                className={`records-tab-btn ${viewMode === 'daily' ? 'active' : ''}`}
-                onClick={() => setViewMode('daily')}
-              >
-                <Calendar size={13} /> Daily Log
-              </button>
-              <button
-                type="button"
-                className={`records-tab-btn ${viewMode === 'ledger' ? 'active' : ''}`}
-                onClick={() => setViewMode('ledger')}
-              >
-                <Layers size={13} /> Inventory Sync
-              </button>
-            </div>
+          <div className="records-header-actions records-header-actions-single">
             <button
               type="button"
               className="btn-secondary dashboard-refresh-btn"
@@ -186,9 +154,9 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
             >
-              <option value="all">All Movements</option>
-              <option value="in">+ Purchased (Added)</option>
-              <option value="out">- Sold (Subtracted)</option>
+              <option value="all">All Records</option>
+              <option value="in">Purchased</option>
+              <option value="out">Sold</option>
             </select>
             <select
               className="mobile-filter-select"
@@ -203,16 +171,16 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
           </div>
 
           <div className="toolbar-desktop-grid">
-            <div className="panel-filter-pills">
+            <div className="panel-filter-pills records-type-pills">
               {[
-                { id: 'all', label: 'All Movements' },
-                { id: 'in', label: '+ Purchased (Added)', pillClass: 'pill-new' },
-                { id: 'out', label: '- Sold (Subtracted)', pillClass: 'pill-used' },
+                { id: 'all', label: 'All Records' },
+                { id: 'in', label: 'Purchased', pillClass: 'pill-new' },
+                { id: 'out', label: 'Sold', pillClass: 'pill-used' },
               ].map((t) => (
                 <button
                   key={t.id}
                   type="button"
-                  className={`filter-pill ${t.pillClass || ''} ${selectedType === t.id ? 'active' : 'inactive'}`}
+                  className={`filter-pill records-type-pill ${t.pillClass || ''} ${selectedType === t.id ? 'active' : 'inactive'}`}
                   onClick={() => setSelectedType(t.id)}
                 >
                   {t.label}
@@ -296,36 +264,36 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
       <div className="records-summary-grid">
         <div className="records-summary-card">
           <div className="records-sum-top">
-            <span>Purchased (+Added)</span>
-            <ArrowDownLeft size={15} style={{ color: '#059669' }} />
+            <span>Purchased</span>
+            <ArrowDownLeft size={15} style={{ color: '#64748b' }} />
           </div>
-          <div className="records-sum-val" style={{ color: '#059669' }}>
-            +{summary.totalAddedUnits} {summary.totalAddedUnits === 1 ? 'unit' : 'units'}
+          <div className="records-sum-val">
+            {summary.totalAddedUnits} {summary.totalAddedUnits === 1 ? 'unit' : 'units'}
           </div>
           <div className="records-sum-sub">PKR {Number(summary.totalAddedValue || 0).toLocaleString()}</div>
         </div>
 
         <div className="records-summary-card">
           <div className="records-sum-top">
-            <span>Sold (-Subtracted)</span>
-            <ArrowUpRight size={15} style={{ color: '#dc2626' }} />
+            <span>Sold</span>
+            <ArrowUpRight size={15} style={{ color: '#64748b' }} />
           </div>
-          <div className="records-sum-val" style={{ color: '#dc2626' }}>
-            -{summary.totalSubtractedUnits} {summary.totalSubtractedUnits === 1 ? 'unit' : 'units'}
+          <div className="records-sum-val">
+            {summary.totalSubtractedUnits} {summary.totalSubtractedUnits === 1 ? 'unit' : 'units'}
           </div>
           <div className="records-sum-sub">PKR {Number(summary.totalSubtractedValue || 0).toLocaleString()}</div>
         </div>
 
         <div className="records-summary-card">
           <div className="records-sum-top">
-            <span>Net Stock Flow</span>
-            <Calendar size={15} style={{ color: '#d97706' }} />
+            <span>Net Stock</span>
+            <Calendar size={15} style={{ color: '#64748b' }} />
           </div>
           <div className="records-sum-val">
-            {summary.netUnits > 0 ? `+${summary.netUnits}` : summary.netUnits} units
+            {summary.netUnits} {Math.abs(summary.netUnits) === 1 ? 'unit' : 'units'}
           </div>
           <div className="records-sum-sub">
-            Across {summary.daysCount} {summary.daysCount === 1 ? 'day' : 'days'} ({summary.movementsCount} events)
+            Across {summary.daysCount} {summary.daysCount === 1 ? 'day' : 'days'} ({summary.movementsCount} records)
           </div>
         </div>
 
@@ -336,9 +304,9 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
         >
           <div className="records-sum-top">
             <span>Live Inventory Stock</span>
-            <Package size={15} style={{ color: '#2563eb' }} />
+            <Package size={15} style={{ color: '#64748b' }} />
           </div>
-          <div className="records-sum-val" style={{ color: '#2563eb' }}>
+          <div className="records-sum-val">
             {summary.liveInventoryUnits} in stock
           </div>
           <div className="records-sum-sub">
@@ -347,223 +315,69 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
         </button>
       </div>
 
-      {/* 3. Main Content: Daily Log OR Inventory Sync Ledger */}
+      {/* 3. Inventory Sync Ledger (Default & Only View) */}
       {loading && !data ? (
         <div className="table-card">
           <div className="empty-state">Loading synchronized stock records...</div>
         </div>
-      ) : viewMode === 'daily' ? (
-        days.length === 0 ? (
-          <div className="table-card">
-            <div className="empty-state">No stock movements found for the selected filters.</div>
-          </div>
-        ) : (
-          <div className="records-days-list">
-            {days.map((day) => {
-              const isCollapsed = Boolean(collapsedDays[day.date]);
-              return (
-                <div key={day.date} className="table-card records-day-card">
-                  {/* Day Header */}
-                  <button
-                    type="button"
-                    className="records-day-header"
-                    onClick={() => toggleDay(day.date)}
-                  >
-                    <div className="records-day-left">
-                      {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                      <div>
-                        <div className="records-day-title">{formatDayHeading(day.date)}</div>
-                        <div className="records-day-sub">
-                          {day.transactions.length} {day.transactions.length === 1 ? 'movement' : 'movements'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="records-day-badges">
-                      <span className="cell-badge badge-success">
-                        +{day.purchasedUnits} Added (PKR {Number(day.purchasedAmount || 0).toLocaleString()})
-                      </span>
-                      <span className="cell-badge badge-danger">
-                        -{day.soldUnits} Sold (PKR {Number(day.soldAmount || 0).toLocaleString()})
-                      </span>
-                      <span className="cell-badge badge-gray">
-                        Net: {day.netUnits > 0 ? `+${day.netUnits}` : day.netUnits}
-                      </span>
-                    </div>
-                  </button>
-
-                  {!isCollapsed && (
-                    <div className="records-day-body">
-                      {/* Desktop Table */}
-                      <div className="hide-on-mobile desktop-table-container">
-                        <table className="pro-table">
-                          <thead>
-                            <tr>
-                              <th style={{ width: '10%' }}>Time</th>
-                              <th style={{ width: '18%' }}>Action</th>
-                              <th style={{ width: '24%' }}>Device / Item</th>
-                              <th style={{ width: '18%' }}>Party / Link</th>
-                              <th style={{ width: '16%' }}>Inventory Effect</th>
-                              <th style={{ width: '14%', textAlign: 'right', paddingRight: '14px' }}>Amount</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {day.transactions.map((m) => {
-                              const badge = getMovementBadge(m);
-                              const absQty = Math.abs(Number(m.quantityDelta) || 0);
-                              return (
-                                <tr key={m._id}>
-                                  <td>
-                                    <span className="cell-mono">{formatTime(m.occurredAt)}</span>
-                                  </td>
-                                  <td>
-                                    <span className={`cell-badge ${badge.cls}`}>{badge.label}</span>
-                                  </td>
-                                  <td>
-                                    <span className="cell-title">{m.modelName || 'Accessory'}</span>
-                                    <span className="cell-sub">
-                                      {m.category} • {m.condition || 'New'}
-                                      {m.imei1 ? ` • ${m.imei1}` : ''}
-                                    </span>
-                                  </td>
-                                  <td>
-                                    <span className="cell-title">{m.partyName || '—'}</span>
-                                    <span className="cell-sub">{m.note}</span>
-                                  </td>
-                                  <td>
-                                    <span
-                                      style={{
-                                        fontWeight: 700,
-                                        color: badge.isIn ? '#059669' : '#dc2626',
-                                        fontVariantNumeric: 'tabular-nums',
-                                      }}
-                                    >
-                                      {badge.isIn ? `+${absQty}` : `-${absQty}`} unit{absQty === 1 ? '' : 's'}
-                                    </span>
-                                    <span className="cell-sub">
-                                      {m.previousStock} → {m.resultingStock} (Live: {m.liveStock})
-                                    </span>
-                                  </td>
-                                  <td style={{ textAlign: 'right', paddingRight: '14px' }}>
-                                    <span className="cell-price">
-                                      PKR {Number(m.totalAmount || 0).toLocaleString()}
-                                    </span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Mobile Cards */}
-                      <div className="show-on-mobile mobile-card-container">
-                        {day.transactions.map((m) => {
-                          const badge = getMovementBadge(m);
-                          const absQty = Math.abs(Number(m.quantityDelta) || 0);
-                          return (
-                            <div key={m._id} className="mobile-card">
-                              <div className="mobile-card-top">
-                                <div style={{ minWidth: 0 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                                    <span className={`cell-badge ${badge.cls}`} style={{ fontSize: '10.5px', padding: '2px 7px' }}>
-                                      {badge.isIn ? `+${absQty} Added` : `-${absQty} Sold`}
-                                    </span>
-                                    <span style={{ fontSize: '11px', color: '#64748b' }}>
-                                      {formatTime(m.occurredAt)}
-                                    </span>
-                                  </div>
-                                  <div className="mobile-card-title">{m.modelName || 'Accessory'}</div>
-                                  <div className="mobile-card-subtitle">
-                                    {m.category} • {m.condition || 'New'}
-                                  </div>
-                                </div>
-                                <div className="mobile-card-price">
-                                  PKR {Number(m.totalAmount || 0).toLocaleString()}
-                                </div>
-                              </div>
-
-                              <div className="mobile-card-meta-grid">
-                                <div className="mobile-meta-cell">
-                                  <div className="mobile-meta-label">Inventory Sync</div>
-                                  <div className="mobile-meta-val">
-                                    {m.previousStock} → {m.resultingStock} • <strong>Live: {m.liveStock}</strong>
-                                  </div>
-                                </div>
-                                <div className="mobile-meta-cell">
-                                  <div className="mobile-meta-label">Party</div>
-                                  <div className="mobile-meta-val">{m.partyName || '—'}</div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )
       ) : (
-        /* View 2: Inventory Reconciliation Ledger */
         <div className="table-card">
           <div className="hide-on-mobile desktop-table-container">
             <table className="pro-table">
               <thead>
                 <tr>
-                  <th style={{ width: '26%' }}>Device Model</th>
-                  <th style={{ width: '12%' }}>Category</th>
-                  <th style={{ width: '12%' }}>Condition</th>
-                  <th style={{ width: '18%' }}>+ Purchased (Added)</th>
-                  <th style={{ width: '18%' }}>- Sold (Subtracted)</th>
-                  <th style={{ width: '14%', textAlign: 'center', paddingRight: '14px' }}>Live Stock</th>
+                  <th style={{ width: '24%' }}>Device Model</th>
+                  <th style={{ width: '13%', textAlign: 'center' }}>Category</th>
+                  <th style={{ width: '13%', textAlign: 'center' }}>Condition</th>
+                  <th style={{ width: '15%', textAlign: 'center' }}>Type</th>
+                  <th style={{ width: '20%', textAlign: 'center' }}>Units &amp; Price</th>
+                  <th style={{ width: '15%', textAlign: 'center', paddingRight: '14px' }}>Live Stock</th>
                 </tr>
               </thead>
               <tbody>
-                {inventoryLedger.length === 0 ? (
+                {ledgerRows.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="empty-state">No model stock ledger entries match filters.</td>
                   </tr>
                 ) : (
-                  inventoryLedger.map((row) => (
-                    <tr key={row.key}>
-                      <td>
-                        <span className="cell-title">{row.modelName}</span>
-                        {row.companyName && <span className="cell-sub">{row.companyName}</span>}
-                      </td>
-                      <td>
-                        <span className="cell-badge badge-gray category-pill">{row.category}</span>
-                      </td>
-                      <td>
-                        <span className={`cell-badge condition-pill ${row.condition === 'Used' ? 'badge-warning' : 'badge-success'}`}>
-                          {row.condition}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ fontWeight: 700, color: '#059669' }}>
-                          +{row.purchasedUnits} units
-                        </span>
-                        <span className="cell-sub">PKR {Number(row.purchasedAmount || 0).toLocaleString()}</span>
-                      </td>
-                      <td>
-                        <span style={{ fontWeight: 700, color: '#dc2626' }}>
-                          -{row.soldUnits} units
-                        </span>
-                        <span className="cell-sub">PKR {Number(row.soldAmount || 0).toLocaleString()}</span>
-                      </td>
-                      <td style={{ textAlign: 'center', paddingRight: '14px' }}>
-                        <span
-                          className={`cell-badge ${row.liveStock > 0 ? 'badge-success' : 'badge-gray'}`}
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => onNavigate && onNavigate('inventory')}
-                          title="Open Live Inventory"
-                        >
-                          {row.liveStock} in stock
-                        </span>
-                      </td>
-                    </tr>
+                  ledgerRows.map((row) => (
+                      <tr key={row.rowKey}>
+                        <td>
+                          <span className="cell-title">{row.modelName}</span>
+                          {row.companyName && <span className="cell-sub">{row.companyName}</span>}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span className="cell-badge badge-gray category-pill records-table-pill">{row.category}</span>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span className={`cell-badge condition-pill records-table-pill ${row.condition === 'Used' ? 'badge-warning' : 'badge-success'}`}>
+                            {row.condition}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span style={{ fontWeight: 700, fontSize: '13px', color: '#090d16' }}>
+                            {row.recordType}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div className="records-col-pill-wrap">
+                            <span style={{ fontWeight: 700, color: '#090d16' }}>
+                              {row.units} {row.units === 1 ? 'unit' : 'units'}
+                            </span>
+                            <span className="cell-sub">PKR {Number(row.amount || 0).toLocaleString()}</span>
+                          </div>
+                        </td>
+                        <td style={{ textAlign: 'center', paddingRight: '14px' }}>
+                          <span
+                            className="cell-badge badge-gray records-table-pill"
+                            style={{ cursor: 'pointer', color: '#090d16' }}
+                            onClick={() => onNavigate && onNavigate('inventory')}
+                            title="Open Live Inventory"
+                          >
+                            {row.liveStock} in stock
+                          </span>
+                        </td>
+                      </tr>
                   ))
                 )}
               </tbody>
@@ -571,37 +385,45 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
           </div>
 
           <div className="show-on-mobile mobile-card-container">
-            {inventoryLedger.length === 0 ? (
+            {ledgerRows.length === 0 ? (
               <div className="empty-state">No model stock ledger entries match filters.</div>
             ) : (
-              inventoryLedger.map((row) => (
-                <div key={row.key} className="mobile-card">
-                  <div className="mobile-card-top">
-                    <div>
-                      <div className="mobile-card-title">{row.modelName}</div>
-                      <div className="mobile-card-subtitle">
-                        {row.category} • {row.condition}{row.companyName ? ` • ${row.companyName}` : ''}
+              ledgerRows.map((row) => (
+                  <div key={row.rowKey} className="mobile-card">
+                    <div className="mobile-card-top">
+                      <div>
+                        <div className="mobile-card-title">{row.modelName}</div>
+                        <div className="mobile-card-subtitle">
+                          {row.category} • {row.condition}{row.companyName ? ` • ${row.companyName}` : ''}
+                        </div>
+                      </div>
+                      <div className="mobile-card-price">
+                        PKR {Number(row.amount || 0).toLocaleString()}
                       </div>
                     </div>
-                    <span className={`cell-badge ${row.liveStock > 0 ? 'badge-success' : 'badge-gray'}`}>
-                      {row.liveStock} in stock
-                    </span>
+                    <div className="mobile-card-meta-grid">
+                      <div className="mobile-meta-cell">
+                        <div className="mobile-meta-label">Type &amp; Units</div>
+                        <div className="mobile-meta-val" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 700, color: '#090d16' }}>
+                            {row.recordType}
+                          </span>
+                          <span>•</span>
+                          <span style={{ fontWeight: 700, color: '#090d16' }}>
+                            {row.units} {row.units === 1 ? 'unit' : 'units'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mobile-meta-cell">
+                        <div className="mobile-meta-label">Live Stock</div>
+                        <div className="mobile-meta-val">
+                          <span className="cell-badge badge-gray" style={{ color: '#090d16' }}>
+                            {row.liveStock} in stock
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="mobile-card-meta-grid">
-                    <div className="mobile-meta-cell">
-                      <div className="mobile-meta-label">Purchased (+Added)</div>
-                      <div className="mobile-meta-val" style={{ color: '#059669', fontWeight: 700 }}>
-                        +{row.purchasedUnits} • PKR {Number(row.purchasedAmount || 0).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="mobile-meta-cell">
-                      <div className="mobile-meta-label">Sold (-Subtracted)</div>
-                      <div className="mobile-meta-val" style={{ color: '#dc2626', fontWeight: 700 }}>
-                        -{row.soldUnits} • PKR {Number(row.soldAmount || 0).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
               ))
             )}
           </div>

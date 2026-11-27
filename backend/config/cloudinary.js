@@ -1,5 +1,8 @@
 const cloudinary = require('cloudinary').v2;
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB decoded limit
+const ALLOWED_DATA_URI_RE = /^data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=]+)$/i;
+
 // Configure Cloudinary if credentials are provided in environment
 const isConfigured = Boolean(
   (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) ||
@@ -19,41 +22,65 @@ if (isConfigured) {
   }
 }
 
+const createValidationError = (message) => {
+  const err = new Error(message);
+  err.statusCode = 400;
+  return err;
+};
+
 /**
- * Upload an image (base64 data URL or remote URL) to Cloudinary with aggressive compression.
- * If Cloudinary credentials are not set, falls back gracefully to storing compressed data.
+ * Validate and upload an image (base64 data URL or Cloudinary HTTPS URL) with compression.
+ * Blocks SVG/HTML data URIs, oversized payloads, and arbitrary external/internal URLs (SSRF).
  */
 const uploadCompressedImage = async (dataUriOrUrl, folder = 'unity_mobile/id_cards') => {
-  if (!dataUriOrUrl || typeof dataUriOrUrl !== 'string') {
-    return '';
+  if (!dataUriOrUrl) return '';
+  if (typeof dataUriOrUrl !== 'string') {
+    throw createValidationError('Invalid image payload.');
   }
 
-  // If already a remote Cloudinary URL or http URL, return it directly
-  if (dataUriOrUrl.startsWith('http://') || dataUriOrUrl.startsWith('https://')) {
-    return dataUriOrUrl;
+  const trimmed = dataUriOrUrl.trim();
+  if (!trimmed) return '';
+
+  // Allow only trusted Cloudinary HTTPS URLs if already uploaded
+  if (trimmed.startsWith('https://res.cloudinary.com/')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    throw createValidationError('External image URLs are not permitted. Please upload a valid image file.');
+  }
+
+  // Strictly validate base64 image MIME type (blocks SVG, HTML, scripts, executables)
+  const match = trimmed.match(ALLOWED_DATA_URI_RE);
+  if (!match) {
+    throw createValidationError('Invalid image format. Only JPEG, PNG, and WEBP images are allowed.');
+  }
+
+  const base64Body = match[2];
+  const estimatedBytes = Math.floor((base64Body.length * 3) / 4);
+  if (estimatedBytes > MAX_IMAGE_BYTES) {
+    throw createValidationError('Image file exceeds maximum allowed size of 5 MB.');
   }
 
   if (!isConfigured) {
-    console.warn('⚠️ Cloudinary is not configured in .env (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET). Using client-compressed data directly.');
-    return dataUriOrUrl;
+    console.warn('⚠️ Cloudinary is not configured. Storing validated client-compressed image.');
+    return trimmed;
   }
 
   try {
-    const uploadRes = await cloudinary.uploader.upload(dataUriOrUrl, {
+    const uploadRes = await cloudinary.uploader.upload(trimmed, {
       folder,
       resource_type: 'image',
-      format: 'webp', // WebP yields 50-80% smaller files than JPEG with high visual fidelity
-      quality: 'auto:eco', // Maximum automatic compression preserving legible text/CNIC digits
+      format: 'webp',
+      quality: 'auto:eco',
       transformation: [
-        { width: 1200, height: 1200, crop: 'limit' }, // Downscale if camera photo exceeds 1200px
+        { width: 1200, height: 1200, crop: 'limit' },
       ],
     });
 
     return uploadRes.secure_url || uploadRes.url;
   } catch (err) {
     console.error('❌ Cloudinary upload error:', err.message);
-    // Fall back to original data so user record is never lost
-    return dataUriOrUrl;
+    return trimmed;
   }
 };
 
