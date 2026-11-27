@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Component } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Component } from 'react';
 import Sidebar from './components/Sidebar';
 import MobileTopBar from './components/MobileTopBar';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -81,14 +81,21 @@ function App() {
     setIsSidebarOpen(false);
   };
 
-  const setAlert = (newAlert) => {
+  const alertTimerRef = useRef(null);
+
+  const setAlert = useCallback((newAlert) => {
     setAlertState(newAlert);
+    if (alertTimerRef.current) {
+      clearTimeout(alertTimerRef.current);
+      alertTimerRef.current = null;
+    }
     if (newAlert) {
-      setTimeout(() => {
+      alertTimerRef.current = setTimeout(() => {
         setAlertState(null);
+        alertTimerRef.current = null;
       }, 4000);
     }
-  };
+  }, []);
 
   const handleOpenInvoiceFromSale = (sale) => {
     setSelectedSaleForInvoice(sale);

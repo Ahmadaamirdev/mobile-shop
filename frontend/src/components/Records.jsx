@@ -24,8 +24,8 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
   const [specificDate, setSpecificDate] = useState('');
 
   const fetchRecords = useCallback(
-    async (force = false) => {
-      if (force) setRefreshing(true);
+    async (force = false, showSpinner = false) => {
+      if (showSpinner) setRefreshing(true);
       try {
         const params = { tzOffset: new Date().getTimezoneOffset() };
         if (specificDate) {
@@ -51,31 +51,27 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
         }
       } finally {
         setLoading(false);
-        setRefreshing(false);
+        if (showSpinner) setRefreshing(false);
       }
     },
     [specificDate, startDate, endDate, selectedType, selectedCategory, search, setAlert]
   );
 
   useEffect(() => {
-    fetchRecords(true);
-  }, [fetchRecords]);
-
-  useEffect(() => {
     if (isActive) {
-      fetchRecords(true);
+      fetchRecords(true, false);
     }
   }, [isActive, fetchRecords]);
 
   useEffect(() => {
-    const handleSync = () => fetchRecords(true);
+    const handleSync = () => fetchRecords(true, false);
     window.addEventListener('unity-data-updated', handleSync);
     return () => window.removeEventListener('unity-data-updated', handleSync);
   }, [fetchRecords]);
 
   useEffect(() => {
     if (!isActive) return undefined;
-    const timer = setInterval(() => fetchRecords(true), 30000);
+    const timer = setInterval(() => fetchRecords(true, false), 30000);
     return () => clearInterval(timer);
   }, [isActive, fetchRecords]);
 
@@ -135,7 +131,7 @@ const Records = ({ isActive, onNavigate, setAlert }) => {
             <button
               type="button"
               className="btn-secondary dashboard-refresh-btn"
-              onClick={() => fetchRecords(true)}
+              onClick={() => fetchRecords(true, true)}
               disabled={refreshing}
               title="Sync records with live inventory"
             >

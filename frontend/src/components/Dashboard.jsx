@@ -36,8 +36,8 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
   const [endDate, setEndDate] = useState('');
 
   const fetchDashboard = useCallback(
-    async (force = false) => {
-      if (force) setRefreshing(true);
+    async (force = false, showSpinner = false) => {
+      if (showSpinner) setRefreshing(true);
       try {
         const params = { tzOffset: new Date().getTimezoneOffset() };
         if (startDate) params.startDate = startDate;
@@ -55,37 +55,32 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
         }
       } finally {
         setLoading(false);
-        setRefreshing(false);
+        if (showSpinner) setRefreshing(false);
       }
     },
     [startDate, endDate, setAlert]
   );
 
-  // Fetch on mount & whenever date filter changes
-  useEffect(() => {
-    fetchDashboard(true);
-  }, [fetchDashboard]);
-
-  // Sync in real time whenever Dashboard becomes active or any mutation occurs
+  // Sync in real time whenever Dashboard becomes active or date filter changes
   useEffect(() => {
     if (isActive) {
-      fetchDashboard(true);
+      fetchDashboard(true, false);
     }
   }, [isActive, fetchDashboard]);
 
   useEffect(() => {
     const handleSync = () => {
-      fetchDashboard(true);
+      fetchDashboard(true, false);
     };
     window.addEventListener('unity-data-updated', handleSync);
     return () => window.removeEventListener('unity-data-updated', handleSync);
   }, [fetchDashboard]);
 
-  // Background real-time poll every 30s while Dashboard is open
+  // Silent background real-time poll every 30s while Dashboard is open
   useEffect(() => {
     if (!isActive) return undefined;
     const timer = setInterval(() => {
-      fetchDashboard(true);
+      fetchDashboard(true, false);
     }, 30000);
     return () => clearInterval(timer);
   }, [isActive, fetchDashboard]);
@@ -159,7 +154,7 @@ const Dashboard = ({ isActive, onNavigate, setAlert }) => {
             <button
               type="button"
               className="btn-secondary dashboard-refresh-btn"
-              onClick={() => fetchDashboard(true)}
+              onClick={() => fetchDashboard(true, true)}
               disabled={refreshing}
               title="Refresh live totals"
             >
