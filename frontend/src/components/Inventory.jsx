@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { getInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem } from '../services/api';
-import { Trash2, Search, Plus, Package, Eye, Smartphone, Edit3, Check, X } from 'lucide-react';
+import { getInventory, updateInventoryItem, deleteInventoryItem } from '../services/api';
+import { Trash2, Search, Package, Eye, Smartphone, Edit3, Check, X, History } from 'lucide-react';
 import DetailModal from './DetailModal';
+import Records from './Records';
 
 const Inventory = ({ isActive, setAlert }) => {
+  const [stockView, setStockView] = useState('live'); // 'live' | 'history'
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCondition, setSelectedCondition] = useState('All'); // 'All' | 'New' | 'Used'
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
@@ -23,24 +23,6 @@ const Inventory = ({ isActive, setAlert }) => {
     quantity: 1,
     price: '',
     imeisText: '',
-  });
-
-  // Manual addition form state
-  const [formData, setFormData] = useState({
-    category: 'Mobile',
-    condition: 'New',
-    status: 'PTA',
-    companyName: '',
-    modelName: '',
-    quantity: 1,
-    price: '',
-    imei1: '',
-    imei2: '',
-    serialNumber: '',
-    customerName: '',
-    customerPhone: '',
-    customerIdCard: '',
-    customerAddress: '',
   });
 
   const fetchInventory = async (force = false) => {
@@ -66,7 +48,6 @@ const Inventory = ({ isActive, setAlert }) => {
 
   useEffect(() => {
     if (isActive) {
-      setShowAddForm(false);
       fetchInventory();
     }
   }, [isActive]);
@@ -86,63 +67,6 @@ const Inventory = ({ isActive, setAlert }) => {
     );
     return categoryMatch && conditionMatch && searchMatch;
   });
-
-  const handleManualAdd = async (e) => {
-    e.preventDefault();
-    if (submitting) return;
-    if (formData.category !== 'Accessory' && !formData.modelName.trim()) {
-      setAlert({
-        type: 'error',
-        message: 'Model name is required.',
-      });
-      return;
-    }
-    if (formData.customerPhone.trim() && !/^\d{11}$/.test(formData.customerPhone.trim())) {
-      setAlert({
-        type: 'error',
-        message: 'Supplier phone number must contain exactly 11 digits.',
-      });
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const res = await createInventoryItem({
-        ...formData,
-        quantity: Number(formData.quantity) || 1,
-        price: Number(formData.price) || 0,
-      });
-      setAlert({
-        type: 'success',
-        message: res.data?.message || 'Item added to inventory & recorded in purchase registry.',
-      });
-      setFormData({
-        category: 'Mobile',
-        condition: 'New',
-        status: 'PTA',
-        companyName: '',
-        modelName: '',
-        quantity: 1,
-        price: '',
-        imei1: '',
-        imei2: '',
-        serialNumber: '',
-        customerName: '',
-        customerPhone: '',
-        customerIdCard: '',
-        customerAddress: '',
-      });
-      setShowAddForm(false);
-      fetchInventory(true);
-    } catch (err) {
-      setAlert({
-        type: 'error',
-        message: err.response?.data?.message || 'Failed to add item to inventory.',
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const openEditModal = (item) => {
     setEditingItem(item);
@@ -237,6 +161,36 @@ const Inventory = ({ isActive, setAlert }) => {
 
   return (
     <div>
+      {/* Unified Stock & Records Switcher */}
+      <div className="stock-view-switcher">
+        <button
+          type="button"
+          className={`filter-pill ${stockView === 'live' ? 'active' : 'inactive'}`}
+          onClick={() => setStockView('live')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Package size={14} />
+          <span>Live Stock</span>
+        </button>
+        <button
+          type="button"
+          className={`filter-pill ${stockView === 'history' ? 'active' : 'inactive'}`}
+          onClick={() => setStockView('history')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <History size={14} />
+          <span>Stock History (Records)</span>
+        </button>
+      </div>
+
+      {stockView === 'history' ? (
+        <Records
+          isActive={isActive && stockView === 'history'}
+          onNavigate={() => setStockView('live')}
+          setAlert={setAlert}
+        />
+      ) : (
+        <>
       {/* 1. Header Card (Reference: Al Haditha Top Card) */}
       <div className="panel-header-card">
         <div className="panel-header-row">
@@ -249,20 +203,10 @@ const Inventory = ({ isActive, setAlert }) => {
               <p>Real-time shop inventory, stock availability, active IMEIs &amp; unit pricing.</p>
             </div>
           </div>
-          <div>
-            <button
-              className="btn-primary"
-              onClick={() => setShowAddForm(!showAddForm)}
-            >
-              <Plus size={15} />
-              {showAddForm ? 'Close Form' : 'Add Item'}
-            </button>
-          </div>
         </div>
 
-        {/* Toolbar: Category Filters on Left, Subfilter for Condition, Search on Right (Hidden when form is open) */}
-        {!showAddForm && (
-          <div className="panel-toolbar-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
+        {/* Toolbar: Category Filters on Left, Subfilter for Condition, Search on Right */}
+        <div className="panel-toolbar-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
             {/* Desktop: pill buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               {/* Primary Category Filter Pills */}
@@ -335,173 +279,10 @@ const Inventory = ({ isActive, setAlert }) => {
               </div>
             </div>
           </div>
-        )}
       </div>
 
-      {/* 2. Collapsible Add Item Form */}
-      {showAddForm && (
-        <div className="card-form">
-          <div className="card-form-title" style={{ display: 'flex', flexDirection: 'column' }}>
-            <span>Manual Inventory Entry</span>
-            <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 400, marginTop: '2px' }}>
-              Items added here are automatically synchronized and recorded into the Purchase registry.
-            </span>
-          </div>
-          <form onSubmit={handleManualAdd}>
-            <div className="form-grid-3">
-              <div className="form-field">
-                <label>Category *</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <option value="Mobile">Mobile</option>
-                  <option value="Tablet">Tablet</option>
-                  <option value="Accessory">Accessory</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label>Device Condition {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
-                <select
-                  value={formData.condition}
-                  onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                >
-                  <option value="New">Brand New</option>
-                  <option value="Used">Used / Second Hand</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label>Status {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                >
-                  <option value="PTA">PTA</option>
-                  <option value="JV">JV</option>
-                  <option value="Non-PTA">Non-PTA</option>
-                  <option value="CPID">CPID</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label>Company / Brand</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Samsung, Apple, Faster"
-                  value={formData.companyName}
-                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Model Name {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
-                <input
-                  type="text"
-                  placeholder="e.g. iPhone 13 Pro"
-                  value={formData.modelName}
-                  onChange={(e) => setFormData({ ...formData, modelName: e.target.value })}
-                  required={formData.category !== 'Accessory'}
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Quantity {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                  required={formData.category !== 'Accessory'}
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Unit Purchase Price (PKR) {formData.category !== 'Accessory' ? '*' : '(Optional)'}</label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  required={formData.category !== 'Accessory'}
-                />
-              </div>
-
-              <div className="form-field">
-                <label>IMEI 1 (Optional - 15 digits)</label>
-                <input
-                  type="text"
-                  maxLength={15}
-                  placeholder="15 digits"
-                  value={formData.imei1}
-                  onChange={(e) => setFormData({ ...formData, imei1: e.target.value.replace(/\D/g, '') })}
-                />
-              </div>
-
-              <div className="form-field">
-                <label>IMEI 2 (Optional - 15 digits)</label>
-                <input
-                  type="text"
-                  maxLength={15}
-                  placeholder="15 digits"
-                  value={formData.imei2}
-                  onChange={(e) => setFormData({ ...formData, imei2: e.target.value.replace(/\D/g, '') })}
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Serial Number (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="Device Serial Number"
-                  value={formData.serialNumber}
-                  onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Supplier / Vendor Name (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Direct Stock / Official Distributor"
-                  value={formData.customerName}
-                  onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Supplier Contact Phone (Optional - 11 digits)</label>
-                <input
-                  type="tel"
-                  maxLength={11}
-                  placeholder="e.g. 03001234567"
-                  value={formData.customerPhone}
-                  onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
-                />
-              </div>
-            </div>
-
-            <div className="card-form-actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setShowAddForm(false)}
-              >
-                Cancel
-              </button>
-              <button type="submit" className="btn-primary" disabled={submitting}>
-                {submitting ? 'Saving...' : 'Save to Inventory'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* 3. Table Card (Hidden when form is open) */}
-      {!showAddForm && (
-        <div className="table-card">
+      {/* 2. Table Card */}
+      <div className="table-card">
         {/* Desktop Proportional Table */}
         <div className="hide-on-mobile desktop-table-container">
           <table className="pro-table">
@@ -687,9 +468,8 @@ const Inventory = ({ isActive, setAlert }) => {
           )}
         </div>
       </div>
-    )}
 
-    {/* 4. Inventory Details Popup Modal */}
+    {/* 3. Inventory Details Popup Modal */}
     <DetailModal
       isOpen={Boolean(detailItem)}
       onClose={() => setDetailItem(null)}
@@ -894,6 +674,8 @@ const Inventory = ({ isActive, setAlert }) => {
         </div>
       </div>
     )}
+        </>
+      )}
   </div>
   );
 };

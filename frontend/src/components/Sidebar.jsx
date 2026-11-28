@@ -1,13 +1,12 @@
 import React from 'react';
-import { LayoutDashboard, ShoppingBag, Tag, Package, History, FileText, BookOpen, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Tag, Package, FileText, BookOpen, X, LogOut } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen, onLogout }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'purchases', label: 'Purchases', icon: ShoppingBag },
     { id: 'sales', label: 'Sales', icon: Tag },
-    { id: 'inventory', label: 'Inventory', icon: Package },
-    { id: 'records', label: 'Records', icon: History },
+    { id: 'inventory', label: 'Stock & Records', icon: Package },
     { id: 'ledger', label: 'Ledger', icon: BookOpen },
     { id: 'invoices', label: 'Invoices', icon: FileText },
   ];

@@ -6,7 +6,6 @@ import Dashboard from './components/Dashboard';
 import Purchases from './components/Purchases';
 import Sales from './components/Sales';
 import Inventory from './components/Inventory';
-import Records from './components/Records';
 import Ledger from './components/Ledger';
 import Invoice from './components/Invoice';
 import Login from './components/Login';
@@ -181,14 +180,6 @@ function App() {
 
             <div style={{ display: activeTab === 'inventory' ? 'block' : 'none' }}>
               <Inventory isActive={activeTab === 'inventory'} setAlert={setAlert} />
-            </div>
-
-            <div style={{ display: activeTab === 'records' ? 'block' : 'none' }}>
-              <Records
-                isActive={activeTab === 'records'}
-                onNavigate={setActiveTab}
-                setAlert={setAlert}
-              />
             </div>
 
             <div style={{ display: activeTab === 'ledger' ? 'block' : 'none' }}>

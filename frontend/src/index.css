@@ -625,6 +625,14 @@ samp {
   flex-wrap: wrap;
 }
 
+.stock-view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
 .filter-pill {
   font-size: 13px;
   font-weight: 500;
@@ -1854,6 +1862,15 @@ samp {
   /* On mobile: hide desktop pill rows — show select dropdowns instead */
   .panel-filter-pills {
     display: none !important;
+  }
+
+  .stock-view-switcher {
+    width: 100%;
+  }
+
+  .stock-view-switcher .filter-pill {
+    flex: 1;
+    justify-content: center;
   }
 
   .subfilter-group {

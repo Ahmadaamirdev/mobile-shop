@@ -913,7 +913,7 @@ const Purchases = ({ isActive, onPurchaseSuccess, setAlert }) => {
                 Cancel
               </button>
               <button type="submit" className="btn-primary" disabled={submitting}>
-                {submitting ? 'Saving & Uploading...' : 'Save & Add to Stock'}
+                {submitting ? 'Saving...' : 'Save'}
               </button>
             </div>
           </form>

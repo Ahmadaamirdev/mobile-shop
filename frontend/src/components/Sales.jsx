@@ -644,7 +644,7 @@ const Sales = ({ isActive, onSaleSuccess, setAlert }) => {
                 Cancel
               </button>
               <button type="submit" className="btn-primary">
-                Record Sale &amp; Deduct Stock
+                Save
               </button>
             </div>
           </form>

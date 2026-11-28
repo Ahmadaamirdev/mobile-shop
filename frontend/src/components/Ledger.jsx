@@ -20,6 +20,7 @@ import {
   Users,
   CheckCircle2,
   X,
+  Eye,
 } from 'lucide-react';
 
 const formatCurrency = (val) => `PKR ${Number(val || 0).toLocaleString()}`;
@@ -174,9 +175,6 @@ const Ledger = ({ isActive, setAlert }) => {
       setSupplierForm({ name: '', phone: '', address: '', notes: '' });
       setShowAddSupplier(false);
       await fetchSuppliers(true);
-      if (res.data?.data?._id) {
-        fetchStatement(res.data.data._id, true);
-      }
     } catch (err) {
       setAlert({
         type: 'error',
@@ -933,12 +931,12 @@ const Ledger = ({ isActive, setAlert }) => {
           <table className="pro-table">
             <thead>
               <tr>
-                <th style={{ width: '28%' }}>Supplier Name</th>
+                <th style={{ width: '24%' }}>Supplier Name</th>
                 <th style={{ width: '16%', textAlign: 'right' }}>Total Purchased</th>
                 <th style={{ width: '16%', textAlign: 'right' }}>Total Paid</th>
                 <th style={{ width: '14%', textAlign: 'right' }}>Returns Deducted</th>
-                <th style={{ width: '16%', textAlign: 'right' }}>Pending Balance</th>
-                <th style={{ width: '10%', textAlign: 'center' }}>Actions</th>
+                <th style={{ width: '15%', textAlign: 'right' }}>Pending Balance</th>
+                <th style={{ width: '15%', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -956,11 +954,7 @@ const Ledger = ({ isActive, setAlert }) => {
                 suppliers.map((s) => {
                   const bal = Number(s.balance) || 0;
                   return (
-                    <tr
-                      key={s._id}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => fetchStatement(s._id, false)}
-                    >
+                    <tr key={s._id}>
                       <td>
                         <div className="cell-title">{s.name}</div>
                         {(s.phone || s.address) && (
@@ -993,18 +987,26 @@ const Ledger = ({ isActive, setAlert }) => {
                           </span>
                         )}
                       </td>
-                      <td
-                        style={{ textAlign: 'center' }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          type="button"
-                          className="action-btn-danger"
-                          onClick={() => handleDeleteSupplier(s)}
-                          title="Delete supplier"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            type="button"
+                            className="btn-details-toggle"
+                            onClick={() => fetchStatement(s._id, false)}
+                            title="View supplier details & statement"
+                          >
+                            <Eye size={13} />
+                            <span>Details</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="action-btn-danger"
+                            onClick={() => handleDeleteSupplier(s)}
+                            title="Delete supplier"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1023,11 +1025,7 @@ const Ledger = ({ isActive, setAlert }) => {
             suppliers.map((s) => {
               const bal = Number(s.balance) || 0;
               return (
-                <div
-                  key={s._id}
-                  className="mobile-card"
-                  onClick={() => fetchStatement(s._id, false)}
-                >
+                <div key={s._id} className="mobile-card">
                   <div className="mobile-card-top">
                     <div>
                       <div className="mobile-card-title">{s.name}</div>
@@ -1071,13 +1069,16 @@ const Ledger = ({ isActive, setAlert }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="mobile-card-actions" onClick={(e) => e.stopPropagation()}>
+                  <div className="mobile-card-actions">
                     <button
                       type="button"
-                      className="btn-secondary"
+                      className="btn-details-toggle"
                       onClick={() => fetchStatement(s._id, false)}
+                      title="View supplier details & statement"
+                      aria-label="View supplier details"
                     >
-                      View Statement
+                      <Eye size={14} />
+                      <span className="view-label">Details</span>
                     </button>
                     <button
                       type="button"
